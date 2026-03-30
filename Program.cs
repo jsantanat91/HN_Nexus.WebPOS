@@ -154,7 +154,6 @@ using (var scope = app.Services.CreateScope())
 
         CREATE UNIQUE INDEX IF NOT EXISTS "IX_UserBranchAccesses_User_Branch" ON "UserBranchAccesses" ("UserId", "BranchId");
         CREATE UNIQUE INDEX IF NOT EXISTS "IX_ProductStocks_Product_Branch" ON "ProductStocks" ("ProductId", "BranchId");
-        CREATE UNIQUE INDEX IF NOT EXISTS "IX_Products_ProductNumber" ON "Products" ("ProductNumber");
 
         INSERT INTO "Branches" ("Code", "Name", "Address", "IsActive")
         SELECT 'MATRIZ', 'Sucursal Matriz', 'Pendiente por configurar', true
@@ -165,17 +164,26 @@ using (var scope = app.Services.CreateScope())
         WHERE NOT EXISTS (SELECT 1 FROM "Suppliers");
         """);
 
-    // Backfill consecutivo de producto para registros existentes.
+    // Normaliza consecutivo para evitar duplicados previos (incluyendo ceros) y luego crea índice único.
     await db.Database.ExecuteSqlRawAsync(
         """
-        WITH numbered AS (
-            SELECT "Id", ROW_NUMBER() OVER (ORDER BY "Id") AS rn
+        WITH renumbered AS (
+            SELECT
+                "Id",
+                ROW_NUMBER() OVER (
+                    ORDER BY
+                        CASE WHEN "ProductNumber" IS NULL OR "ProductNumber" = 0 THEN 1 ELSE 0 END,
+                        "ProductNumber",
+                        "Id"
+                ) AS rn
             FROM "Products"
         )
         UPDATE "Products" p
-        SET "ProductNumber" = n.rn
-        FROM numbered n
-        WHERE p."Id" = n."Id" AND (p."ProductNumber" IS NULL OR p."ProductNumber" = 0);
+        SET "ProductNumber" = r.rn
+        FROM renumbered r
+        WHERE p."Id" = r."Id";
+
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_Products_ProductNumber" ON "Products" ("ProductNumber");
         """);
 
     if (!await db.Users.AnyAsync(u => u.Username == "admin"))
