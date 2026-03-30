@@ -9,7 +9,7 @@
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://0.0.0.0:8080
 
-      ConnectionStrings__Default: "Host=database_primary;Port=5432;Database=hncontrol;Username=hncontrol_user;Password=${HNCONTROL_DB_PASSWORD};Include Error Detail=false"
+      ConnectionStrings__Default: "Host=database_primary;Port=5432;Database=hnpos;Username=hnpos_user;Password=${HNCONTROL_DB_PASSWORD};Include Error Detail=false"
 
     networks:
       - infra_net
