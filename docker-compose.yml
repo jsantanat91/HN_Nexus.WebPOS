@@ -1,0 +1,22 @@
+﻿services:
+  hnnexus_webpos:
+    container_name: hnnexus_webpos
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+
+      ConnectionStrings__Default: "Host=database_primary;Port=5432;Database=hncontrol;Username=hncontrol_user;Password=${HNCONTROL_DB_PASSWORD};Include Error Detail=false"
+
+    networks:
+      - infra_net
+
+    expose:
+      - "8080"
+
+networks:
+  infra_net:
+    external: true

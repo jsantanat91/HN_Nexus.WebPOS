@@ -1,0 +1,44 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Sales.NewModel
+@{
+    ViewData["Title"] = "Nueva venta";
+}
+
+<h3>Nueva venta</h3>
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-5">
+            <label class="form-label">Cliente (opcional)</label>
+            <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select">
+                <option value="">Publico general</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+                <input class="form-check-input" asp-for="IsInvoice" />
+                <label class="form-check-label" asp-for="IsInvoice">Requiere factura</label>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Producto</th><th>Categoria</th><th>Precio</th><th>Stock</th><th style="width:120px;">Cantidad</th></tr></thead>
+        <tbody>
+        @foreach (var product in Model.Products)
+        {
+            <tr>
+                <td>@product.Name</td>
+                <td>@product.Category?.Name</td>
+                <td>@product.Price.ToString("C")</td>
+                <td>@product.Stock</td>
+                <td><input type="number" min="0" max="@product.Stock" class="form-control" name="qty_@product.Id" value="0" /></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <button class="btn btn-primary">Confirmar venta</button>
+    <a class="btn btn-outline-secondary" asp-page="/Sales/Index">Cancelar</a>
+</form>

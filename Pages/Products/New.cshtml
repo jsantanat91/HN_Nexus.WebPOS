@@ -1,0 +1,50 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Products.NewModel
+@{
+    ViewData["Title"] = "Nuevo producto";
+}
+
+<h3>Nuevo producto</h3>
+<form method="post" class="row g-3">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="col-md-6">
+        <label asp-for="Item.Name" class="form-label"></label>
+        <input asp-for="Item.Name" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.Barcode" class="form-label"></label>
+        <input asp-for="Item.Barcode" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.CategoryId" class="form-label">Categoria</label>
+        <select asp-for="Item.CategoryId" asp-items="Model.Categories" class="form-select"></select>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.Price" class="form-label"></label>
+        <input asp-for="Item.Price" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.Cost" class="form-label"></label>
+        <input asp-for="Item.Cost" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.Stock" class="form-label"></label>
+        <input asp-for="Item.Stock" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.SatProductCode" class="form-label"></label>
+        <input asp-for="Item.SatProductCode" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Item.SatUnitCode" class="form-label"></label>
+        <input asp-for="Item.SatUnitCode" class="form-control" />
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary">Guardar</button>
+        <a class="btn btn-outline-secondary" asp-page="/Products/Index">Cancelar</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

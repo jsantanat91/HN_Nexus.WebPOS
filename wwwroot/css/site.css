@@ -1,0 +1,22 @@
+﻿html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  background: #f4f6f9;
+}
+
+.card {
+  border: 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.table td, .table th {
+  vertical-align: middle;
+}

@@ -1,0 +1,16 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Config.IndexModel
+@{
+    ViewData["Title"] = "Configuracion";
+}
+
+<h3>Configuracion del negocio</h3>
+<form method="post" class="row g-3">
+    <div class="col-md-6"><label asp-for="Item.CompanyName" class="form-label"></label><input asp-for="Item.CompanyName" class="form-control" /></div>
+    <div class="col-md-3"><label asp-for="Item.TaxId" class="form-label">RFC</label><input asp-for="Item.TaxId" class="form-control" /></div>
+    <div class="col-md-3"><label asp-for="Item.Phone" class="form-label"></label><input asp-for="Item.Phone" class="form-control" /></div>
+    <div class="col-md-12"><label asp-for="Item.Address" class="form-label"></label><input asp-for="Item.Address" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="Item.TicketHeader" class="form-label"></label><input asp-for="Item.TicketHeader" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="Item.TicketFooter" class="form-label"></label><input asp-for="Item.TicketFooter" class="form-control" /></div>
+    <div class="col-12"><button class="btn btn-primary">Guardar</button></div>
+</form>

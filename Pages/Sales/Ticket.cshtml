@@ -1,0 +1,52 @@
+﻿@page "{id:int}"
+@model HN_Nexus.WebPOS.Pages.Sales.TicketModel
+@{
+    ViewData["Title"] = "Ticket";
+}
+
+@if (Model.Sale != null)
+{
+    <div class="card mx-auto" style="max-width:420px;">
+        <div class="card-body">
+            <h5 class="text-center mb-1">@Model.Config.CompanyName</h5>
+            <p class="text-center small mb-1">@Model.Config.Address</p>
+            <p class="text-center small mb-1">RFC: @Model.Config.TaxId</p>
+            <p class="text-center small mb-3">Tel: @Model.Config.Phone</p>
+            @if (!string.IsNullOrWhiteSpace(Model.Config.TicketHeader))
+            {
+                <p class="text-center">@Model.Config.TicketHeader</p>
+            }
+
+            <hr />
+            <p class="mb-1">Folio: <strong>@Model.Sale.Id</strong></p>
+            <p class="mb-1">Fecha: @Model.Sale.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+            <p class="mb-3">Cliente: @(Model.Sale.Customer?.FullName ?? "Publico General")</p>
+
+            <table class="table table-sm">
+                <thead><tr><th>Prod</th><th>Cant</th><th>PU</th><th>Imp</th></tr></thead>
+                <tbody>
+                @foreach (var d in Model.Sale.Details)
+                {
+                    <tr>
+                        <td>@d.Product?.Name</td>
+                        <td>@d.Quantity</td>
+                        <td>@d.UnitPrice.ToString("C")</td>
+                        <td>@d.Total.ToString("C")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+
+            <h4 class="text-end">TOTAL: @Model.Sale.TotalAmount.ToString("C")</h4>
+            @if (!string.IsNullOrWhiteSpace(Model.Config.TicketFooter))
+            {
+                <p class="text-center mt-4">@Model.Config.TicketFooter</p>
+            }
+        </div>
+    </div>
+
+    <div class="text-center mt-3 d-print-none">
+        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+        <a class="btn btn-outline-secondary" asp-page="/Sales/Index">Volver</a>
+    </div>
+}

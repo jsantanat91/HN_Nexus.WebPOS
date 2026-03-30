@@ -1,0 +1,30 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Customers.IndexModel
+@{
+    ViewData["Title"] = "Clientes";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Clientes</h3>
+    <a class="btn btn-primary" asp-page="/Customers/New">Nuevo cliente</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4"><input class="form-control" name="q" value="@Model.Q" placeholder="Nombre o RFC" /></div>
+    <div class="col-auto"><button class="btn btn-outline-secondary">Buscar</button></div>
+</form>
+
+<table class="table table-striped">
+    <thead><tr><th>Nombre</th><th>RFC</th><th>Telefono</th><th>Email</th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.FullName</td>
+            <td>@item.Rfc</td>
+            <td>@item.PhoneNumber</td>
+            <td>@item.Email</td>
+        </tr>
+    }
+    </tbody>
+</table>

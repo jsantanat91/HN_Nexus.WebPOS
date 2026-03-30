@@ -1,0 +1,28 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Expenses.IndexModel
+@{
+    ViewData["Title"] = "Gastos";
+}
+
+<h3>Gastos</h3>
+<form method="post" asp-page-handler="Create" class="row g-2 mb-3">
+    <div class="col-md-4"><input class="form-control" name="description" placeholder="Descripcion" /></div>
+    <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="amount" placeholder="Monto" /></div>
+    <div class="col-md-3"><input class="form-control" name="category" placeholder="Categoria" /></div>
+    <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
+</form>
+
+<table class="table table-striped">
+    <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Monto</th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@item.Description</td>
+            <td>@item.Category</td>
+            <td>@item.Amount.ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+</table>

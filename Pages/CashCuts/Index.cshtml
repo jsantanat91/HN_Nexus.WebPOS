@@ -1,0 +1,34 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.CashCuts.IndexModel
+@{
+    ViewData["Title"] = "Cortes de caja";
+}
+
+<h3>Cortes de caja</h3>
+<form method="post" asp-page-handler="Create" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <label class="form-label">Total sistema (hoy)</label>
+        <input class="form-control" value="@Model.SuggestedSystemTotal.ToString("C")" disabled />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Total fisico contado</label>
+        <input class="form-control" type="number" step="0.01" name="totalPhysical" required />
+    </div>
+    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary">Guardar corte</button></div>
+</form>
+
+<table class="table table-striped">
+    <thead><tr><th>Fecha</th><th>Sistema</th><th>Fisico</th><th>Diferencia</th><th>Usuario</th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.CutDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@item.TotalSystem.ToString("C")</td>
+            <td>@item.TotalPhysical.ToString("C")</td>
+            <td>@item.Difference.ToString("C")</td>
+            <td>@item.User</td>
+        </tr>
+    }
+    </tbody>
+</table>

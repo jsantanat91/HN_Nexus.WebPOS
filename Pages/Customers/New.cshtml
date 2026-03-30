@@ -1,0 +1,19 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Customers.NewModel
+@{
+    ViewData["Title"] = "Nuevo cliente";
+}
+
+<h3>Nuevo cliente</h3>
+<form method="post" class="row g-3">
+    <div class="col-md-6"><label asp-for="Item.FullName" class="form-label"></label><input asp-for="Item.FullName" class="form-control" /></div>
+    <div class="col-md-3"><label asp-for="Item.Rfc" class="form-label"></label><input asp-for="Item.Rfc" class="form-control" /></div>
+    <div class="col-md-3"><label asp-for="Item.PostalCode" class="form-label"></label><input asp-for="Item.PostalCode" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="Item.PhoneNumber" class="form-label"></label><input asp-for="Item.PhoneNumber" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="Item.Email" class="form-label"></label><input asp-for="Item.Email" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="Item.Address" class="form-label"></label><input asp-for="Item.Address" class="form-control" /></div>
+    <div class="col-12">
+        <button class="btn btn-primary">Guardar</button>
+        <a class="btn btn-outline-secondary" asp-page="/Customers/Index">Cancelar</a>
+    </div>
+</form>

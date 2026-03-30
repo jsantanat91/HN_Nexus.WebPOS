@@ -1,0 +1,38 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.SupplierOrders.IndexModel
+@{
+    ViewData["Title"] = "Pedidos proveedor";
+}
+
+<h3>Pedidos a proveedor</h3>
+<form method="post" asp-page-handler="Create" class="row g-2 mb-3">
+    <div class="col-md-4"><input class="form-control" name="providerName" placeholder="Proveedor" /></div>
+    <div class="col-md-4"><input class="form-control" name="productName" placeholder="Producto" /></div>
+    <div class="col-md-2"><input class="form-control" type="number" name="quantity" placeholder="Cantidad" /></div>
+    <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
+</form>
+
+<table class="table table-striped">
+    <thead><tr><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Estatus</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@item.ProviderName</td>
+            <td>@item.ProductName</td>
+            <td>@item.Quantity</td>
+            <td>@item.Status</td>
+            <td>
+                @if (item.Status != "Recibido")
+                {
+                    <form method="post" asp-page-handler="MarkReceived" class="d-inline">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button class="btn btn-sm btn-outline-success">Recibir</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

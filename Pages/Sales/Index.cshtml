@@ -1,0 +1,27 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Sales.IndexModel
+@{
+    ViewData["Title"] = "Ventas";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Ventas</h3>
+    <a class="btn btn-primary" asp-page="/Sales/New">Nueva venta</a>
+</div>
+
+<table class="table table-striped">
+    <thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Cajero</th><th>Total</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Items)
+    {
+        <tr>
+            <td>@item.Id</td>
+            <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@(item.Customer?.FullName ?? "Publico General")</td>
+            <td>@item.User?.FullName</td>
+            <td>@item.TotalAmount.ToString("C")</td>
+            <td><a asp-page="/Sales/Ticket" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Ticket</a></td>
+        </tr>
+    }
+    </tbody>
+</table>

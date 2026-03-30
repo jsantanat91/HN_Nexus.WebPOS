@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="es-mx">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - HN Nexus WebPOS</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-page="/Index">HN Nexus WebPOS</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-page="/Sales/Index">Ventas</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/Sales/New">Nueva Venta</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/Products/Index">Productos</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/Customers/Index">Clientes</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/CashCuts/Index">Cortes</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/Expenses/Index">Gastos</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-page="/SupplierOrders/Index">Pedidos</a></li>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-page="/Config/Index">Configuracion</a></li>
+                            }
+                        }
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item me-3 text-white d-flex align-items-center">@User.Identity.Name</li>
+                            <li class="nav-item"><a class="btn btn-outline-light" asp-page="/Account/Logout">Salir</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <main class="container py-4">
+        @if (TempData["Flash"] != null)
+        {
+            <div class="alert alert-info">@TempData["Flash"]</div>
+        }
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

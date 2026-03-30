@@ -1,0 +1,25 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="card"><div class="card-body"><h6>Ventas Hoy</h6><h3>@Model.SalesToday.ToString("C")</h3></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body"><h6>Gastos Hoy</h6><h3>@Model.ExpensesToday.ToString("C")</h3></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body"><h6>Ventas Realizadas</h6><h3>@Model.SalesCountToday</h3></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body"><h6>Stock Bajo</h6><h3>@Model.LowStockProducts</h3></div></div>
+    </div>
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <a class="btn btn-primary" asp-page="/Sales/New">Registrar Venta</a>
+    <a class="btn btn-outline-primary" asp-page="/Products/Index">Catalogo</a>
+</div>
