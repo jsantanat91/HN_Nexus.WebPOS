@@ -40,7 +40,7 @@ public static class ModuleCatalog
         [Expenses] = "Gastos",
         [CashCuts] = "Corte",
         [CashShifts] = "Turno",
-        [SupplierOrders] = "Pedidos a Proveedor",
+        [SupplierOrders] = "Órdenes de Compra",
         [Reports] = "Reportes",
         [Config] = "Configuración",
         [Users] = "Usuarios",

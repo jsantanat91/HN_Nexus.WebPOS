@@ -27,8 +27,9 @@
         <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
     </div>
     <div class="col-md-3">
-        <label class="form-label">ID consecutivo</label>
-        <input class="form-control" value="@($"PROD-{Model.NextNumber:D6}")" readonly />
+        <label asp-for="Item.ProductNumber" class="form-label">Código producto</label>
+        <input asp-for="Item.ProductNumber" class="form-control" placeholder="@Model.NextNumber" />
+        <small class="text-muted">Si lo dejas vacío, se genera automático.</small>
     </div>
     <div class="col-md-5">
         <label asp-for="Item.Name" class="form-label">Nombre</label>

@@ -27,7 +27,16 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
     public async Task<IActionResult> OnPostAsync()
     {
-        Item.ProductNumber = (await db.Products.MaxAsync(x => (int?)x.ProductNumber) ?? 0) + 1;
+        var next = (await db.Products.MaxAsync(x => (int?)x.ProductNumber) ?? 0) + 1;
+        Item.ProductNumber = Item.ProductNumber > 0 ? Item.ProductNumber : next;
+
+        var existsCode = await db.Products.AnyAsync(p => p.ProductNumber == Item.ProductNumber);
+        if (existsCode)
+        {
+            ModelState.AddModelError(string.Empty, "El código de producto ya existe.");
+        }
+
+        Item.Barcode = string.IsNullOrWhiteSpace(Item.Barcode) ? $"PROD-{Item.ProductNumber:D6}" : Item.Barcode.Trim();
 
         if (!ModelState.IsValid)
         {

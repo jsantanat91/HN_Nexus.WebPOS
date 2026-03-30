@@ -76,6 +76,9 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     [BindProperty]
     public string QuickCustomerPaymentMethodSat { get; set; } = "PUE";
 
+    [BindProperty]
+    public bool QuickCustomerRequiresInvoice { get; set; }
+
     public List<SelectListItem> QuickCfdiUses { get; private set; } = new();
     public List<SelectListItem> QuickPaymentForms { get; private set; } = new();
     public List<SelectListItem> QuickPaymentMethods { get; private set; } = new();
@@ -171,18 +174,31 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             return RedirectToPage(new { branchId = BranchId });
         }
 
-        var rfc = (string.IsNullOrWhiteSpace(QuickCustomerRfc) ? "XAXX010101000" : QuickCustomerRfc.Trim().ToUpperInvariant());
-        if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$"))
-        {
-            TempData["Flash"] = "RFC inválido para cliente rápido.";
-            return RedirectToPage(new { branchId = BranchId });
-        }
+        var rfc = "XAXX010101000";
+        var cp = string.Empty;
+        var cfdiUse = "S01";
+        var paymentForm = "01";
+        var paymentMethodSat = "PUE";
 
-        var cp = (QuickCustomerPostalCode ?? string.Empty).Trim();
-        if (!string.IsNullOrWhiteSpace(cp) && !System.Text.RegularExpressions.Regex.IsMatch(cp, @"^\d{5}$"))
+        if (QuickCustomerRequiresInvoice)
         {
-            TempData["Flash"] = "Código postal inválido (debe ser de 5 dígitos).";
-            return RedirectToPage(new { branchId = BranchId });
+            rfc = (string.IsNullOrWhiteSpace(QuickCustomerRfc) ? string.Empty : QuickCustomerRfc.Trim().ToUpperInvariant());
+            if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$"))
+            {
+                TempData["Flash"] = "RFC inválido para cliente rápido con factura.";
+                return RedirectToPage(new { branchId = BranchId });
+            }
+
+            cp = (QuickCustomerPostalCode ?? string.Empty).Trim();
+            if (!System.Text.RegularExpressions.Regex.IsMatch(cp, @"^\d{5}$"))
+            {
+                TempData["Flash"] = "Código postal inválido (debe ser de 5 dígitos) para factura.";
+                return RedirectToPage(new { branchId = BranchId });
+            }
+
+            cfdiUse = QuickCustomerCfdiUse;
+            paymentForm = QuickCustomerPaymentForm;
+            paymentMethodSat = QuickCustomerPaymentMethodSat;
         }
 
         db.Customers.Add(new Customer
@@ -193,11 +209,11 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             PhoneNumber = string.Empty,
             Address = string.Empty,
             PostalCode = cp,
-            CfdiUse = QuickCustomerCfdiUse,
+            CfdiUse = cfdiUse,
             FiscalRegime = "601",
             InvoiceType = "I",
-            PaymentForm = QuickCustomerPaymentForm,
-            PaymentMethodSat = QuickCustomerPaymentMethodSat,
+            PaymentForm = paymentForm,
+            PaymentMethodSat = paymentMethodSat,
             IsActive = true,
             RegisteredAt = DateTime.UtcNow
         });

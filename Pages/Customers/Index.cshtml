@@ -7,10 +7,10 @@
 <section class="panel">
     <div class="panel-header">
         <div>
-            <h5 class="mb-0">Listado de Clientes</h5>
-            <small class="text-muted">Base comercial y datos de facturacion</small>
+            <h5 class="mb-0">Clientes</h5>
+            <small class="text-muted">Base comercial y datos fiscales</small>
         </div>
-        <a class="btn btn-primary" asp-page="/Customers/New">+ Nuevo cliente</a>
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newCustomerModal">+ Nuevo cliente</button>
     </div>
 
     <div class="panel-body">
@@ -18,26 +18,79 @@
             <div class="col-md-4"><input class="form-control" name="q" value="@Model.Q" placeholder="Nombre, RFC o correo" /></div>
             <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
         </form>
-    </div>
 
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Nombre</th><th>RFC</th><th>CFDI</th><th>Pago SAT</th><th>Teléfono</th><th>Email</th><th>Estatus</th></tr></thead>
-            <tbody>
+        <div class="cards-grid">
             @foreach (var item in Model.Items)
             {
-                <tr>
-                    <td class="fw-semibold">@item.FullName</td>
-                    <td>@item.Rfc</td>
-                    <td><span class="badge-soft badge-info">@item.CfdiUse</span></td>
-                    <td><span class="badge-soft badge-warn">@item.PaymentForm / @item.PaymentMethodSat</span></td>
-                    <td>@item.PhoneNumber</td>
-                    <td>@item.Email</td>
-                    <td><span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span></td>
-                </tr>
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <strong>@item.FullName</strong>
+                        <span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span>
+                    </div>
+                    <div class="product-meta mb-1">RFC: <span class="fw-semibold">@item.Rfc</span></div>
+                    <div class="product-meta mb-1">Email: @item.Email</div>
+                    <div class="product-meta mb-2">Tel: @item.PhoneNumber</div>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <span class="badge-soft badge-info">CFDI @item.CfdiUse</span>
+                        <span class="badge-soft badge-warn">@item.PaymentForm / @item.PaymentMethodSat</span>
+                        <span class="badge-soft category-pill" data-category="@item.FiscalRegime">Régimen @item.FiscalRegime</span>
+                    </div>
+                </article>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>
 
+<div class="modal fade" id="newCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Nuevo cliente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-body row g-2">
+                    <div class="col-md-6"><label asp-for="Input.FullName" class="form-label">Nombre completo</label><input asp-for="Input.FullName" class="form-control" /></div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" asp-for="InputRequiresInvoice" id="custRequiresInvoice" />
+                            <label class="form-check-label" asp-for="InputRequiresInvoice">Requiere factura</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3"><label asp-for="Input.Rfc" class="form-label">RFC</label><input asp-for="Input.Rfc" class="form-control text-uppercase" style="text-transform:uppercase;" /></div>
+                    <div class="col-md-3"><label asp-for="Input.PostalCode" class="form-label">Código postal</label><input asp-for="Input.PostalCode" class="form-control" /></div>
+                    <div class="col-md-4"><label asp-for="Input.PhoneNumber" class="form-label">Teléfono</label><input asp-for="Input.PhoneNumber" class="form-control" /></div>
+                    <div class="col-md-4"><label asp-for="Input.Email" class="form-label">Correo</label><input asp-for="Input.Email" class="form-control" /></div>
+                    <div class="col-md-4"><label asp-for="Input.Address" class="form-label">Dirección</label><input asp-for="Input.Address" class="form-control" /></div>
+
+                    <div id="customerInvoiceFields" class="row g-2">
+                        <div class="col-md-4"><label asp-for="Input.CfdiUse" class="form-label">Uso CFDI</label><select asp-for="Input.CfdiUse" asp-items="Model.UsoCfdiOptions" class="form-select"></select></div>
+                        <div class="col-md-4"><label asp-for="Input.FiscalRegime" class="form-label">Régimen fiscal</label><select asp-for="Input.FiscalRegime" asp-items="Model.RegimenFiscalOptions" class="form-select"></select></div>
+                        <div class="col-md-4"><label asp-for="Input.InvoiceType" class="form-label">Tipo de comprobante</label><select asp-for="Input.InvoiceType" asp-items="Model.TipoComprobanteOptions" class="form-select"></select></div>
+                        <div class="col-md-4"><label asp-for="Input.PaymentForm" class="form-label">Forma de pago SAT</label><select asp-for="Input.PaymentForm" asp-items="Model.FormaPagoOptions" class="form-select"></select></div>
+                        <div class="col-md-4"><label asp-for="Input.PaymentMethodSat" class="form-label">Método de pago SAT</label><select asp-for="Input.PaymentMethodSat" asp-items="Model.MetodoPagoOptions" class="form-select"></select></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-save">Guardar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(() => {
+  const toggle = document.getElementById('custRequiresInvoice');
+  const fields = document.getElementById('customerInvoiceFields');
+  const rfc = document.getElementById('Input_Rfc');
+  const cp = document.getElementById('Input_PostalCode');
+
+  function syncInvoice() {
+    const on = !!toggle?.checked;
+    if (fields) fields.style.display = on ? 'flex' : 'none';
+    if (rfc) rfc.required = on;
+    if (cp) cp.required = on;
+  }
+
+  toggle?.addEventListener('change', syncInvoice);
+  syncInvoice();
+})();
+</script>
+}

@@ -1,0 +1,37 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Inventory.KardexModel
+@{
+    ViewData["Title"] = "Kardex";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Kardex por producto y sucursal</h5></div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-3"><label class="form-label">Producto</label><select asp-for="ProductId" asp-items="Model.Products" class="form-select"></select></div>
+            <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
+            <div class="col-md-2"><button class="btn btn-primary w-100">Consultar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Movimientos</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var r in Model.Rows)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@r.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="badge-soft @(r.Type == "Entrada" ? "badge-ok" : "badge-danger")">@r.Type @r.Quantity</span>
+                    </div>
+                    <div class="fw-semibold">@r.Reference</div>
+                    <div class="product-meta">@r.Notes</div>
+                </article>
+            }
+        </div>
+    </div>
+</section>

@@ -18,53 +18,32 @@
 
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Listado de sucursales</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Código</th><th>Nombre</th><th>Dirección</th><th>Estatus</th><th></th></tr></thead>
-            <tbody>
+    <div class="panel-body">
+        <div class="cards-grid">
             @foreach (var b in Model.Branches)
             {
-                <tr>
-                    <td>@b.Code</td>
-                    <td class="fw-semibold">@b.Name</td>
-                    <td>@b.Address</td>
-                    <td><span class="badge-soft @(b.IsActive ? "badge-ok" : "badge-danger")">@(b.IsActive ? "Activa" : "Inactiva")</span></td>
-                    <td class="d-flex gap-2">
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2"><strong>@b.Name</strong><span class="badge-soft @(b.IsActive ? "badge-ok" : "badge-danger")">@(b.IsActive ? "Activa" : "Inactiva")</span></div>
+                    <div class="product-meta mb-1">Código: <span class="fw-semibold">@b.Code</span></div>
+                    <div class="product-meta mb-2">@b.Address</div>
+                    <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#branchModal-@b.Id">Editar</button>
                         @if (b.IsActive)
                         {
-                            <form method="post" asp-page-handler="Deactivate" class="d-inline">
-                                <input type="hidden" name="id" value="@b.Id" />
-                                <button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar sucursal?');">Desactivar</button>
-                            </form>
+                            <form method="post" asp-page-handler="Deactivate" class="d-inline"><input type="hidden" name="id" value="@b.Id" /><button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar sucursal?');">Desactivar</button></form>
                         }
-                    </td>
-                </tr>
+                    </div>
+                </article>
 
                 <div class="modal fade" id="branchModal-@b.Id" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Editar sucursal</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <form method="post" asp-page-handler="Edit">
-                                <input type="hidden" name="id" value="@b.Id" />
-                                <div class="modal-body row g-2">
-                                    <div class="col-12"><label class="form-label">Código</label><input class="form-control" name="code" value="@b.Code" /></div>
-                                    <div class="col-12"><label class="form-label">Nombre</label><input class="form-control" name="name" value="@b.Name" /></div>
-                                    <div class="col-12"><label class="form-label">Dirección</label><input class="form-control" name="address" value="@b.Address" /></div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-                                    <button class="btn btn-save">Guardar</button>
-                                </div>
-                            </form>
+                            <div class="modal-header"><h5 class="modal-title">Editar sucursal</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                            <form method="post" asp-page-handler="Edit"><input type="hidden" name="id" value="@b.Id" /><div class="modal-body row g-2"><div class="col-12"><label class="form-label">Código</label><input class="form-control" name="code" value="@b.Code" /></div><div class="col-12"><label class="form-label">Nombre</label><input class="form-control" name="name" value="@b.Name" /></div><div class="col-12"><label class="form-label">Dirección</label><input class="form-control" name="address" value="@b.Address" /></div></div><div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-save">Guardar</button></div></form>
                         </div>
                     </div>
                 </div>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>

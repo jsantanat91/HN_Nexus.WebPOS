@@ -11,10 +11,7 @@
             <div class="col-md-3"><label class="form-label">Nombre completo</label><input asp-for="Input.FullName" class="form-control" /></div>
             <div class="col-md-2"><label class="form-label">Usuario</label><input asp-for="Input.Username" class="form-control" /></div>
             <div class="col-md-2"><label class="form-label">Contraseña</label><input asp-for="Input.Password" class="form-control" type="password" /></div>
-            <div class="col-md-3">
-                <label class="form-label">Perfil</label>
-                <select asp-for="Input.ProfileId" asp-items="Model.Profiles" class="form-select"></select>
-            </div>
+            <div class="col-md-3"><label class="form-label">Perfil</label><select asp-for="Input.ProfileId" asp-items="Model.Profiles" class="form-select"></select></div>
 
             <div class="col-12">
                 <strong class="d-block mb-2">Sucursales visibles</strong>
@@ -38,23 +35,26 @@
 
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Usuarios creados</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Nombre</th><th>Usuario</th><th>Perfil</th><th>Estatus</th><th></th></tr></thead>
-            <tbody>
+    <div class="panel-body">
+        <div class="cards-grid">
             @foreach (var u in Model.Users)
             {
                 var branchSet = Model.UserBranchMap.ContainsKey(u.Id) ? Model.UserBranchMap[u.Id] : new HashSet<int>();
-                <tr>
-                    <td>@u.FullName</td>
-                    <td>@u.Username</td>
-                    <td><span class="badge-soft badge-info">@(u.PermissionProfile?.Name ?? u.Role)</span></td>
-                    <td><span class="badge-soft @(u.IsActive ? "badge-ok" : "badge-danger")">@(u.IsActive ? "Activo" : "Inactivo")</span></td>
-                    <td class="d-flex gap-2">
-                        <button type="button"
-                                class="btn btn-sm btn-outline-primary"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editUserModal-@u.Id">Editar</button>
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <strong>@u.FullName</strong>
+                        <span class="badge-soft @(u.IsActive ? "badge-ok" : "badge-danger")">@(u.IsActive ? "Activo" : "Inactivo")</span>
+                    </div>
+                    <div class="product-meta mb-1">Usuario: @u.Username</div>
+                    <div class="d-flex gap-1 flex-wrap mb-2">
+                        <span class="badge-soft badge-info">@(u.PermissionProfile?.Name ?? u.Role)</span>
+                        @foreach (var b in Model.Branches.Where(x => branchSet.Contains(x.Id)).Take(3))
+                        {
+                            <span class="badge-soft category-pill" data-category="@b.Name">@b.Name</span>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal-@u.Id">Editar</button>
                         @if (!u.Username.Equals("admin", StringComparison.OrdinalIgnoreCase) && u.IsActive)
                         {
                             <form method="post" asp-page-handler="Deactivate" class="d-inline">
@@ -62,55 +62,35 @@
                                 <button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar usuario?');">Desactivar</button>
                             </form>
                         }
-                    </td>
-                </tr>
+                    </div>
+                </article>
 
                 <div class="modal fade" id="editUserModal-@u.Id" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered">
                         <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Editar usuario: @u.Username</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
+                            <div class="modal-header"><h5 class="modal-title">Editar usuario: @u.Username</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                             <form method="post" asp-page-handler="Edit">
                                 <input type="hidden" name="id" value="@u.Id" />
                                 <div class="modal-body">
                                     <div class="row g-2">
                                         <div class="col-md-5"><label class="form-label">Nombre completo</label><input class="form-control" name="fullName" value="@u.FullName" /></div>
-                                        <div class="col-md-4"><label class="form-label">Perfil</label>
-                                            <select class="form-select" name="profileId">
-                                                @foreach (var p in Model.Profiles)
-                                                {
-                                                    var selected = u.PermissionProfileId.HasValue && u.PermissionProfileId.Value.ToString() == p.Value;
-                                                    <option value="@p.Value" selected="@selected">@p.Text</option>
-                                                }
-                                            </select>
-                                        </div>
+                                        <div class="col-md-4"><label class="form-label">Perfil</label><select class="form-select" name="profileId">@foreach (var p in Model.Profiles){ var selected = u.PermissionProfileId.HasValue && u.PermissionProfileId.Value.ToString() == p.Value; <option value="@p.Value" selected="@selected">@p.Text</option>}</select></div>
                                         <div class="col-md-3"><label class="form-label">Nueva contraseña</label><input class="form-control" type="password" name="password" placeholder="Opcional" /></div>
 
                                         <div class="col-12"><strong class="d-block mb-1">Sucursales visibles</strong></div>
                                         @foreach (var b in Model.Branches)
                                         {
                                             var checkedBranch = branchSet.Contains(b.Id);
-                                            <div class="col-md-4">
-                                                <label class="form-check-label d-flex align-items-center gap-2 border rounded p-2">
-                                                    <input class="form-check-input" type="checkbox" name="ebr_@b.Id" checked="@checkedBranch" />
-                                                    <span>@b.Name</span>
-                                                </label>
-                                            </div>
+                                            <div class="col-md-4"><label class="form-check-label d-flex align-items-center gap-2 border rounded p-2"><input class="form-check-input" type="checkbox" name="ebr_@b.Id" checked="@checkedBranch" /><span>@b.Name</span></label></div>
                                         }
                                     </div>
                                 </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-                                    <button class="btn btn-save">Guardar</button>
-                                </div>
+                                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-save">Guardar</button></div>
                             </form>
                         </div>
                     </div>
                 </div>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>

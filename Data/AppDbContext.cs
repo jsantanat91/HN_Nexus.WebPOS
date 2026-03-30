@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SupplierOrder> SupplierOrders => Set<SupplierOrder>();
     public DbSet<ProductIngredient> ProductIngredients => Set<ProductIngredient>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<StockTransfer> StockTransfers => Set<StockTransfer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

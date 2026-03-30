@@ -51,9 +51,11 @@
                     </details>
                 }
                 @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Products/Index">Productos</a> }
+                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Inventory/Kardex">Kardex</a> }
+                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Inventory/Transfers">Transferencias</a> }
                 @if (has(ModuleCatalog.Customers)) { <a class="nav-link" asp-page="/Customers/Index">Clientes</a> }
                 @if (has(ModuleCatalog.Expenses)) { <a class="nav-link" asp-page="/Expenses/Index">Gastos</a> }
-                @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Pedidos</a> }
+                @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Órdenes Compra</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Daily">Reportes</a> }
 
                 @if (User.IsInRole("Admin"))

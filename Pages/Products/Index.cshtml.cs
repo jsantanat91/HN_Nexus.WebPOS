@@ -24,6 +24,9 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     public int EditId { get; set; }
 
     [BindProperty]
+    public int EditProductNumber { get; set; }
+
+    [BindProperty]
     public string EditName { get; set; } = string.Empty;
 
     [BindProperty]
@@ -56,6 +59,33 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     [BindProperty]
     public int EditPromotionMinQty { get; set; }
 
+    [BindProperty]
+    public int NewProductNumber { get; set; }
+
+    [BindProperty]
+    public string NewName { get; set; } = string.Empty;
+
+    [BindProperty]
+    public string NewBarcode { get; set; } = string.Empty;
+
+    [BindProperty]
+    public decimal NewPrice { get; set; }
+
+    [BindProperty]
+    public decimal NewCost { get; set; }
+
+    [BindProperty]
+    public int NewStock { get; set; }
+
+    [BindProperty]
+    public int NewCategoryId { get; set; }
+
+    [BindProperty]
+    public bool NewPriceIncludesTax { get; set; }
+
+    [BindProperty]
+    public string NewCategoryName { get; set; } = string.Empty;
+
     public List<Category> Categories { get; private set; } = new();
 
     public async Task OnGetAsync()
@@ -65,9 +95,97 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
 
     public IActionResult OnGetTemplate()
     {
-        var csv = "Nombre,CodigoBarras,Categoria,Precio,Costo,Stock,IncluyeIVA\n" +
-                  "Producto Demo,2001,General,99.90,60.00,10,SI\n";
+        var csv = "Nombre,CodigoBarras,Categoria,Precio,Costo,Stock,IncluyeIVA,SucursalCodigo\n" +
+                  "Producto Demo,2001,General,99.90,60.00,10,SI,MATRIZ\n";
         return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "plantilla_productos.csv");
+    }
+
+    public async Task<IActionResult> OnPostCreateCategoryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewCategoryName))
+        {
+            TempData["Flash"] = "Nombre de categoría requerido.";
+            return RedirectToPage(new { branchId = BranchId, q = Q });
+        }
+
+        var normalized = NewCategoryName.Trim();
+        var exists = await db.Categories.AnyAsync(c => c.Name.ToLower() == normalized.ToLower());
+        if (exists)
+        {
+            TempData["Flash"] = "La categoría ya existe.";
+            return RedirectToPage(new { branchId = BranchId, q = Q });
+        }
+
+        db.Categories.Add(new Category { Name = normalized });
+        await db.SaveChangesAsync();
+        TempData["Flash"] = "Categoría creada.";
+        return RedirectToPage(new { branchId = BranchId, q = Q });
+    }
+
+    public async Task<IActionResult> OnPostCreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewName) || NewCategoryId <= 0)
+        {
+            TempData["Flash"] = "Completa nombre y categoría para crear producto.";
+            return RedirectToPage(new { branchId = BranchId, q = Q });
+        }
+
+        var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == BranchId && b.IsActive);
+        if (branch is null)
+        {
+            TempData["Flash"] = "Sucursal inválida.";
+            return RedirectToPage(new { branchId = BranchId, q = Q });
+        }
+
+        var nextNumber = (await db.Products.MaxAsync(x => (int?)x.ProductNumber) ?? 0) + 1;
+        var finalNumber = NewProductNumber > 0 ? NewProductNumber : nextNumber;
+        var usedNumber = await db.Products.AnyAsync(p => p.ProductNumber == finalNumber);
+        if (usedNumber)
+        {
+            TempData["Flash"] = "El código de producto ya existe. Usa otro.";
+            return RedirectToPage(new { branchId = BranchId, q = Q });
+        }
+
+        var product = new Product
+        {
+            ProductNumber = finalNumber,
+            Name = NewName.Trim(),
+            Barcode = string.IsNullOrWhiteSpace(NewBarcode) ? $"PROD-{finalNumber:D6}" : NewBarcode.Trim(),
+            CategoryId = NewCategoryId,
+            Price = NewPrice,
+            Cost = NewCost,
+            Stock = Math.Max(0, NewStock),
+            PriceIncludesTax = NewPriceIncludesTax,
+            SatProductCode = "01010101",
+            SatUnitCode = "H87"
+        };
+
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+
+        db.ProductStocks.Add(new ProductStock
+        {
+            ProductId = product.Id,
+            BranchId = BranchId,
+            Stock = product.Stock,
+            MinStock = 5
+        });
+
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "CREATE",
+            Entity = "Product",
+            EntityId = product.Id,
+            BranchId = BranchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Alta producto '{product.Name}' (cod {product.ProductNumber}) en sucursal {BranchId}."
+        });
+
+        await db.SaveChangesAsync();
+        TempData["Flash"] = "Producto creado.";
+        return RedirectToPage(new { branchId = BranchId, q = Q });
     }
 
     public async Task<IActionResult> OnPostImportAsync(IFormFile? file, int branchId)
@@ -87,7 +205,6 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         }
 
         var categories = await db.Categories.ToListAsync();
-
         var created = 0;
         var assigned = 0;
         using var stream = file.OpenReadStream();
@@ -97,16 +214,10 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         while (!reader.EndOfStream)
         {
             var line = await reader.ReadLineAsync();
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(line)) continue;
 
             var parts = line.Split(',', StringSplitOptions.None);
-            if (parts.Length < 7)
-            {
-                continue;
-            }
+            if (parts.Length < 7) continue;
 
             var name = parts[0].Trim();
             var barcode = parts[1].Trim();
@@ -115,25 +226,29 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             _ = decimal.TryParse(parts[4], NumberStyles.Any, CultureInfo.InvariantCulture, out var cost);
             _ = int.TryParse(parts[5], NumberStyles.Any, CultureInfo.InvariantCulture, out var stock);
             var includesTax = parts[6].Trim().Equals("SI", StringComparison.OrdinalIgnoreCase) || parts[6].Trim().Equals("TRUE", StringComparison.OrdinalIgnoreCase);
-
-            if (string.IsNullOrWhiteSpace(name))
+            var targetBranch = branch;
+            if (parts.Length >= 8)
             {
-                continue;
+                var branchCode = (parts[7] ?? string.Empty).Trim().ToUpperInvariant();
+                if (!string.IsNullOrWhiteSpace(branchCode))
+                {
+                    var byCode = await db.Branches.FirstOrDefaultAsync(b => b.Code.ToUpper() == branchCode && b.IsActive);
+                    if (byCode is not null)
+                    {
+                        targetBranch = byCode;
+                    }
+                }
             }
+
+            if (string.IsNullOrWhiteSpace(name)) continue;
 
             var existing = await db.Products.FirstOrDefaultAsync(p => !string.IsNullOrWhiteSpace(barcode) && p.Barcode == barcode);
             if (existing is not null)
             {
-                var existingStock = await db.ProductStocks.FirstOrDefaultAsync(ps => ps.ProductId == existing.Id && ps.BranchId == branch.Id);
+                var existingStock = await db.ProductStocks.FirstOrDefaultAsync(ps => ps.ProductId == existing.Id && ps.BranchId == targetBranch.Id);
                 if (existingStock is null)
                 {
-                    db.ProductStocks.Add(new ProductStock
-                    {
-                        ProductId = existing.Id,
-                        BranchId = branch.Id,
-                        Stock = stock,
-                        MinStock = 5
-                    });
+                    db.ProductStocks.Add(new ProductStock { ProductId = existing.Id, BranchId = targetBranch.Id, Stock = stock, MinStock = 5 });
                     assigned++;
                 }
                 else
@@ -159,7 +274,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             {
                 ProductNumber = nextNumber,
                 Name = name,
-                Barcode = string.IsNullOrWhiteSpace(barcode) ? $"IMP-{nextNumber:D6}" : barcode,
+                Barcode = string.IsNullOrWhiteSpace(barcode) ? $"PROD-{nextNumber:D6}" : barcode,
                 CategoryId = category.Id,
                 Price = price,
                 Cost = cost,
@@ -172,19 +287,10 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             db.Products.Add(product);
             await db.SaveChangesAsync();
 
-            db.ProductStocks.Add(new ProductStock
-            {
-                ProductId = product.Id,
-                BranchId = branch.Id,
-                Stock = stock,
-                MinStock = 5
-            });
+            db.ProductStocks.Add(new ProductStock { ProductId = product.Id, BranchId = targetBranch.Id, Stock = stock, MinStock = 5 });
             await db.SaveChangesAsync();
-
             created++;
         }
-
-        TempData["Flash"] = $"Importación completada en sucursal. Nuevos: {created}, asignados: {assigned}.";
 
         db.AuditLogs.Add(new AuditLog
         {
@@ -198,6 +304,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         });
         await db.SaveChangesAsync();
 
+        TempData["Flash"] = $"Importación completada en sucursal. Nuevos: {created}, asignados: {assigned}.";
         return RedirectToPage(new { branchId = BranchId, q = Q });
     }
 
@@ -209,16 +316,18 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             return RedirectToPage(new { q = Q, branchId = BranchId });
         }
 
+        var desiredNumber = EditProductNumber <= 0 ? product.ProductNumber : EditProductNumber;
+        var numberUsed = await db.Products.AnyAsync(p => p.ProductNumber == desiredNumber && p.Id != product.Id);
+        if (numberUsed)
+        {
+            TempData["Flash"] = "El código de producto ya está en uso.";
+            return RedirectToPage(new { q = Q, branchId = BranchId });
+        }
+
         var stock = await db.ProductStocks.FirstOrDefaultAsync(x => x.ProductId == EditId && x.BranchId == BranchId);
         if (stock is null)
         {
-            stock = new ProductStock
-            {
-                ProductId = EditId,
-                BranchId = BranchId,
-                Stock = EditStock,
-                MinStock = Math.Max(0, EditMinStock)
-            };
+            stock = new ProductStock { ProductId = EditId, BranchId = BranchId, Stock = EditStock, MinStock = Math.Max(0, EditMinStock) };
             db.ProductStocks.Add(stock);
         }
         else
@@ -227,8 +336,9 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             stock.MinStock = Math.Max(0, EditMinStock);
         }
 
+        product.ProductNumber = desiredNumber;
         product.Name = EditName.Trim();
-        product.Barcode = EditBarcode.Trim();
+        product.Barcode = string.IsNullOrWhiteSpace(EditBarcode) ? $"PROD-{desiredNumber:D6}" : EditBarcode.Trim();
         product.Price = EditPrice;
         product.Cost = EditCost;
         product.CategoryId = EditCategoryId;
@@ -239,9 +349,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
 
         await db.SaveChangesAsync();
 
-        product.Stock = await db.ProductStocks
-            .Where(ps => ps.ProductId == product.Id)
-            .SumAsync(ps => ps.Stock);
+        product.Stock = await db.ProductStocks.Where(ps => ps.ProductId == product.Id).SumAsync(ps => ps.Stock);
 
         db.AuditLogs.Add(new AuditLog
         {
@@ -256,7 +364,6 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         });
 
         await db.SaveChangesAsync();
-
         TempData["Flash"] = "Producto actualizado.";
         return RedirectToPage(new { q = Q, branchId = BranchId });
     }
@@ -264,10 +371,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     private async Task LoadAsync()
     {
         var allowedBranches = await userContext.GetAccessibleBranchesAsync(User);
-        Branches = allowedBranches
-            .OrderBy(b => b.Name)
-            .Select(b => new SelectListItem($"{b.Code} - {b.Name}", b.Id.ToString()))
-            .ToList();
+        Branches = allowedBranches.OrderBy(b => b.Name).Select(b => new SelectListItem($"{b.Code} - {b.Name}", b.Id.ToString())).ToList();
 
         if (Branches.Count == 0)
         {
@@ -282,6 +386,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         }
 
         Categories = await db.Categories.OrderBy(c => c.Name).ToListAsync();
+        NewProductNumber = (await db.Products.MaxAsync(x => (int?)x.ProductNumber) ?? 0) + 1;
 
         var query = db.ProductStocks
             .Include(x => x.Product)!.ThenInclude(p => p!.Category)
@@ -290,15 +395,10 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
 
         if (!string.IsNullOrWhiteSpace(Q))
         {
-            query = query.Where(x =>
-                x.Product != null && (
-                    x.Product.Name.Contains(Q) ||
-                    x.Product.Barcode.Contains(Q) ||
-                    x.Product.ProductNumber.ToString().Contains(Q)));
+            query = query.Where(x => x.Product != null && (x.Product.Name.Contains(Q) || x.Product.Barcode.Contains(Q) || x.Product.ProductNumber.ToString().Contains(Q)));
         }
 
-        Items = await query
-            .OrderBy(x => x.Product!.ProductNumber)
+        Items = await query.OrderBy(x => x.Product!.ProductNumber)
             .Select(x => new ProductBranchRow
             {
                 ProductId = x.ProductId,

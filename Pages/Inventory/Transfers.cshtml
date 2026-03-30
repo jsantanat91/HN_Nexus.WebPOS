@@ -1,0 +1,42 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Inventory.TransfersModel
+@{
+    ViewData["Title"] = "Transferencias";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Transferencia entre sucursales</h5></div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-3"><label class="form-label">Sucursal origen</label><select asp-for="FromBranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-3"><label class="form-label">Sucursal destino</label><select asp-for="ToBranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-3"><label class="form-label">Producto</label><select asp-for="ProductId" asp-items="Model.Products" class="form-select"></select></div>
+            <div class="col-md-1"><label class="form-label">Cantidad</label><input asp-for="Quantity" class="form-control" type="number" min="1" /></div>
+            <div class="col-md-2"><label class="form-label">Notas</label><input asp-for="Notes" class="form-control" /></div>
+            <div class="col-md-2"><button class="btn btn-save w-100">Transferir</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Historial de transferencias</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+        @foreach (var t in Model.Items)
+        {
+            <article class="product-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge-soft badge-info">@t.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                    <span class="badge-soft badge-warn">@t.Quantity pzas</span>
+                </div>
+                <div><strong>@t.Product?.Name</strong></div>
+                <div class="product-meta">@t.FromBranch?.Name -> @t.ToBranch?.Name</div>
+                @if (!string.IsNullOrWhiteSpace(t.Notes))
+                {
+                    <div class="product-meta mt-1">@t.Notes</div>
+                }
+            </article>
+        }
+        </div>
+    </div>
+</section>

@@ -1,15 +1,15 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.SupplierOrders.IndexModel
 @{
-    ViewData["Title"] = "Pedidos a Proveedor";
+    ViewData["Title"] = "Órdenes de Compra";
 }
 
 <section class="panel mb-3">
-    <div class="panel-header"><h5 class="mb-0">Nuevo Pedido</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Nueva orden de compra</h5></div>
     <div class="panel-body">
         @if (Model.Branches.Count == 0)
         {
-            <p class="mb-0">No tienes sucursales asignadas para gestionar pedidos.</p>
+            <p class="mb-0">No tienes sucursales asignadas para gestionar órdenes.</p>
             return;
         }
 
@@ -20,56 +20,43 @@
 
         <form method="post" asp-page-handler="Create" class="row g-2">
             <input type="hidden" name="branchId" value="@Model.BranchId" />
-            <div class="col-md-4">
-                <label class="form-label">Proveedor</label>
-                <select class="form-select" name="supplierId" asp-items="Model.Suppliers"></select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Producto</label>
-                <select class="form-select" name="productId" asp-items="Model.Products"></select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Cantidad</label>
-                <input class="form-control" type="number" min="1" name="quantity" placeholder="Cantidad" />
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Costo unitario</label>
-                <input class="form-control" type="number" min="0" step="0.01" name="unitCost" placeholder="Costo" />
-            </div>
-            <div class="col-md-3"><button class="btn btn-save">Guardar</button></div>
+            <div class="col-md-4"><label class="form-label">Proveedor</label><select class="form-select" name="supplierId" asp-items="Model.Suppliers"></select></div>
+            <div class="col-md-4"><label class="form-label">Producto</label><select class="form-select" name="productId" asp-items="Model.Products"></select></div>
+            <div class="col-md-2"><label class="form-label">Cantidad</label><input class="form-control" type="number" min="1" name="quantity" placeholder="Cantidad" /></div>
+            <div class="col-md-2"><label class="form-label">Costo unitario</label><input class="form-control" type="number" min="0" step="0.01" name="unitCost" placeholder="Costo" /></div>
+            <div class="col-md-3"><button class="btn btn-save">Guardar orden</button></div>
         </form>
     </div>
 </section>
 
 <section class="panel">
-    <div class="panel-header"><h5 class="mb-0">Seguimiento de Pedidos</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Fecha</th><th>Sucursal</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Costo</th><th>Estatus</th><th></th></tr></thead>
-            <tbody>
+    <div class="panel-header"><h5 class="mb-0">Seguimiento de órdenes</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
             @foreach (var item in Model.Items)
             {
-                <tr>
-                    <td>@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@item.Branch?.Name</td>
-                    <td>@item.Supplier?.Name</td>
-                    <td>@item.Product?.Name</td>
-                    <td>@item.Quantity</td>
-                    <td>@item.UnitCost.ToString("C")</td>
-                    <td><span class="badge-soft @(item.Status == "Recibido" ? "badge-ok" : "badge-warn")">@item.Status</span></td>
-                    <td>
-                        @if (item.Status != "Recibido")
-                        {
-                            <form method="post" asp-page-handler="MarkReceived" class="d-inline">
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <input type="hidden" name="branchId" value="@Model.BranchId" />
-                                <button class="btn btn-sm btn-outline-primary">Marcar recibido</button>
-                            </form>
-                        }
-                    </td>
-                </tr>
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="badge-soft @(item.Status == "Recibido" ? "badge-ok" : "badge-warn")">@item.Status</span>
+                    </div>
+                    <div class="mb-1"><strong>@item.Product?.Name</strong></div>
+                    <div class="product-meta">Proveedor: @item.Supplier?.Name</div>
+                    <div class="product-meta">Sucursal: @item.Branch?.Name</div>
+                    <div class="d-flex gap-2 mt-2 mb-2">
+                        <span class="badge-soft badge-info">Cant. @item.Quantity</span>
+                        <span class="badge-soft badge-danger">@item.UnitCost.ToString("C")</span>
+                    </div>
+                    @if (item.Status != "Recibido")
+                    {
+                        <form method="post" asp-page-handler="MarkReceived" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input type="hidden" name="branchId" value="@Model.BranchId" />
+                            <button class="btn btn-sm btn-outline-primary">Marcar recibido</button>
+                        </form>
+                    }
+                </article>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>

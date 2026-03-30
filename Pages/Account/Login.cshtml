@@ -4,51 +4,45 @@
     ViewData["Title"] = "Acceso";
 }
 
-<section class="login-hero">
-    <div class="login-overlay"></div>
-    <div class="login-glow login-glow-a"></div>
-    <div class="login-glow login-glow-b"></div>
+<section class="login-split-wrap">
+    <div class="login-left-pane">
+        <div class="login-pro-card">
+            <div class="login-brand">HN NEXUS POS</div>
+            <h2>Iniciar sesión</h2>
+            <p class="login-muted">Acceso al sistema de punto de venta.</p>
 
-    <div class="login-content">
-        <div class="login-copy">
-            <span class="login-chip">Plataforma POS</span>
-            <h1>BIENVENIDO A<br />HN NEXUS POS</h1>
-            <p>Sistema profesional para caja, inventario, clientes y control multi-sucursal.</p>
-            <ul>
-                <li>Cobro veloz con teclado, escáner y atajos</li>
-                <li>CFDI, ticket térmico y reportes en un flujo</li>
-                <li>Operación por roles, permisos y sucursales</li>
-            </ul>
-
-            <div class="login-stats">
-                <div class="login-stat"><strong>POS</strong><span>Venta ágil</span></div>
-                <div class="login-stat"><strong>INV</strong><span>Inventario vivo</span></div>
-                <div class="login-stat"><strong>REP</strong><span>Reportes diarios</span></div>
-            </div>
-        </div>
-
-        <div class="login-panel login-card p-4">
-            <h3 class="fw-bold mb-3">INICIAR SESIÓN</h3>
-            <form method="post">
+            <form method="post" class="mt-3">
                 <div asp-validation-summary="All" class="text-danger small"></div>
-
                 <div class="mb-3">
                     <label asp-for="Input.Username" class="form-label">Nombre de usuario / correo</label>
-                    <input asp-for="Input.Username" class="form-control login-input" autocomplete="username" />
+                    <input asp-for="Input.Username" class="form-control" autocomplete="username" />
                 </div>
 
                 <div class="mb-3">
                     <label asp-for="Input.Password" class="form-label">Contraseña</label>
-                    <input asp-for="Input.Password" type="password" class="form-control login-input" autocomplete="current-password" />
+                    <input asp-for="Input.Password" type="password" class="form-control" autocomplete="current-password" />
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 py-2">Iniciar sesión</button>
+                <button type="submit" class="btn btn-primary w-100 py-2">Entrar</button>
             </form>
 
             <div class="login-badges mt-3">
                 <span class="login-badge">Acceso seguro</span>
                 <span class="login-badge">HN Nexus</span>
             </div>
+        </div>
+
+        <div class="login-footer-note">
+            Punto de Venta v2.0 PRO by
+            <a href="https://hubnet-solutions.net" target="_blank" rel="noopener noreferrer">HN Solutions</a>
+        </div>
+    </div>
+
+    <div class="login-right-pane" aria-hidden="true">
+        <div class="login-pos-photo"></div>
+        <div class="login-right-overlay">
+            <h3>Punto de Venta Inteligente</h3>
+            <p>Caja, inventario, clientes, órdenes y reportes en una sola plataforma.</p>
         </div>
     </div>
 </section>

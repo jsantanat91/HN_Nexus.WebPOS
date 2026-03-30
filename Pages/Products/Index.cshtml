@@ -13,9 +13,9 @@
         <div class="d-flex gap-2">
             <button class="btn btn-outline-primary" type="button" id="btnCardsView">Cards</button>
             <button class="btn btn-outline-primary" type="button" id="btnTableView">Tabla</button>
-            <a class="btn btn-outline-primary" asp-page="/Config/Categories">Categorías</a>
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#categoriesModal">Categorías</button>
             <button class="btn btn-save" type="button" data-bs-toggle="modal" data-bs-target="#importProductsModal">Importar Excel</button>
-            <a class="btn btn-primary" asp-page="/Products/New" asp-route-branchId="@Model.BranchId">+ Nuevo producto</a>
+            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newProductModal">+ Nuevo producto</button>
         </div>
     </div>
 
@@ -41,8 +41,8 @@
                         <span class="badge-soft @(item.Stock <= item.MinStock ? "badge-danger" : "badge-ok")">Stock @item.Stock</span>
                     </div>
                     <h6 class="mb-1">@item.Name</h6>
-                    <div class="product-meta mb-2">Código: @item.Barcode</div>
-                    <div class="d-flex gap-2 mb-2">
+                    <div class="product-meta mb-1">Código: @item.Barcode</div>
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
                         <span class="badge-soft category-pill" data-category="@item.CategoryName">@item.CategoryName</span>
                         <span class="badge-soft @(item.PriceIncludesTax ? "badge-ok" : "badge-info")">IVA @(item.PriceIncludesTax ? "incluido" : "separado")</span>
                         @if (item.PromotionType == "TwoForOne")
@@ -60,6 +60,7 @@
                             data-bs-toggle="modal"
                             data-bs-target="#editProductModal"
                             data-id="@item.ProductId"
+                            data-product-number="@item.ProductNumber"
                             data-name="@item.Name"
                             data-barcode="@item.Barcode"
                             data-price="@item.Price"
@@ -79,7 +80,7 @@
 
         <div id="productsTableView" class="table-responsive" style="display:none;">
             <table class="table table-modern mb-0">
-                <thead><tr><th>ID</th><th>Producto</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Precio</th><th>IVA</th><th></th></tr></thead>
+                <thead><tr><th>ID</th><th>Producto</th><th>Código barras</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Precio</th><th>IVA</th><th></th></tr></thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
@@ -98,6 +99,7 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#editProductModal"
                                     data-id="@item.ProductId"
+                                    data-product-number="@item.ProductNumber"
                                     data-name="@item.Name"
                                     data-barcode="@item.Barcode"
                                     data-price="@item.Price"
@@ -120,24 +122,63 @@
     </div>
 </section>
 
+<div class="modal fade" id="newProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Nuevo producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" asp-page-handler="Create">
+                <input type="hidden" asp-for="BranchId" />
+                <div class="modal-body row g-2">
+                    <div class="col-md-3"><label class="form-label">Código producto</label><input asp-for="NewProductNumber" class="form-control" placeholder="Auto si vacío" /></div>
+                    <div class="col-md-5"><label class="form-label">Nombre</label><input asp-for="NewName" class="form-control" /></div>
+                    <div class="col-md-4"><label class="form-label">Código de barras</label><input asp-for="NewBarcode" class="form-control" placeholder="Auto si vacío" /></div>
+                    <div class="col-md-3"><label class="form-label">Categoría</label><select asp-for="NewCategoryId" class="form-select">@foreach (var cat in Model.Categories){<option value="@cat.Id">@cat.Name</option>}</select></div>
+                    <div class="col-md-3"><label class="form-label">Precio</label><input asp-for="NewPrice" type="number" step="0.01" class="form-control" /></div>
+                    <div class="col-md-3"><label class="form-label">Costo</label><input asp-for="NewCost" type="number" step="0.01" class="form-control" /></div>
+                    <div class="col-md-3"><label class="form-label">Stock inicial</label><input asp-for="NewStock" type="number" class="form-control" /></div>
+                    <div class="col-md-4 d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" asp-for="NewPriceIncludesTax" /><label class="form-check-label" asp-for="NewPriceIncludesTax">Precio incluye IVA</label></div></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-save">Guardar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="categoriesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Categorías</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" asp-page-handler="CreateCategory">
+                <input type="hidden" asp-for="BranchId" />
+                <div class="modal-body">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8"><input asp-for="NewCategoryName" class="form-control" placeholder="Nueva categoría" /></div>
+                        <div class="col-md-4"><button class="btn btn-save w-100">Guardar categoría</button></div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <span class="badge-soft category-pill" data-category="@cat.Name">@cat.Name</span>
+                        }
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="importProductsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Importar productos desde Excel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+            <div class="modal-header"><h5 class="modal-title">Importar productos desde Excel</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
                 <input type="hidden" name="branchId" value="@Model.BranchId" />
                 <div class="modal-body">
-                    <p class="small text-muted">Descarga la plantilla CSV, llénala en Excel y súbela aquí.</p>
+                    <p class="small text-muted">Descarga la plantilla CSV, llénala en Excel y súbela aquí. Si pones <strong>SucursalCodigo</strong> se respetará; si no, se usa la sucursal seleccionada.</p>
                     <a class="btn btn-outline-primary btn-sm mb-3" asp-page="/Products/Index" asp-page-handler="Template">Descargar plantilla</a>
                     <input type="file" class="form-control" name="file" accept=".csv" required />
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-save">Importar</button>
-                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-save">Importar</button></div>
             </form>
         </div>
     </div>
@@ -146,42 +187,27 @@
 <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar producto de sucursal</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+            <div class="modal-header"><h5 class="modal-title">Editar producto de sucursal</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <form method="post" asp-page-handler="Edit">
                 <input type="hidden" asp-for="BranchId" />
                 <div class="modal-body">
                     <input type="hidden" asp-for="EditId" id="editId" />
                     <div class="row g-2">
-                        <div class="col-md-6"><label class="form-label">Nombre</label><input asp-for="EditName" id="editName" class="form-control" /></div>
-                        <div class="col-md-3"><label class="form-label">Código</label><input asp-for="EditBarcode" id="editBarcode" class="form-control" /></div>
-                        <div class="col-md-3"><label class="form-label">Categoría</label><select asp-for="EditCategoryId" id="editCategoryId" class="form-select">
-                            @foreach (var cat in Model.Categories)
-                            {
-                                <option value="@cat.Id">@cat.Name</option>
-                            }
-                        </select></div>
-                        <div class="col-md-4"><label class="form-label">Precio</label><input asp-for="EditPrice" id="editPrice" type="number" step="0.01" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label">Costo</label><input asp-for="EditCost" id="editCost" type="number" step="0.01" class="form-control" /></div>
-                        <div class="col-md-2"><label class="form-label">Stock</label><input asp-for="EditStock" id="editStock" type="number" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Código producto</label><input asp-for="EditProductNumber" id="editProductNumber" type="number" class="form-control" /></div>
+                        <div class="col-md-5"><label class="form-label">Nombre</label><input asp-for="EditName" id="editName" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label">Código barras</label><input asp-for="EditBarcode" id="editBarcode" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Categoría</label><select asp-for="EditCategoryId" id="editCategoryId" class="form-select">@foreach (var cat in Model.Categories){<option value="@cat.Id">@cat.Name</option>}</select></div>
+                        <div class="col-md-3"><label class="form-label">Precio</label><input asp-for="EditPrice" id="editPrice" type="number" step="0.01" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Costo</label><input asp-for="EditCost" id="editCost" type="number" step="0.01" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Stock</label><input asp-for="EditStock" id="editStock" type="number" class="form-control" /></div>
                         <div class="col-md-2"><label class="form-label">Mínimo</label><input asp-for="EditMinStock" id="editMinStock" type="number" class="form-control" /></div>
                         <div class="col-md-4"><label class="form-label">Promoción</label><select asp-for="EditPromotionType" id="editPromotionType" class="form-select"><option value="None">Sin promoción</option><option value="TwoForOne">2x1</option><option value="Volume">Descuento por volumen</option></select></div>
-                        <div class="col-md-4"><label class="form-label">Valor promoción (%)</label><input asp-for="EditPromotionValue" id="editPromotionValue" type="number" step="0.01" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label">Mínimo para promo</label><input asp-for="EditPromotionMinQty" id="editPromotionMinQty" type="number" class="form-control" /></div>
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" asp-for="EditPriceIncludesTax" id="editPriceIncludesTax" />
-                                <label class="form-check-label" asp-for="EditPriceIncludesTax">Precio incluye IVA</label>
-                            </div>
-                        </div>
+                        <div class="col-md-3"><label class="form-label">Valor promoción (%)</label><input asp-for="EditPromotionValue" id="editPromotionValue" type="number" step="0.01" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">Mínimo para promo</label><input asp-for="EditPromotionMinQty" id="editPromotionMinQty" type="number" class="form-control" /></div>
+                        <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" asp-for="EditPriceIncludesTax" id="editPriceIncludesTax" /><label class="form-check-label" asp-for="EditPriceIncludesTax">Precio incluye IVA</label></div></div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-save">Guardar</button>
-                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-save">Guardar</button></div>
             </form>
         </div>
     </div>
@@ -198,6 +224,7 @@
   document.querySelectorAll('.btn-edit-product').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.getElementById('editId').value = btn.dataset.id || '0';
+      document.getElementById('editProductNumber').value = btn.dataset.productNumber || '0';
       document.getElementById('editName').value = btn.dataset.name || '';
       document.getElementById('editBarcode').value = btn.dataset.barcode || '';
       document.getElementById('editPrice').value = btn.dataset.price || '0';
