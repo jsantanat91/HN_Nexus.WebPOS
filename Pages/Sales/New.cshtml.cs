@@ -238,6 +238,17 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     {
         await LoadAsync();
 
+        var closureDate = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var hasClosedPeriod = await db.AccountingClosures.AnyAsync(x =>
+            x.BranchId == BranchId &&
+            x.ClosureDate == closureDate &&
+            x.Status == "Closed");
+        if (hasClosedPeriod)
+        {
+            TempData["Flash"] = "La sucursal tiene cierre contable activo para hoy. Requiere reapertura auditada.";
+            return RedirectToPage(new { branchId = BranchId });
+        }
+
         var stockRows = await db.ProductStocks
             .Include(ps => ps.Product)
             .Where(ps => ps.BranchId == BranchId)
@@ -283,6 +294,38 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         }
 
         var taxRate = Math.Clamp(Config.TaxRate, 0m, 100m) / 100m;
+        var nowLocal = DateTime.Now;
+        var activePromotions = await db.PromotionRules
+            .Where(x => x.IsActive && (x.BranchId == null || x.BranchId == BranchId))
+            .ToListAsync();
+
+        bool IsRuleActiveNow(PromotionRule rule)
+        {
+            if (rule.StartTime is null || rule.EndTime is null)
+            {
+                return true;
+            }
+
+            var nowTime = TimeOnly.FromDateTime(nowLocal);
+            var inRange = rule.StartTime <= rule.EndTime
+                ? nowTime >= rule.StartTime && nowTime <= rule.EndTime
+                : nowTime >= rule.StartTime || nowTime <= rule.EndTime;
+            if (!inRange)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(rule.DaysOfWeekCsv))
+            {
+                return true;
+            }
+
+            var today = ((int)nowLocal.DayOfWeek).ToString(CultureInfo.InvariantCulture);
+            return rule.DaysOfWeekCsv
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Any(x => x == today);
+        }
+
         decimal PromoDiscount(ProductStock stock, int qty)
         {
             var product = stock.Product;
@@ -303,11 +346,68 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
                 return (unit * qty) * (product.PromotionValue / 100m);
             }
 
-            return 0m;
+            decimal advanced = 0m;
+            foreach (var rule in activePromotions.Where(r => r.ProductId == product.Id && IsRuleActiveNow(r)))
+            {
+                if (rule.RuleType == "ThreeForTwo" && rule.BuyQty > 0 && rule.PayQty >= 0 && rule.BuyQty > rule.PayQty)
+                {
+                    var freeByBlock = rule.BuyQty - rule.PayQty;
+                    var freeItems = (qty / rule.BuyQty) * freeByBlock;
+                    advanced += freeItems * unit;
+                    continue;
+                }
+
+                if (rule.RuleType == "HappyHourPercent" && rule.DiscountPercent > 0)
+                {
+                    advanced += (unit * qty) * (rule.DiscountPercent / 100m);
+                }
+            }
+
+            return advanced;
+        }
+
+        var selectedByProduct = selected.ToDictionary(x => x.Stock.ProductId, x => x.Qty);
+        decimal comboDiscountAmount = 0m;
+        foreach (var rule in activePromotions.Where(r => r.RuleType == "ComboPrice" && IsRuleActiveNow(r)))
+        {
+            if (string.IsNullOrWhiteSpace(rule.ProductIdsCsv) || rule.ComboPrice <= 0)
+            {
+                continue;
+            }
+
+            var comboIds = rule.ProductIdsCsv
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(x => int.TryParse(x, out var id) ? id : 0)
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList();
+
+            if (comboIds.Count < 2 || comboIds.Any(id => !selectedByProduct.ContainsKey(id)))
+            {
+                continue;
+            }
+
+            var combosCount = comboIds.Min(id => selectedByProduct[id]);
+            if (combosCount <= 0)
+            {
+                continue;
+            }
+
+            var regularValue = comboIds.Sum(id =>
+            {
+                var line = selected.FirstOrDefault(x => x.Stock.ProductId == id);
+                return line.Stock.Product?.Price ?? 0m;
+            }) * combosCount;
+
+            var promoValue = rule.ComboPrice * combosCount;
+            if (regularValue > promoValue)
+            {
+                comboDiscountAmount += (regularValue - promoValue);
+            }
         }
 
         var subtotalGross = selected.Sum(x => (x.Stock.Product?.Price ?? 0m) * x.Qty);
-        var promoDiscountAmount = selected.Sum(x => PromoDiscount(x.Stock, x.Qty));
+        var promoDiscountAmount = selected.Sum(x => PromoDiscount(x.Stock, x.Qty)) + comboDiscountAmount;
         var lineDiscountAmount = selected.Sum(x => (((x.Stock.Product?.Price ?? 0m) * x.Qty) - PromoDiscount(x.Stock, x.Qty)) * (x.DiscountPercent / 100m));
         var subtotalAfterLineDiscount = subtotalGross - lineDiscountAmount;
         subtotalAfterLineDiscount -= promoDiscountAmount;
@@ -363,7 +463,8 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             SubtotalAmount = subtotal,
             TaxAmount = tax,
             DiscountAmount = promoDiscountAmount + lineDiscountAmount + globalDiscountAmount,
-            TotalAmount = total
+            TotalAmount = total,
+            CfdiStatus = IsInvoice ? "Pendiente" : "NoAplica"
         };
 
         foreach (var line in selected)
@@ -385,6 +486,13 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             if (line.Stock.Product is not null)
             {
                 line.Stock.Product.Stock = Math.Max(0, line.Stock.Product.Stock - line.Qty);
+            }
+
+            var lotOk = await ConsumeLotsAsync(BranchId, line.Stock.ProductId, line.Qty);
+            if (!lotOk)
+            {
+                ModelState.AddModelError(string.Empty, $"Lotes insuficientes para el producto {line.Stock.Product?.Name}. Ajusta lotes/caducidades.");
+                return Page();
             }
         }
 
@@ -453,6 +561,42 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             .ToList();
 
         Config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
+    }
+
+    private async Task<bool> ConsumeLotsAsync(int branchId, int productId, int quantity)
+    {
+        var lots = await db.ProductLots
+            .Where(x => x.BranchId == branchId && x.ProductId == productId && x.Quantity > 0)
+            .OrderBy(x => x.ExpirationDate ?? DateTime.MaxValue)
+            .ThenBy(x => x.Id)
+            .ToListAsync();
+
+        if (lots.Count == 0)
+        {
+            return true;
+        }
+
+        var available = lots.Sum(x => x.Quantity);
+        if (available < quantity)
+        {
+            return false;
+        }
+
+        var pending = quantity;
+        foreach (var lot in lots)
+        {
+            if (pending <= 0)
+            {
+                break;
+            }
+
+            var take = Math.Min(lot.Quantity, pending);
+            lot.Quantity -= take;
+            lot.UpdatedAt = DateTime.UtcNow;
+            pending -= take;
+        }
+
+        return pending <= 0;
     }
 
     public class ProductPosItem

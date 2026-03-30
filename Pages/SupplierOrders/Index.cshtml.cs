@@ -97,6 +97,35 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             }
         }
 
+        var lotNumber = $"OC-{order.Id}-{DateTime.UtcNow:yyyyMMdd}";
+        var lot = await db.ProductLots.FirstOrDefaultAsync(x =>
+            x.BranchId == branchId &&
+            x.ProductId == order.ProductId &&
+            x.LotNumber == lotNumber &&
+            x.SerialNumber == null);
+
+        if (lot is null)
+        {
+            db.ProductLots.Add(new ProductLot
+            {
+                BranchId = branchId,
+                ProductId = order.ProductId,
+                LotNumber = lotNumber,
+                SerialNumber = null,
+                ExpirationDate = null,
+                Quantity = order.Quantity,
+                UnitCost = order.UnitCost,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            lot.Quantity += order.Quantity;
+            lot.UnitCost = order.UnitCost > 0 ? order.UnitCost : lot.UnitCost;
+            lot.UpdatedAt = DateTime.UtcNow;
+        }
+
         await db.SaveChangesAsync();
         TempData["Flash"] = "Pedido marcado como recibido.";
         return RedirectToPage(new { branchId = BranchId });

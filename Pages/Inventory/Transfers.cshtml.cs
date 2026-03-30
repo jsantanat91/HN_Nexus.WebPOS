@@ -61,6 +61,54 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
         source.Stock -= Quantity;
         target.Stock += Quantity;
 
+        var sourceLots = await db.ProductLots
+            .Where(x => x.BranchId == FromBranchId && x.ProductId == ProductId && x.Quantity > 0)
+            .OrderBy(x => x.ExpirationDate ?? DateTime.MaxValue)
+            .ThenBy(x => x.Id)
+            .ToListAsync();
+
+        var toMove = Quantity;
+        foreach (var lot in sourceLots)
+        {
+            if (toMove <= 0)
+            {
+                break;
+            }
+
+            var moving = Math.Min(lot.Quantity, toMove);
+            lot.Quantity -= moving;
+            lot.UpdatedAt = DateTime.UtcNow;
+            toMove -= moving;
+
+            var targetLot = await db.ProductLots.FirstOrDefaultAsync(x =>
+                x.BranchId == ToBranchId &&
+                x.ProductId == ProductId &&
+                x.LotNumber == lot.LotNumber &&
+                x.SerialNumber == lot.SerialNumber &&
+                x.ExpirationDate == lot.ExpirationDate);
+
+            if (targetLot is null)
+            {
+                db.ProductLots.Add(new ProductLot
+                {
+                    BranchId = ToBranchId,
+                    ProductId = ProductId,
+                    LotNumber = lot.LotNumber,
+                    SerialNumber = lot.SerialNumber,
+                    ExpirationDate = lot.ExpirationDate,
+                    Quantity = moving,
+                    UnitCost = lot.UnitCost,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                targetLot.Quantity += moving;
+                targetLot.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
         db.StockTransfers.Add(new StockTransfer
         {
             ProductId = ProductId,
@@ -96,12 +144,10 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
 
         var branchIds = branches.Select(b => b.Id).ToList();
 
-        Products = await db.ProductStocks
-            .Include(ps => ps.Product)
-            .Where(ps => branchIds.Contains(ps.BranchId))
-            .GroupBy(ps => new { ps.ProductId, ps.Product!.Name })
-            .Select(g => new SelectListItem($"{g.Key.Name}", g.Key.ProductId.ToString()))
-            .OrderBy(x => x.Text)
+        Products = await db.Products
+            .Where(p => db.ProductStocks.Any(ps => ps.ProductId == p.Id && branchIds.Contains(ps.BranchId)))
+            .OrderBy(p => p.Name)
+            .Select(p => new SelectListItem(p.Name, p.Id.ToString()))
             .ToListAsync();
 
         Items = await db.StockTransfers

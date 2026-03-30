@@ -27,6 +27,8 @@ public class Sale
     public string? CancelReason { get; set; }
 
     public bool IsInvoice { get; set; }
+    public string CfdiStatus { get; set; } = "NoAplica"; // NoAplica | Pendiente | Timbrado | Cancelado | Error
+    public string? CfdiUuid { get; set; }
 
     public int? CustomerId { get; set; }
     public Customer? Customer { get; set; }

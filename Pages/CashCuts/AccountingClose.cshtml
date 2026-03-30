@@ -1,0 +1,107 @@
+@page
+@model HN_Nexus.WebPOS.Pages.CashCuts.AccountingCloseModel
+@{
+    ViewData["Title"] = "Cierre Contable";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header">
+        <h5 class="mb-0">Bloqueo contable por turno/sucursal</h5>
+    </div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Sucursal</label>
+                <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha</label>
+                <input asp-for="Date" type="date" class="form-control" />
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-outline-primary w-100">Filtrar</button>
+            </div>
+        </form>
+
+        <form method="post" asp-page-handler="Close" class="row g-2">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <input type="hidden" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" />
+            <div class="col-md-8">
+                <input name="notes" class="form-control" placeholder="Notas de cierre (opcional)" />
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-save w-100">Aplicar cierre contable</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h5 class="mb-0">Historial de cierres / reaperturas</h5>
+    </div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Sucursal</th>
+                    <th>Estatus</th>
+                    <th>Cerrado por</th>
+                    <th>Reapertura</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.ClosureDate.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        <td>@item.Branch?.Name</td>
+                        <td><span class="badge-soft @(item.Status == "Closed" ? "badge-danger" : "badge-ok")">@item.Status</span></td>
+                        <td>@item.ClosedByUser?.FullName<br /><small class="text-muted">@item.ClosedAt.ToLocalTime().ToString("dd/MM HH:mm")</small></td>
+                        <td>
+                            @if (item.ReopenedAt.HasValue)
+                            {
+                                <span>@item.ReopenedByUser?.FullName</span>
+                                <br />
+                                <small class="text-muted">@item.ReopenedAt.Value.ToLocalTime().ToString("dd/MM HH:mm")</small>
+                                <br />
+                                <small>@item.ReopenReason</small>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </td>
+                        <td>
+                            @if (item.Status == "Closed")
+                            {
+                                <form method="post" asp-page-handler="Reopen" class="reopen-form">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <input type="hidden" name="branchId" value="@Model.BranchId" />
+                                    <input type="hidden" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" />
+                                    <input type="hidden" name="reason" class="reopen-reason" />
+                                    <button class="btn btn-sm btn-outline-danger">Reabrir</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.reopen-form').forEach(function(form){
+  form.addEventListener('submit', function(e){
+    var reason = prompt('Motivo de reapertura auditada:');
+    if(reason === null){ e.preventDefault(); return; }
+    form.querySelector('.reopen-reason').value = reason;
+  });
+});
+</script>
+}
+

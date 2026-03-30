@@ -47,6 +47,7 @@
                     <th>Pago</th>
                     <th>Cajero</th>
                     <th>Estatus</th>
+                    <th>CFDI</th>
                     <th>Total</th>
                     <th></th>
                 </tr>
@@ -64,9 +65,35 @@
                     <td>
                         <span class="badge-soft @(item.Status == "Completed" ? "badge-ok" : "badge-danger")">@item.Status</span>
                     </td>
+                    <td>
+                        <span class="badge-soft @(item.CfdiStatus == "Timbrado" ? "badge-ok" : item.CfdiStatus == "Cancelado" ? "badge-danger" : "badge-info")">
+                            @item.CfdiStatus
+                        </span>
+                        @if (!string.IsNullOrWhiteSpace(item.CfdiUuid))
+                        {
+                            <div class="small text-muted">@item.CfdiUuid</div>
+                        }
+                    </td>
                     <td class="fw-bold">@item.TotalAmount.ToString("C")</td>
                     <td class="d-flex gap-1">
                         <a asp-page="/Sales/Ticket" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Ticket</a>
+                        @if (item.IsInvoice && item.Status == "Completed" && item.CfdiStatus != "Timbrado")
+                        {
+                            <form method="post" asp-page-handler="StampCfdi" class="d-inline">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                                <button type="submit" class="btn btn-sm btn-save">Timbrar CFDI</button>
+                            </form>
+                        }
+                        @if (item.CfdiStatus == "Timbrado")
+                        {
+                            <form method="post" asp-page-handler="CancelCfdi" class="d-inline cancel-cfdi-form">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                                <input type="hidden" name="reason" class="cancel-cfdi-reason" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar CFDI</button>
+                            </form>
+                        }
                         @if (item.Status == "Completed")
                         {
                             <form method="post" asp-page-handler="Cancel" class="d-inline cancel-sale-form">
@@ -94,6 +121,17 @@ document.querySelectorAll('.cancel-sale-form').forEach(function(form){
       return;
     }
     form.querySelector('.cancel-reason').value = reason;
+  });
+});
+
+document.querySelectorAll('.cancel-cfdi-form').forEach(function(form){
+  form.addEventListener('submit', function(e){
+    var reason = prompt('Motivo de cancelación CFDI (SAT):');
+    if(reason === null){
+      e.preventDefault();
+      return;
+    }
+    form.querySelector('.cancel-cfdi-reason').value = reason;
   });
 });
 

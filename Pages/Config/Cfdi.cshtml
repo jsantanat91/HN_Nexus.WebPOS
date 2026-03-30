@@ -1,0 +1,92 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.CfdiModel
+@{
+    ViewData["Title"] = "CFDI / PAC";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header">
+        <h5 class="mb-0">Timbrado CFDI real (PAC)</h5>
+    </div>
+    <div class="panel-body">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="badge-soft badge-info">Recomendado: Facturama</span>
+            <span class="badge-soft badge-ok">Alternativa: SW sapien</span>
+            <span class="badge-soft badge-warning">Enterprise: Solución Factible</span>
+        </div>
+        <p class="text-muted mb-0">
+            Esta pantalla deja lista la configuración para integrar API de timbrado/cancelación SAT con CSD.
+        </p>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Credenciales PAC y sello digital</h5></div>
+    <div class="panel-body">
+        <form method="post" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Proveedor PAC</label>
+                <select asp-for="Item.PacProvider" class="form-select">
+                    <option value="">Selecciona</option>
+                    <option value="Facturama">Facturama</option>
+                    <option value="SW sapien">SW sapien</option>
+                    <option value="Solucion Factible">Solución Factible</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">API URL</label>
+                <input asp-for="Item.PacApiUrl" class="form-control" placeholder="https://api.tu-pac.com" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Modo</label>
+                <select asp-for="Item.PacTestMode" class="form-select">
+                    <option value="true">Pruebas</option>
+                    <option value="false">Producción</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">API Key / Usuario</label>
+                <input asp-for="Item.PacApiKey" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">API Secret / Password</label>
+                <input asp-for="Item.PacApiSecret" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Ruta .cer</label>
+                <input asp-for="Item.CerPath" class="form-control" placeholder="/certs/csd.cer" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ruta .key</label>
+                <input asp-for="Item.KeyPath" class="form-control" placeholder="/certs/csd.key" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Password llave privada</label>
+                <input asp-for="Item.PrivateKeyPassword" class="form-control" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Calle y número fiscal</label>
+                <input asp-for="Item.Street" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Código postal</label>
+                <input asp-for="Item.PostalCode" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <input asp-for="Item.State" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">País</label>
+                <input asp-for="Item.Country" class="form-control" />
+            </div>
+
+            <div class="col-12">
+                <button class="btn btn-save">Guardar CFDI</button>
+            </div>
+        </form>
+    </div>
+</section>
+

@@ -24,6 +24,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ProductIngredient> ProductIngredients => Set<ProductIngredient>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<StockTransfer> StockTransfers => Set<StockTransfer>();
+    public DbSet<ProductLot> ProductLots => Set<ProductLot>();
+    public DbSet<PromotionRule> PromotionRules => Set<PromotionRule>();
+    public DbSet<CfdiDocument> CfdiDocuments => Set<CfdiDocument>();
+    public DbSet<AccountingClosure> AccountingClosures => Set<AccountingClosure>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +55,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<Product>()
             .HasIndex(x => x.ProductNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<ProductLot>()
+            .HasIndex(x => new { x.BranchId, x.ProductId, x.LotNumber, x.SerialNumber });
+
+        modelBuilder.Entity<CfdiDocument>()
+            .HasIndex(x => x.SaleId)
             .IsUnique();
 
         modelBuilder.Entity<Category>().HasData(

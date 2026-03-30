@@ -21,5 +21,11 @@ public class AppConfig
     public string? PostalCode { get; set; }
     public string? State { get; set; }
     public string? Country { get; set; } = "Mexico";
+
+    public string? PacProvider { get; set; }
+    public string? PacApiUrl { get; set; }
+    public string? PacApiKey { get; set; }
+    public string? PacApiSecret { get; set; }
+    public bool PacTestMode { get; set; } = true;
 }
 
