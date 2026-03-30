@@ -15,6 +15,10 @@
 <body>
 @if (User.Identity?.IsAuthenticated == true)
 {
+    var currentPath = (Context?.Request?.Path.Value ?? string.Empty).ToLowerInvariant();
+    var cajaOpen = currentPath.StartsWith("/sales") || currentPath.StartsWith("/cashcuts") || currentPath.StartsWith("/cashshifts");
+    var configOpen = currentPath.StartsWith("/config");
+
     var modules = (User.FindFirstValue("modules") ?? string.Empty)
         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(x => x.ToLowerInvariant())
@@ -36,7 +40,7 @@
                 @if (has(ModuleCatalog.Dashboard)) { <a class="nav-link" asp-page="/Index">Inicio</a> }
                 @if (has(ModuleCatalog.Sales) || has(ModuleCatalog.CashCuts) || has(ModuleCatalog.CashShifts))
                 {
-                    <details class="config-menu" open>
+                    <details class="config-menu" @(cajaOpen ? "open" : null) data-pinned="@cajaOpen">
                         <summary class="nav-link">Caja</summary>
                         <div class="config-submenu">
                             @if (has(ModuleCatalog.Sales)) { <a class="nav-link sub-link" asp-page="/Sales/New">Venta</a> }
@@ -54,7 +58,7 @@
 
                 @if (User.IsInRole("Admin"))
                 {
-                    <details class="config-menu" open>
+                    <details class="config-menu" @(configOpen ? "open" : null) data-pinned="@configOpen">
                         <summary class="nav-link">Configuración</summary>
                         <div class="config-submenu">
                             <a class="nav-link sub-link" asp-page="/Config/Index">General</a>
@@ -63,6 +67,7 @@
                             <a class="nav-link sub-link" asp-page="/Config/Permissions">Permisos</a>
                             <a class="nav-link sub-link" asp-page="/Config/Categories">Categorías</a>
                             <a class="nav-link sub-link" asp-page="/Config/Suppliers">Proveedores</a>
+                            <a class="nav-link sub-link" asp-page="/Config/Audit">Bitácora</a>
                         </div>
                     </details>
                 }

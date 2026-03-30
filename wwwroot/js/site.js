@@ -29,6 +29,22 @@
     active.classList.add("active");
   }
 
+  document.querySelectorAll(".config-menu").forEach((menu) => {
+    const pinned = (menu.getAttribute("data-pinned") || "").toLowerCase() === "true";
+    if (pinned) {
+      menu.setAttribute("open", "");
+      return;
+    }
+
+    menu.addEventListener("mouseenter", () => {
+      menu.setAttribute("open", "");
+    });
+
+    menu.addEventListener("mouseleave", () => {
+      menu.removeAttribute("open");
+    });
+  });
+
   window.paintCategoryPills = function () {
     const palette = [
       ["#dbeafe", "#1d4ed8", "#93c5fd"],
@@ -108,9 +124,28 @@
     cartRows.innerHTML = rows
       .map((r) => {
         const discLabel = r.discountPercent > 0 ? ` <span class="badge-soft badge-warn">-${r.discountPercent.toFixed(2)}%</span>` : "";
-        return `<div class="ticket-row"><span>${r.name} x ${r.qty}${discLabel}</span><strong>${toMoney(r.total)}</strong></div>`;
+        const promoLabel = r.promoAmount > 0 ? ` <span class="badge-soft badge-info">Promo</span>` : "";
+        return `<div class="ticket-row"><span>${r.name} x ${r.qty}${promoLabel}${discLabel}</span><strong>${toMoney(r.total)}</strong></div>`;
       })
       .join("");
+  }
+
+  function promoDiscountFor(card, qty, price) {
+    const type = card.getAttribute("data-promo-type") || "None";
+    const promoValue = parseFloat(card.getAttribute("data-promo-value") || "0") || 0;
+    const promoMin = parseInt(card.getAttribute("data-promo-min") || "0", 10);
+
+    if (qty <= 0 || price <= 0) return 0;
+
+    if (type === "TwoForOne") {
+      return Math.floor(qty / 2) * price;
+    }
+
+    if (type === "Volume" && promoMin > 0 && qty >= promoMin && promoValue > 0) {
+      return (price * qty) * (promoValue / 100);
+    }
+
+    return 0;
   }
 
   function refreshPosSummary() {
@@ -129,14 +164,15 @@
 
       if (qty > 0) {
         const lineGross = price * qty;
-        const lineDisc = lineGross * (Math.max(0, Math.min(100, lineDiscPercent)) / 100);
-        const lineTotal = lineGross - lineDisc;
+        const promoDiscount = promoDiscountFor(card, qty, price);
+        const lineDisc = (lineGross - promoDiscount) * (Math.max(0, Math.min(100, lineDiscPercent)) / 100);
+        const lineTotal = lineGross - promoDiscount - lineDisc;
 
         gross += lineGross;
-        discountAmount += lineDisc;
+        discountAmount += lineDisc + promoDiscount;
         items += qty;
 
-        selectedRows.push({ name, qty, discountPercent: lineDiscPercent, total: lineTotal });
+        selectedRows.push({ name, qty, discountPercent: lineDiscPercent, promoAmount: promoDiscount, total: lineTotal });
       }
     });
 

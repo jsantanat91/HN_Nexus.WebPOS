@@ -17,6 +17,9 @@ public class Product
     public decimal Cost { get; set; }
     public int Stock { get; set; }
     public bool PriceIncludesTax { get; set; }
+    public string PromotionType { get; set; } = "None"; // None | TwoForOne | Volume
+    public decimal PromotionValue { get; set; } // % para Volume
+    public int PromotionMinQty { get; set; } // mínimo para Volume
 
     public int CategoryId { get; set; }
     public Category? Category { get; set; }

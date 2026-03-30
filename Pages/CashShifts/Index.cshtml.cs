@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HN_Nexus.WebPOS.Pages.CashShifts;
 
-public class IndexModel(AppDbContext db, IUserContextService userContext) : PageModel
+public class IndexModel(AppDbContext db, IUserContextService userContext, IWebHostEnvironment env) : PageModel
 {
     public List<CashShift> Shifts { get; private set; } = new();
     public List<SelectListItem> Branches { get; private set; } = new();
@@ -75,16 +75,33 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             Status = "Open"
         });
 
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "OPEN_SHIFT",
+            Entity = "CashShift",
+            BranchId = branchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Apertura de turno con fondo inicial {openingFloat:N2}."
+        });
+
         await db.SaveChangesAsync();
         TempData["Flash"] = "Turno abierto correctamente.";
         return RedirectToPage(new { branchId });
     }
 
-    public async Task<IActionResult> OnPostCloseAsync(int shiftId, int branchId, decimal closingDeclared)
+    public async Task<IActionResult> OnPostCloseAsync(int shiftId, int branchId, decimal closingDeclared, string closingSignature, string? closingNotes, IFormFile? closingEvidence)
     {
         var shift = await db.CashShifts.FirstOrDefaultAsync(x => x.Id == shiftId);
         if (shift is null || shift.Status != "Open")
         {
+            return RedirectToPage(new { branchId });
+        }
+
+        if (string.IsNullOrWhiteSpace(closingSignature))
+        {
+            TempData["Flash"] = "Debes capturar el nombre de quien firma el cierre.";
             return RedirectToPage(new { branchId });
         }
 
@@ -96,11 +113,37 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         shift.ClosingDeclared = closingDeclared;
         shift.SystemCashTotal = shift.OpeningFloat + cashTotal;
         shift.Difference = closingDeclared - shift.SystemCashTotal;
+        shift.ClosingSignature = closingSignature.Trim();
+        shift.ClosingNotes = (closingNotes ?? string.Empty).Trim();
+
+        if (closingEvidence is not null && closingEvidence.Length > 0)
+        {
+            var uploadsRoot = Path.Combine(env.WebRootPath, "uploads", "cash-evidence");
+            Directory.CreateDirectory(uploadsRoot);
+            var ext = Path.GetExtension(closingEvidence.FileName);
+            var fileName = $"turno-{shift.Id}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid():N}{ext}";
+            var fullPath = Path.Combine(uploadsRoot, fileName);
+            await using var fs = System.IO.File.Create(fullPath);
+            await closingEvidence.CopyToAsync(fs);
+            shift.ClosingEvidencePath = $"/uploads/cash-evidence/{fileName}";
+        }
+
         shift.Status = "Closed";
 
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "CLOSE_SHIFT",
+            Entity = "CashShift",
+            EntityId = shift.Id,
+            BranchId = shift.BranchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Cierre de turno. Declarado={closingDeclared:N2}, Sistema={shift.SystemCashTotal:N2}, Firma={shift.ClosingSignature}."
+        });
+
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Turno cerrado.";
+        TempData["Flash"] = "Turno cerrado con evidencia.";
         return RedirectToPage(new { branchId });
     }
 }
-

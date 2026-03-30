@@ -1,0 +1,36 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Config.AuditModel
+@{
+    ViewData["Title"] = "Bitácora";
+}
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Bitácora de auditoría</h5></div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-5"><input name="q" class="form-control" value="@Model.Q" placeholder="Buscar por acción, entidad, usuario o detalle" /></div>
+            <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-modern mb-0">
+                <thead><tr><th>Fecha</th><th>Acción</th><th>Entidad</th><th>ID</th><th>Sucursal</th><th>Usuario</th><th>IP</th><th>Detalle</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Items)
+                {
+                    <tr>
+                        <td>@row.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td><span class="badge-soft badge-info">@row.Action</span></td>
+                        <td>@row.Entity</td>
+                        <td>@(row.EntityId?.ToString() ?? "-")</td>
+                        <td>@(row.BranchId?.ToString() ?? "-")</td>
+                        <td>@row.Username</td>
+                        <td>@row.IpAddress</td>
+                        <td>@row.Details</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

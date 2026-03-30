@@ -17,6 +17,9 @@ public class CashShift
     public decimal? ClosingDeclared { get; set; }
     public decimal? SystemCashTotal { get; set; }
     public decimal? Difference { get; set; }
+    public string ClosingSignature { get; set; } = string.Empty;
+    public string ClosingNotes { get; set; } = string.Empty;
+    public string? ClosingEvidencePath { get; set; }
 
     public string Status { get; set; } = "Open";
 }

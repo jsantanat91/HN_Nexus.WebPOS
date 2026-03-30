@@ -17,9 +17,15 @@
 </section>
 
 <section class="panel">
-    <div class="panel-header"><h5 class="mb-0">Historial de egresos</h5></div>
+    <div class="panel-header">
+        <h5 class="mb-0">Historial de egresos</h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" type="button" id="btnExpenseCards">Cards</button>
+            <button class="btn btn-outline-primary btn-sm" type="button" id="btnExpenseTable">Tabla</button>
+        </div>
+    </div>
     <div class="panel-body">
-        <div class="cards-grid">
+        <div class="cards-grid" id="expenseCardsView">
             @foreach (var item in Model.Items)
             {
                 <article class="product-card">
@@ -33,5 +39,32 @@
                 </article>
             }
         </div>
+        <div class="table-responsive" id="expenseTableView" style="display:none;">
+            <table class="table table-modern mb-0">
+                <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@item.Description</td>
+                        <td><span class="badge-soft category-pill" data-category="@item.Category">@item.Category</span></td>
+                        <td><span class="badge-soft badge-danger">@item.Amount.ToString("C")</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     </div>
 </section>
+
+@section Scripts {
+<script>
+(() => {
+  const cards = document.getElementById('expenseCardsView');
+  const table = document.getElementById('expenseTableView');
+  document.getElementById('btnExpenseCards')?.addEventListener('click', () => { cards.style.display = 'grid'; table.style.display = 'none'; });
+  document.getElementById('btnExpenseTable')?.addEventListener('click', () => { cards.style.display = 'none'; table.style.display = 'block'; });
+})();
+</script>
+}

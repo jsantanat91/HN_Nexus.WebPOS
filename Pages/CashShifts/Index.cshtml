@@ -26,11 +26,14 @@
         else
         {
             <div class="alert app-alert">Turno abierto desde @Model.OpenShift.OpenedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") en @Model.OpenShift.Branch?.Name.</div>
-            <form method="post" asp-page-handler="Close" class="row g-2">
+            <form method="post" asp-page-handler="Close" class="row g-2" enctype="multipart/form-data">
                 <input type="hidden" name="shiftId" value="@Model.OpenShift.Id" />
                 <input type="hidden" name="branchId" value="@Model.BranchId" />
-                <div class="col-md-4"><label class="form-label">Arqueo final (efectivo contado)</label><input name="closingDeclared" type="number" step="0.01" class="form-control" required /></div>
-                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-danger w-100">Cerrar turno</button></div>
+                <div class="col-md-3"><label class="form-label">Arqueo final (efectivo contado)</label><input name="closingDeclared" type="number" step="0.01" class="form-control" required /></div>
+                <div class="col-md-3"><label class="form-label">Firma responsable</label><input name="closingSignature" class="form-control" placeholder="Nombre y apellido" required /></div>
+                <div class="col-md-3"><label class="form-label">Evidencia (foto/archivo)</label><input name="closingEvidence" type="file" class="form-control" /></div>
+                <div class="col-md-3"><label class="form-label">Nota</label><input name="closingNotes" class="form-control" placeholder="Observaciones" /></div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-danger w-100">Cerrar turno</button></div>
             </form>
         }
     </div>
@@ -40,7 +43,7 @@
     <div class="panel-header"><h5 class="mb-0">Historial de turnos</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Sucursal</th><th>Usuario</th><th>Apertura</th><th>Cierre</th><th>Fondo inicial</th><th>Sistema</th><th>Declarado</th><th>Diferencia</th><th>Estatus</th></tr></thead>
+            <thead><tr><th>Sucursal</th><th>Usuario</th><th>Apertura</th><th>Cierre</th><th>Fondo inicial</th><th>Sistema</th><th>Declarado</th><th>Diferencia</th><th>Firma</th><th>Evidencia</th><th>Estatus</th></tr></thead>
             <tbody>
             @foreach (var s in Model.Shifts)
             {
@@ -53,6 +56,17 @@
                     <td>@(s.SystemCashTotal?.ToString("C") ?? "-")</td>
                     <td>@(s.ClosingDeclared?.ToString("C") ?? "-")</td>
                     <td>@(s.Difference?.ToString("C") ?? "-")</td>
+                    <td>@(string.IsNullOrWhiteSpace(s.ClosingSignature) ? "-" : s.ClosingSignature)</td>
+                    <td>
+                        @if (string.IsNullOrWhiteSpace(s.ClosingEvidencePath))
+                        {
+                            <span>-</span>
+                        }
+                        else
+                        {
+                            <a class="btn btn-sm btn-outline-primary" href="@s.ClosingEvidencePath" target="_blank">Ver</a>
+                        }
+                    </td>
                     <td><span class="badge-soft @(s.Status == "Open" ? "badge-warn" : "badge-ok")">@s.Status</span></td>
                 </tr>
             }
@@ -60,4 +74,3 @@
         </table>
     </div>
 </section>
-

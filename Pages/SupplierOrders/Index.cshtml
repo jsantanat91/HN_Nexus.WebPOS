@@ -7,7 +7,19 @@
 <section class="panel mb-3">
     <div class="panel-header"><h5 class="mb-0">Nuevo Pedido</h5></div>
     <div class="panel-body">
+        @if (Model.Branches.Count == 0)
+        {
+            <p class="mb-0">No tienes sucursales asignadas para gestionar pedidos.</p>
+            return;
+        }
+
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-auto d-flex align-items-end"><button class="btn btn-outline-primary">Cambiar</button></div>
+        </form>
+
         <form method="post" asp-page-handler="Create" class="row g-2">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
             <div class="col-md-4">
                 <label class="form-label">Proveedor</label>
                 <select class="form-select" name="supplierId" asp-items="Model.Suppliers"></select>
@@ -33,12 +45,13 @@
     <div class="panel-header"><h5 class="mb-0">Seguimiento de Pedidos</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Costo</th><th>Estatus</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Sucursal</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Costo</th><th>Estatus</th><th></th></tr></thead>
             <tbody>
             @foreach (var item in Model.Items)
             {
                 <tr>
                     <td>@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@item.Branch?.Name</td>
                     <td>@item.Supplier?.Name</td>
                     <td>@item.Product?.Name</td>
                     <td>@item.Quantity</td>
@@ -49,6 +62,7 @@
                         {
                             <form method="post" asp-page-handler="MarkReceived" class="d-inline">
                                 <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="branchId" value="@Model.BranchId" />
                                 <button class="btn btn-sm btn-outline-primary">Marcar recibido</button>
                             </form>
                         }
@@ -59,4 +73,3 @@
         </table>
     </div>
 </section>
-

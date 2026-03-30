@@ -7,53 +7,115 @@
 <section class="panel">
     <div class="panel-header">
         <div>
-            <h5 class="mb-0">Inventario</h5>
-            <small class="text-muted">Catálogo principal de productos</small>
+            <h5 class="mb-0">Inventario por sucursal</h5>
+            <small class="text-muted">Productos asignados a la sucursal seleccionada</small>
         </div>
         <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" type="button" id="btnCardsView">Cards</button>
+            <button class="btn btn-outline-primary" type="button" id="btnTableView">Tabla</button>
             <a class="btn btn-outline-primary" asp-page="/Config/Categories">Categorías</a>
             <button class="btn btn-save" type="button" data-bs-toggle="modal" data-bs-target="#importProductsModal">Importar Excel</button>
-            <a class="btn btn-primary" asp-page="/Products/New">+ Nuevo producto</a>
+            <a class="btn btn-primary" asp-page="/Products/New" asp-route-branchId="@Model.BranchId">+ Nuevo producto</a>
         </div>
     </div>
 
     <div class="panel-body">
+        @if (Model.Branches.Count == 0)
+        {
+            <p class="mb-0">No tienes sucursales asignadas para gestionar productos.</p>
+            return;
+        }
+
         <form method="get" class="row g-2 mb-3">
-            <div class="col-md-4"><input class="form-control" name="q" value="@Model.Q" placeholder="Buscar por nombre o código" /></div>
-            <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
+            <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label">Buscar</label><input class="form-control" name="q" value="@Model.Q" placeholder="Nombre, código o ID" /></div>
+            <div class="col-auto d-flex align-items-end"><button class="btn btn-outline-primary">Ver</button></div>
         </form>
 
-        <div class="cards-grid">
+        <div id="productsCardsView" class="cards-grid">
             @foreach (var item in Model.Items)
             {
                 <article class="product-card">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="badge-soft badge-info">PROD-@item.ProductNumber.ToString("D6")</span>
-                        <span class="badge-soft @(item.Stock <= 5 ? "badge-danger" : "badge-ok")">Stock @item.Stock</span>
+                        <span class="badge-soft @(item.Stock <= item.MinStock ? "badge-danger" : "badge-ok")">Stock @item.Stock</span>
                     </div>
                     <h6 class="mb-1">@item.Name</h6>
                     <div class="product-meta mb-2">Código: @item.Barcode</div>
                     <div class="d-flex gap-2 mb-2">
-                        <span class="badge-soft category-pill" data-category="@item.Category?.Name">@item.Category?.Name</span>
+                        <span class="badge-soft category-pill" data-category="@item.CategoryName">@item.CategoryName</span>
                         <span class="badge-soft @(item.PriceIncludesTax ? "badge-ok" : "badge-info")">IVA @(item.PriceIncludesTax ? "incluido" : "separado")</span>
+                        @if (item.PromotionType == "TwoForOne")
+                        {
+                            <span class="badge-soft badge-warn">Promo 2x1</span>
+                        }
+                        else if (item.PromotionType == "Volume")
+                        {
+                            <span class="badge-soft badge-warn">@item.PromotionValue% desde @item.PromotionMinQty</span>
+                        }
                     </div>
                     <div class="fw-bold fs-5 mb-2">@item.Price.ToString("C")</div>
                     <button type="button"
                             class="btn btn-sm btn-outline-primary btn-edit-product"
                             data-bs-toggle="modal"
                             data-bs-target="#editProductModal"
-                            data-id="@item.Id"
+                            data-id="@item.ProductId"
                             data-name="@item.Name"
                             data-barcode="@item.Barcode"
                             data-price="@item.Price"
                             data-cost="@item.Cost"
                             data-stock="@item.Stock"
+                            data-min-stock="@item.MinStock"
                             data-category-id="@item.CategoryId"
-                            data-price-includes-tax="@item.PriceIncludesTax">
+                            data-price-includes-tax="@item.PriceIncludesTax"
+                            data-promo-type="@item.PromotionType"
+                            data-promo-value="@item.PromotionValue"
+                            data-promo-min="@item.PromotionMinQty">
                         Editar
                     </button>
                 </article>
             }
+        </div>
+
+        <div id="productsTableView" class="table-responsive" style="display:none;">
+            <table class="table table-modern mb-0">
+                <thead><tr><th>ID</th><th>Producto</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Mínimo</th><th>Precio</th><th>IVA</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td><span class="badge-soft badge-info">PROD-@item.ProductNumber.ToString("D6")</span></td>
+                        <td>@item.Name</td>
+                        <td>@item.Barcode</td>
+                        <td><span class="badge-soft category-pill" data-category="@item.CategoryName">@item.CategoryName</span></td>
+                        <td><span class="badge-soft @(item.Stock <= item.MinStock ? "badge-danger" : "badge-ok")">@item.Stock</span></td>
+                        <td>@item.MinStock</td>
+                        <td class="fw-semibold">@item.Price.ToString("C")</td>
+                        <td><span class="badge-soft @(item.PriceIncludesTax ? "badge-ok" : "badge-info")">@(item.PriceIncludesTax ? "Incluido" : "Separado")</span></td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary btn-edit-product"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editProductModal"
+                                    data-id="@item.ProductId"
+                                    data-name="@item.Name"
+                                    data-barcode="@item.Barcode"
+                                    data-price="@item.Price"
+                                    data-cost="@item.Cost"
+                                    data-stock="@item.Stock"
+                                    data-min-stock="@item.MinStock"
+                                    data-category-id="@item.CategoryId"
+                                    data-price-includes-tax="@item.PriceIncludesTax"
+                                    data-promo-type="@item.PromotionType"
+                                    data-promo-value="@item.PromotionValue"
+                                    data-promo-min="@item.PromotionMinQty">
+                                Editar
+                            </button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
         </div>
     </div>
 </section>
@@ -66,6 +128,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
                 <div class="modal-body">
                     <p class="small text-muted">Descarga la plantilla CSV, llénala en Excel y súbela aquí.</p>
                     <a class="btn btn-outline-primary btn-sm mb-3" asp-page="/Products/Index" asp-page-handler="Template">Descargar plantilla</a>
@@ -84,10 +147,11 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Editar producto</h5>
+                <h5 class="modal-title">Editar producto de sucursal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="Edit">
+                <input type="hidden" asp-for="BranchId" />
                 <div class="modal-body">
                     <input type="hidden" asp-for="EditId" id="editId" />
                     <div class="row g-2">
@@ -101,7 +165,11 @@
                         </select></div>
                         <div class="col-md-4"><label class="form-label">Precio</label><input asp-for="EditPrice" id="editPrice" type="number" step="0.01" class="form-control" /></div>
                         <div class="col-md-4"><label class="form-label">Costo</label><input asp-for="EditCost" id="editCost" type="number" step="0.01" class="form-control" /></div>
-                        <div class="col-md-4"><label class="form-label">Stock</label><input asp-for="EditStock" id="editStock" type="number" class="form-control" /></div>
+                        <div class="col-md-2"><label class="form-label">Stock</label><input asp-for="EditStock" id="editStock" type="number" class="form-control" /></div>
+                        <div class="col-md-2"><label class="form-label">Mínimo</label><input asp-for="EditMinStock" id="editMinStock" type="number" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label">Promoción</label><select asp-for="EditPromotionType" id="editPromotionType" class="form-select"><option value="None">Sin promoción</option><option value="TwoForOne">2x1</option><option value="Volume">Descuento por volumen</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Valor promoción (%)</label><input asp-for="EditPromotionValue" id="editPromotionValue" type="number" step="0.01" class="form-control" /></div>
+                        <div class="col-md-4"><label class="form-label">Mínimo para promo</label><input asp-for="EditPromotionMinQty" id="editPromotionMinQty" type="number" class="form-control" /></div>
                         <div class="col-12">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" asp-for="EditPriceIncludesTax" id="editPriceIncludesTax" />
@@ -121,17 +189,28 @@
 
 @section Scripts {
 <script>
-document.querySelectorAll('.btn-edit-product').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.getElementById('editId').value = btn.dataset.id || '0';
-    document.getElementById('editName').value = btn.dataset.name || '';
-    document.getElementById('editBarcode').value = btn.dataset.barcode || '';
-    document.getElementById('editPrice').value = btn.dataset.price || '0';
-    document.getElementById('editCost').value = btn.dataset.cost || '0';
-    document.getElementById('editStock').value = btn.dataset.stock || '0';
-    document.getElementById('editCategoryId').value = btn.dataset.categoryId || '0';
-    document.getElementById('editPriceIncludesTax').checked = (btn.dataset.priceIncludesTax || '').toLowerCase() === 'true';
+(function(){
+  const cards = document.getElementById('productsCardsView');
+  const table = document.getElementById('productsTableView');
+  document.getElementById('btnCardsView')?.addEventListener('click', () => { cards.style.display='grid'; table.style.display='none'; });
+  document.getElementById('btnTableView')?.addEventListener('click', () => { cards.style.display='none'; table.style.display='block'; });
+
+  document.querySelectorAll('.btn-edit-product').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.getElementById('editId').value = btn.dataset.id || '0';
+      document.getElementById('editName').value = btn.dataset.name || '';
+      document.getElementById('editBarcode').value = btn.dataset.barcode || '';
+      document.getElementById('editPrice').value = btn.dataset.price || '0';
+      document.getElementById('editCost').value = btn.dataset.cost || '0';
+      document.getElementById('editStock').value = btn.dataset.stock || '0';
+      document.getElementById('editMinStock').value = btn.dataset.minStock || '0';
+      document.getElementById('editCategoryId').value = btn.dataset.categoryId || '0';
+      document.getElementById('editPriceIncludesTax').checked = (btn.dataset.priceIncludesTax || '').toLowerCase() === 'true';
+      document.getElementById('editPromotionType').value = btn.dataset.promoType || 'None';
+      document.getElementById('editPromotionValue').value = btn.dataset.promoValue || '0';
+      document.getElementById('editPromotionMinQty').value = btn.dataset.promoMin || '0';
+    });
   });
-});
+})();
 </script>
 }

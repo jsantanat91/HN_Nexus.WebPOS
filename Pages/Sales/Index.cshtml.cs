@@ -124,6 +124,18 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         sale.CancelledAt = DateTime.UtcNow;
         sale.CancelReason = string.IsNullOrWhiteSpace(reason) ? "Cancelada desde historial" : reason.Trim();
 
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "CANCEL",
+            Entity = "Sale",
+            EntityId = sale.Id,
+            BranchId = sale.BranchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Venta cancelada. Razón: {sale.CancelReason}"
+        });
+
         await db.SaveChangesAsync();
         TempData["Flash"] = $"Venta #{sale.Id} cancelada y stock restaurado.";
         return RedirectToPage(new { branchId = sale.BranchId });

@@ -18,6 +18,9 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
     public int BranchId { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public bool AllBranches { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public DateTime Date { get; set; } = DateTime.Today;
 
     public decimal Total => Sales.Where(x => x.Status == "Completed").Sum(x => x.TotalAmount);
@@ -27,17 +30,23 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
         await LoadAsync();
     }
 
-    public async Task<IActionResult> OnPostPdfAsync(int branchId, DateTime date)
+    public async Task<IActionResult> OnPostPdfAsync(int branchId, DateTime date, bool allBranches)
     {
         BranchId = branchId;
         Date = date;
+        AllBranches = allBranches;
         await LoadAsync();
 
-        var branchName = Branches.FirstOrDefault(b => b.Value == BranchId.ToString())?.Text ?? "Sucursal";
+        var branchName = AllBranches
+            ? "General (todas las sucursales permitidas)"
+            : (Branches.FirstOrDefault(b => b.Value == BranchId.ToString())?.Text ?? "Sucursal");
+
         var symbol = string.IsNullOrWhiteSpace(Config.CurrencySymbol) ? "$" : Config.CurrencySymbol;
 
         var bytes = pdfService.BuildDailySalesPdf(Date, branchName, symbol, Sales);
-        var filename = $"reporte-ventas-{Date:yyyyMMdd}-suc-{BranchId}.pdf";
+        var filename = AllBranches
+            ? $"reporte-ventas-{Date:yyyyMMdd}-general.pdf"
+            : $"reporte-ventas-{Date:yyyyMMdd}-suc-{BranchId}.pdf";
 
         return File(bytes, "application/pdf", filename);
     }
@@ -56,20 +65,27 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
             return;
         }
 
-        if (BranchId <= 0 && Branches.Count > 0)
+        if (!AllBranches && (BranchId <= 0 || !Branches.Any(b => b.Value == BranchId.ToString())))
         {
             BranchId = int.Parse(Branches[0].Value!);
         }
 
-        var start = Date.Date;
+        var allowedIds = Branches.Select(x => int.Parse(x.Value!)).ToList();
+        var start = DateTime.SpecifyKind(Date.Date, DateTimeKind.Utc);
         var end = start.AddDays(1);
 
-        Sales = await db.Sales
+        var query = db.Sales
             .Include(x => x.Customer)
             .Include(x => x.Branch)
-            .Where(x => x.BranchId == BranchId && x.Date >= start && x.Date < end)
+            .Where(x => x.Date >= start && x.Date < end && allowedIds.Contains(x.BranchId));
+
+        if (!AllBranches)
+        {
+            query = query.Where(x => x.BranchId == BranchId);
+        }
+
+        Sales = await query
             .OrderByDescending(x => x.Date)
             .ToListAsync();
     }
 }
-

@@ -61,6 +61,25 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     [BindProperty]
     public string QuickCustomerRfc { get; set; } = string.Empty;
 
+    [BindProperty]
+    public string QuickCustomerPostalCode { get; set; } = string.Empty;
+
+    [BindProperty]
+    public string QuickCustomerEmail { get; set; } = string.Empty;
+
+    [BindProperty]
+    public string QuickCustomerCfdiUse { get; set; } = "G03";
+
+    [BindProperty]
+    public string QuickCustomerPaymentForm { get; set; } = "01";
+
+    [BindProperty]
+    public string QuickCustomerPaymentMethodSat { get; set; } = "PUE";
+
+    public List<SelectListItem> QuickCfdiUses { get; private set; } = new();
+    public List<SelectListItem> QuickPaymentForms { get; private set; } = new();
+    public List<SelectListItem> QuickPaymentMethods { get; private set; } = new();
+
     public async Task<IActionResult> OnGetAsync()
     {
         await LoadAsync();
@@ -125,6 +144,18 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             MinStock = 5
         });
 
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "QUICK_CREATE",
+            Entity = "Product",
+            EntityId = product.Id,
+            BranchId = BranchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Producto rápido '{product.Name}' desde Caja."
+        });
+
         await db.SaveChangesAsync();
         TempData["Flash"] = "Producto rápido agregado.";
         return RedirectToPage(new { branchId = BranchId });
@@ -140,21 +171,46 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             return RedirectToPage(new { branchId = BranchId });
         }
 
+        var rfc = (string.IsNullOrWhiteSpace(QuickCustomerRfc) ? "XAXX010101000" : QuickCustomerRfc.Trim().ToUpperInvariant());
+        if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$"))
+        {
+            TempData["Flash"] = "RFC inválido para cliente rápido.";
+            return RedirectToPage(new { branchId = BranchId });
+        }
+
+        var cp = (QuickCustomerPostalCode ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(cp) && !System.Text.RegularExpressions.Regex.IsMatch(cp, @"^\d{5}$"))
+        {
+            TempData["Flash"] = "Código postal inválido (debe ser de 5 dígitos).";
+            return RedirectToPage(new { branchId = BranchId });
+        }
+
         db.Customers.Add(new Customer
         {
             FullName = QuickCustomerName.Trim(),
-            Rfc = string.IsNullOrWhiteSpace(QuickCustomerRfc) ? "XAXX010101000" : QuickCustomerRfc.Trim().ToUpperInvariant(),
-            Email = string.Empty,
+            Rfc = rfc,
+            Email = (QuickCustomerEmail ?? string.Empty).Trim(),
             PhoneNumber = string.Empty,
             Address = string.Empty,
-            PostalCode = string.Empty,
-            CfdiUse = "G03",
+            PostalCode = cp,
+            CfdiUse = QuickCustomerCfdiUse,
             FiscalRegime = "601",
             InvoiceType = "I",
-            PaymentForm = "01",
-            PaymentMethodSat = "PUE",
+            PaymentForm = QuickCustomerPaymentForm,
+            PaymentMethodSat = QuickCustomerPaymentMethodSat,
             IsActive = true,
             RegisteredAt = DateTime.UtcNow
+        });
+
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "QUICK_CREATE",
+            Entity = "Customer",
+            BranchId = BranchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Cliente rápido '{QuickCustomerName.Trim()}' desde Caja."
         });
 
         await db.SaveChangesAsync();
@@ -211,9 +267,34 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         }
 
         var taxRate = Math.Clamp(Config.TaxRate, 0m, 100m) / 100m;
+        decimal PromoDiscount(ProductStock stock, int qty)
+        {
+            var product = stock.Product;
+            if (product is null || qty <= 0)
+            {
+                return 0m;
+            }
+
+            var unit = product.Price;
+            if (product.PromotionType == "TwoForOne")
+            {
+                var free = qty / 2;
+                return free * unit;
+            }
+
+            if (product.PromotionType == "Volume" && product.PromotionMinQty > 0 && qty >= product.PromotionMinQty && product.PromotionValue > 0)
+            {
+                return (unit * qty) * (product.PromotionValue / 100m);
+            }
+
+            return 0m;
+        }
+
         var subtotalGross = selected.Sum(x => (x.Stock.Product?.Price ?? 0m) * x.Qty);
-        var lineDiscountAmount = selected.Sum(x => ((x.Stock.Product?.Price ?? 0m) * x.Qty) * (x.DiscountPercent / 100m));
+        var promoDiscountAmount = selected.Sum(x => PromoDiscount(x.Stock, x.Qty));
+        var lineDiscountAmount = selected.Sum(x => (((x.Stock.Product?.Price ?? 0m) * x.Qty) - PromoDiscount(x.Stock, x.Qty)) * (x.DiscountPercent / 100m));
         var subtotalAfterLineDiscount = subtotalGross - lineDiscountAmount;
+        subtotalAfterLineDiscount -= promoDiscountAmount;
 
         GlobalDiscountPercent = Math.Clamp(GlobalDiscountPercent, 0m, 100m);
         var globalDiscountAmount = subtotalAfterLineDiscount * (GlobalDiscountPercent / 100m);
@@ -265,7 +346,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             ChangeAmount = normalizedPayment.Equals("Cash", StringComparison.OrdinalIgnoreCase) ? (AmountReceived - total) : 0m,
             SubtotalAmount = subtotal,
             TaxAmount = tax,
-            DiscountAmount = lineDiscountAmount + globalDiscountAmount,
+            DiscountAmount = promoDiscountAmount + lineDiscountAmount + globalDiscountAmount,
             TotalAmount = total
         };
 
@@ -273,14 +354,15 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         {
             var unitPrice = line.Stock.Product?.Price ?? 0m;
             var lineSubtotal = unitPrice * line.Qty;
-            var lineDiscount = lineSubtotal * (line.DiscountPercent / 100m);
+            var promo = PromoDiscount(line.Stock, line.Qty);
+            var lineDiscount = (lineSubtotal - promo) * (line.DiscountPercent / 100m);
             sale.Details.Add(new SaleDetail
             {
                 ProductId = line.Stock.ProductId,
                 Quantity = line.Qty,
                 UnitPrice = unitPrice,
                 DiscountPercent = line.DiscountPercent,
-                DiscountAmount = lineDiscount
+                DiscountAmount = promo + lineDiscount
             });
 
             line.Stock.Stock -= line.Qty;
@@ -291,6 +373,16 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         }
 
         db.Sales.Add(sale);
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "CREATE",
+            Entity = "Sale",
+            BranchId = BranchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            Details = $"Venta registrada. Total={total:N2}, método={normalizedPayment}, items={selected.Count}."
+        });
         await db.SaveChangesAsync();
 
         TempData["Flash"] = $"Venta #{sale.Id} registrada correctamente.";
@@ -315,30 +407,6 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             .OrderBy(ps => ps.Product!.Name)
             .ToListAsync();
 
-        if (branchStocks.Count == 0)
-        {
-            var baseProducts = await db.Products.Include(p => p.Category).OrderBy(p => p.Name).ToListAsync();
-            if (baseProducts.Count > 0)
-            {
-                var newStocks = baseProducts.Select(p => new ProductStock
-                {
-                    ProductId = p.Id,
-                    BranchId = BranchId,
-                    Stock = p.Stock,
-                    MinStock = 5
-                }).ToList();
-
-                db.ProductStocks.AddRange(newStocks);
-                await db.SaveChangesAsync();
-
-                branchStocks = await db.ProductStocks
-                    .Include(ps => ps.Product)!.ThenInclude(p => p!.Category)
-                    .Where(ps => ps.BranchId == BranchId)
-                    .OrderBy(ps => ps.Product!.Name)
-                    .ToListAsync();
-            }
-        }
-
         Products = branchStocks.Select(ps => new ProductPosItem
         {
             ProductId = ps.ProductId,
@@ -347,6 +415,9 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             Price = ps.Product?.Price ?? 0m,
             PriceIncludesTax = ps.Product?.PriceIncludesTax ?? false,
             CategoryName = ps.Product?.Category?.Name ?? "General",
+            PromotionType = ps.Product?.PromotionType ?? "None",
+            PromotionValue = ps.Product?.PromotionValue ?? 0m,
+            PromotionMinQty = ps.Product?.PromotionMinQty ?? 0,
             Stock = ps.Stock
         }).ToList();
 
@@ -354,6 +425,16 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             .OrderBy(x => x.FullName)
             .Select(x => new SelectListItem(x.FullName, x.Id.ToString()))
             .ToListAsync();
+
+        QuickCfdiUses = SatCatalogs.UsoCfdi
+            .Select(x => new SelectListItem($"{x.Code} - {x.Name}", x.Code))
+            .ToList();
+        QuickPaymentForms = SatCatalogs.FormaPago
+            .Select(x => new SelectListItem($"{x.Code} - {x.Name}", x.Code))
+            .ToList();
+        QuickPaymentMethods = SatCatalogs.MetodoPago
+            .Select(x => new SelectListItem($"{x.Code} - {x.Name}", x.Code))
+            .ToList();
 
         Config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
     }
@@ -366,6 +447,9 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         public decimal Price { get; set; }
         public bool PriceIncludesTax { get; set; }
         public string CategoryName { get; set; } = string.Empty;
+        public string PromotionType { get; set; } = "None";
+        public decimal PromotionValue { get; set; }
+        public int PromotionMinQty { get; set; }
         public int Stock { get; set; }
     }
 }

@@ -70,8 +70,14 @@
                 <input type="hidden" asp-for="BranchId" />
                 <div class="modal-body">
                     <div class="row g-2">
-                        <div class="col-12"><label class="form-label">Nombre del cliente</label><input asp-for="QuickCustomerName" class="form-control" placeholder="Nombre cliente" /></div>
-                        <div class="col-12"><label class="form-label">RFC</label><input asp-for="QuickCustomerRfc" class="form-control text-uppercase" placeholder="RFC" style="text-transform:uppercase;" /></div>
+                        <div class="col-md-8"><label class="form-label">Nombre del cliente</label><input asp-for="QuickCustomerName" class="form-control" placeholder="Nombre cliente" /></div>
+                        <div class="col-md-4"><label class="form-label">RFC</label><input asp-for="QuickCustomerRfc" id="quickRfcInput" class="form-control text-uppercase" placeholder="RFC" style="text-transform:uppercase;" /></div>
+                        <div class="col-md-4"><label class="form-label">Código postal</label><input asp-for="QuickCustomerPostalCode" id="quickCpInput" class="form-control" placeholder="00000" maxlength="5" /></div>
+                        <div class="col-md-8"><label class="form-label">Email</label><input asp-for="QuickCustomerEmail" class="form-control" placeholder="correo@dominio.com" /></div>
+                        <div class="col-md-6"><label class="form-label">Uso CFDI</label><select asp-for="QuickCustomerCfdiUse" asp-items="Model.QuickCfdiUses" class="form-select"></select></div>
+                        <div class="col-md-6"><label class="form-label">Forma de pago SAT</label><select asp-for="QuickCustomerPaymentForm" asp-items="Model.QuickPaymentForms" class="form-select"></select></div>
+                        <div class="col-md-6"><label class="form-label">Método de pago SAT</label><select asp-for="QuickCustomerPaymentMethodSat" asp-items="Model.QuickPaymentMethods" class="form-select"></select></div>
+                        <div class="col-12"><small id="quickSatValidation" class="text-muted">Validación SAT en vivo: RFC y código postal.</small></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -143,22 +149,34 @@
             </div>
 
             <div class="products-grid" id="productsGrid">
+                @if (Model.Products.Count == 0)
+                {
+                    <div class="alert app-alert w-100 mb-0">Esta sucursal no tiene productos asignados. Usa “Producto rápido” o asígnalos desde Inventario por sucursal.</div>
+                }
                 @foreach (var item in Model.Products)
                 {
-                    <article class="product-card" data-price="@item.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-name="@item.Name.ToLowerInvariant()" data-code="@item.Barcode.ToLowerInvariant()" data-price-includes-tax="@item.PriceIncludesTax" data-product-id="@item.ProductId">
+                    <article class="product-card" data-price="@item.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-name="@item.Name.ToLowerInvariant()" data-code="@item.Barcode.ToLowerInvariant()" data-price-includes-tax="@item.PriceIncludesTax" data-product-id="@item.ProductId" data-promo-type="@item.PromotionType" data-promo-value="@item.PromotionValue.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-promo-min="@item.PromotionMinQty">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <span class="badge-soft category-pill" data-category="@item.CategoryName">@item.CategoryName</span>
                             <span class="badge-soft @(item.Stock <= 3 ? "badge-danger" : "badge-ok")">Stock @item.Stock</span>
                         </div>
+                        @if (item.PromotionType == "TwoForOne")
+                        {
+                            <div class="mb-1"><span class="badge-soft badge-warn">Promo 2x1</span></div>
+                        }
+                        else if (item.PromotionType == "Volume")
+                        {
+                            <div class="mb-1"><span class="badge-soft badge-warn">@item.PromotionValue% desde @item.PromotionMinQty piezas</span></div>
+                        }
                         <div class="product-name">@item.Name</div>
                         <div class="product-meta mb-2">Cod: @item.Barcode</div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="mb-2">
                             <span class="price-chip">@item.Price.ToString("C")</span>
-                            <div class="d-flex align-items-center gap-1">
-                                <button class="btn btn-sm btn-outline-primary px-2 btn-dec" type="button">-</button>
-                                <input type="number" min="0" max="@item.Stock" class="form-control qty-input" name="qty_@item.ProductId" value="0" data-product-id="@item.ProductId" />
-                                <button class="btn btn-sm btn-outline-primary px-2 btn-inc" type="button">+</button>
-                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <button class="btn btn-sm btn-outline-primary px-2 btn-dec" type="button">-</button>
+                            <input type="number" min="0" max="@item.Stock" class="form-control qty-input" name="qty_@item.ProductId" value="0" data-product-id="@item.ProductId" />
+                            <button class="btn btn-sm btn-outline-primary px-2 btn-inc" type="button">+</button>
                         </div>
                         <div class="mt-2">
                             <label class="form-label small mb-1">Desc. línea (%)</label>
@@ -227,6 +245,9 @@
   const payment = document.getElementById('paymentMethod');
   const wrap = document.getElementById('authCodeWrap');
   const auth = document.getElementById('authorizationCode');
+  const quickRfc = document.getElementById('quickRfcInput');
+  const quickCp = document.getElementById('quickCpInput');
+  const satMsg = document.getElementById('quickSatValidation');
 
   function syncAuth() {
     const isCard = (payment?.value || '') === 'Card';
@@ -236,6 +257,21 @@
 
   payment?.addEventListener('change', syncAuth);
   syncAuth();
+
+  function satQuickValidate() {
+    if (!satMsg) return;
+    const rfc = (quickRfc?.value || '').trim().toUpperCase();
+    const cp = (quickCp?.value || '').trim();
+    const rfcOk = !rfc || /^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$/.test(rfc);
+    const cpOk = !cp || /^\d{5}$/.test(cp);
+    satMsg.className = (rfcOk && cpOk) ? 'text-success small' : 'text-danger small';
+    satMsg.textContent = (rfcOk && cpOk)
+      ? 'Validación SAT en vivo: RFC y código postal correctos.'
+      : 'Validación SAT: revisa RFC (formato SAT) y código postal de 5 dígitos.';
+  }
+  quickRfc?.addEventListener('input', satQuickValidate);
+  quickCp?.addEventListener('input', satQuickValidate);
+  satQuickValidate();
 
   const modalEl = document.getElementById('saleTicketModal');
   if (modalEl) {
