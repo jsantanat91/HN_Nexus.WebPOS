@@ -10,5 +10,10 @@ public class CashCut
     public decimal TotalSystem { get; set; }
     public decimal TotalPhysical { get; set; }
     public decimal Difference { get; set; }
+
+    public decimal CashSales { get; set; }
+    public decimal CardSales { get; set; }
+    public decimal TransferSales { get; set; }
+
     public string User { get; set; } = string.Empty;
 }

@@ -2,51 +2,74 @@
 @model HN_Nexus.WebPOS.Pages.Sales.TicketModel
 @{
     ViewData["Title"] = "Ticket";
+    var symbol = string.IsNullOrWhiteSpace(Model.Config.CurrencySymbol) ? "$" : Model.Config.CurrencySymbol;
+    string money(decimal val) => $"{symbol}{val:N2}";
 }
 
 @if (Model.Sale != null)
 {
-    <div class="card mx-auto" style="max-width:420px;">
-        <div class="card-body">
-            <h5 class="text-center mb-1">@Model.Config.CompanyName</h5>
-            <p class="text-center small mb-1">@Model.Config.Address</p>
-            <p class="text-center small mb-1">RFC: @Model.Config.TaxId</p>
-            <p class="text-center small mb-3">Tel: @Model.Config.Phone</p>
-            @if (!string.IsNullOrWhiteSpace(Model.Config.TicketHeader))
-            {
-                <p class="text-center">@Model.Config.TicketHeader</p>
-            }
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-xl-5">
+            <div class="panel" id="ticketPanel">
+                <div class="panel-body">
+                    <div class="ticket-preview thermal-ticket">
+                        <h4 class="text-center mb-1">@Model.Config.CompanyName</h4>
+                        <p class="text-center small mb-1">@Model.Config.Address</p>
+                        <p class="text-center small mb-1">RFC: @Model.Config.TaxId</p>
+                        <p class="text-center small mb-2">Tel: @Model.Config.Phone</p>
 
-            <hr />
-            <p class="mb-1">Folio: <strong>@Model.Sale.Id</strong></p>
-            <p class="mb-1">Fecha: @Model.Sale.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
-            <p class="mb-3">Cliente: @(Model.Sale.Customer?.FullName ?? "Publico General")</p>
+                        @if (!string.IsNullOrWhiteSpace(Model.Config.TicketHeader))
+                        {
+                            <p class="text-center fw-semibold">@Model.Config.TicketHeader</p>
+                        }
 
-            <table class="table table-sm">
-                <thead><tr><th>Prod</th><th>Cant</th><th>PU</th><th>Imp</th></tr></thead>
-                <tbody>
-                @foreach (var d in Model.Sale.Details)
-                {
-                    <tr>
-                        <td>@d.Product?.Name</td>
-                        <td>@d.Quantity</td>
-                        <td>@d.UnitPrice.ToString("C")</td>
-                        <td>@d.Total.ToString("C")</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+                        <hr />
+                        <div class="ticket-row"><span>Folio</span><strong>#@Model.Sale.Id</strong></div>
+                        <div class="ticket-row"><span>Fecha</span><strong>@Model.Sale.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
+                        <div class="ticket-row"><span>Cliente</span><strong>@(Model.Sale.Customer?.FullName ?? "Público General")</strong></div>
+                        <div class="ticket-row"><span>Cajero</span><strong>@Model.Sale.User?.FullName</strong></div>
+                        <div class="ticket-row"><span>Pago</span><strong>@Model.Sale.PaymentMethod</strong></div>
 
-            <h4 class="text-end">TOTAL: @Model.Sale.TotalAmount.ToString("C")</h4>
-            @if (!string.IsNullOrWhiteSpace(Model.Config.TicketFooter))
-            {
-                <p class="text-center mt-4">@Model.Config.TicketFooter</p>
-            }
+                        <hr />
+                        @foreach (var d in Model.Sale.Details)
+                        {
+                            <div class="ticket-row">
+                                <span>@d.Product?.Name x @d.Quantity</span>
+                                <strong>@money(d.Total)</strong>
+                            </div>
+                        }
+                        <hr />
+
+                        <div class="ticket-row"><span>Subtotal</span><strong>@money(Model.Sale.SubtotalAmount)</strong></div>
+                        <div class="ticket-row"><span>Descuento</span><strong>@money(Model.Sale.DiscountAmount)</strong></div>
+                        <div class="ticket-row"><span>IVA</span><strong>@money(Model.Sale.TaxAmount)</strong></div>
+                        <div class="ticket-row ticket-total"><span>TOTAL</span><span>@money(Model.Sale.TotalAmount)</span></div>
+                        <div class="ticket-row"><span>Recibido</span><strong>@money(Model.Sale.AmountReceived)</strong></div>
+                        <div class="ticket-row"><span>Cambio</span><strong>@money(Model.Sale.ChangeAmount)</strong></div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Config.TicketFooter))
+                        {
+                            <p class="text-center mt-3">@Model.Config.TicketFooter</p>
+                        }
+                    </div>
+
+                    <div class="d-grid gap-2 mt-3 d-print-none">
+                        <button class="btn btn-primary" onclick="window.print()">Imprimir ticket</button>
+                        <a class="btn btn-outline-primary" asp-page="/Sales/Index">Volver a ventas</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+}
 
-    <div class="text-center mt-3 d-print-none">
-        <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
-        <a class="btn btn-outline-secondary" asp-page="/Sales/Index">Volver</a>
-    </div>
+@section Scripts {
+<style>
+@@media print {
+  body { background: #fff !important; }
+  .app-sidebar, .app-topbar, .d-print-none { display: none !important; }
+  .app-main { padding: 0 !important; }
+  .thermal-ticket { width: 80mm; margin: 0 auto; font-size: 12px; }
+}
+</style>
 }

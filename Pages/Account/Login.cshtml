@@ -1,35 +1,32 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.Account.LoginModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Acceso";
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card">
-            <div class="card-body p-4">
-                <h3 class="mb-3">Iniciar sesion</h3>
-                <p class="text-muted">Acceso al Punto de Venta web.</p>
-
-                <form method="post">
-                    <div asp-validation-summary="All" class="text-danger"></div>
-
-                    <div class="mb-3">
-                        <label asp-for="Input.Username" class="form-label"></label>
-                        <input asp-for="Input.Username" class="form-control" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Input.Password" class="form-label"></label>
-                        <input asp-for="Input.Password" type="password" class="form-control" />
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
-                </form>
-                <small class="text-muted d-block mt-3">Usuario inicial: admin | Password inicial: admin123</small>
-            </div>
-        </div>
+<div class="login-card p-4">
+    <div class="text-center mb-3">
+        <h3 class="fw-bold mb-1">HN Nexus POS</h3>
+        <p class="text-muted mb-0">Inicia sesion para operar caja, inventario y reportes.</p>
     </div>
+
+    <form method="post">
+        <div asp-validation-summary="All" class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Username" class="form-label">Usuario</label>
+            <input asp-for="Input.Username" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Password" class="form-label">Contrasena</label>
+            <input asp-for="Input.Password" type="password" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2">Entrar al sistema</button>
+    </form>
+
+    <small class="text-muted d-block mt-3 text-center">Demo inicial: admin / admin123</small>
 </div>
 
 @section Scripts {

@@ -1,0 +1,50 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Config.PermissionsModel
+@{
+    ViewData["Title"] = "Permisos por Módulo";
+}
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h5 class="mb-0">Gestión de Permisos</h5>
+            <small class="text-muted">Activa módulos por usuario</small>
+        </div>
+    </div>
+
+    <div class="panel-body">
+        @foreach (var user in Model.Users)
+        {
+            <form method="post" asp-page-handler="Save" class="panel mb-3">
+                <input type="hidden" name="userId" value="@user.Id" />
+                <div class="panel-header">
+                    <div>
+                        <strong>@user.FullName</strong>
+                        <small class="text-muted d-block">@($"@{user.Username}") · @user.Role</small>
+                    </div>
+                    <span class="badge-soft @(user.IsActive ? "badge-ok" : "badge-danger")">@(user.IsActive ? "Activo" : "Inactivo")</span>
+                </div>
+                <div class="panel-body">
+                    <div class="row g-2">
+                    @foreach (var module in Model.Modules)
+                    {
+                        var checkedModule = user.Role == "Admin" || user.PermissionSet.Contains(module.Key);
+                        <div class="col-md-3 col-sm-6">
+                            <label class="form-check-label d-flex align-items-center gap-2 border rounded p-2">
+                                <input class="form-check-input" type="checkbox" name="perm_@module.Key" checked="@checkedModule" disabled="@(user.Role == "Admin")" />
+                                <span>@module.Value</span>
+                            </label>
+                        </div>
+                    }
+                    </div>
+                    @if (user.Role != "Admin")
+                    {
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-sm">Guardar permisos</button>
+                        </div>
+                    }
+                </div>
+            </form>
+        }
+    </div>
+</section>

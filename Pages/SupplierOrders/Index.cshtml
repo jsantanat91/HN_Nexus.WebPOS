@@ -1,38 +1,47 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.SupplierOrders.IndexModel
 @{
-    ViewData["Title"] = "Pedidos proveedor";
+    ViewData["Title"] = "Pedidos a Proveedor";
 }
 
-<h3>Pedidos a proveedor</h3>
-<form method="post" asp-page-handler="Create" class="row g-2 mb-3">
-    <div class="col-md-4"><input class="form-control" name="providerName" placeholder="Proveedor" /></div>
-    <div class="col-md-4"><input class="form-control" name="productName" placeholder="Producto" /></div>
-    <div class="col-md-2"><input class="form-control" type="number" name="quantity" placeholder="Cantidad" /></div>
-    <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
-</form>
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Nuevo Pedido</h5></div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-4"><input class="form-control" name="providerName" placeholder="Proveedor" /></div>
+            <div class="col-md-4"><input class="form-control" name="productName" placeholder="Producto" /></div>
+            <div class="col-md-2"><input class="form-control" type="number" name="quantity" placeholder="Cantidad" /></div>
+            <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</section>
 
-<table class="table table-striped">
-    <thead><tr><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Estatus</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var item in Model.Items)
-    {
-        <tr>
-            <td>@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-            <td>@item.ProviderName</td>
-            <td>@item.ProductName</td>
-            <td>@item.Quantity</td>
-            <td>@item.Status</td>
-            <td>
-                @if (item.Status != "Recibido")
-                {
-                    <form method="post" asp-page-handler="MarkReceived" class="d-inline">
-                        <input type="hidden" name="id" value="@item.Id" />
-                        <button class="btn btn-sm btn-outline-success">Recibir</button>
-                    </form>
-                }
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Seguimiento de Pedidos</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Estatus</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@item.ProviderName</td>
+                    <td>@item.ProductName</td>
+                    <td>@item.Quantity</td>
+                    <td><span class="badge-soft @(item.Status == "Recibido" ? "badge-ok" : "badge-warn")">@item.Status</span></td>
+                    <td>
+                        @if (item.Status != "Recibido")
+                        {
+                            <form method="post" asp-page-handler="MarkReceived" class="d-inline">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button class="btn btn-sm btn-outline-primary">Marcar recibido</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

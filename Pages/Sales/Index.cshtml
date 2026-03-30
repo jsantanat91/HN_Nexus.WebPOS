@@ -1,27 +1,74 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.Sales.IndexModel
 @{
-    ViewData["Title"] = "Ventas";
+    ViewData["Title"] = "Historial de Ventas";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Ventas</h3>
-    <a class="btn btn-primary" asp-page="/Sales/New">Nueva venta</a>
-</div>
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h5 class="mb-0">Historial de Ventas</h5>
+            <small class="text-muted">Control detallado de operaciones POS</small>
+        </div>
+        <a class="btn btn-primary" asp-page="/Sales/New">+ Nueva venta</a>
+    </div>
 
-<table class="table table-striped">
-    <thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Cajero</th><th>Total</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var item in Model.Items)
-    {
-        <tr>
-            <td>@item.Id</td>
-            <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-            <td>@(item.Customer?.FullName ?? "Publico General")</td>
-            <td>@item.User?.FullName</td>
-            <td>@item.TotalAmount.ToString("C")</td>
-            <td><a asp-page="/Sales/Ticket" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Ticket</a></td>
-        </tr>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Pago</th>
+                    <th>Cajero</th>
+                    <th>Estatus</th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td><span class="badge-soft badge-info">#@item.Id</span></td>
+                    <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(item.Customer?.FullName ?? "Público General")</td>
+                    <td>@item.PaymentMethod</td>
+                    <td>@item.User?.FullName</td>
+                    <td>
+                        <span class="badge-soft @(item.Status == "Completed" ? "badge-ok" : "badge-danger")">@item.Status</span>
+                    </td>
+                    <td class="fw-bold">@item.TotalAmount.ToString("C")</td>
+                    <td class="d-flex gap-1">
+                        <a asp-page="/Sales/Ticket" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Ticket</a>
+                        @if (item.Status == "Completed")
+                        {
+                            <form method="post" asp-page-handler="Cancel" class="d-inline cancel-sale-form">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="reason" value="" class="cancel-reason" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.cancel-sale-form').forEach(function(form){
+  form.addEventListener('submit', function(e){
+    var reason = prompt('Motivo de cancelación/devolución:');
+    if(reason === null){
+      e.preventDefault();
+      return;
     }
-    </tbody>
-</table>
+    form.querySelector('.cancel-reason').value = reason;
+  });
+});
+</script>
+}

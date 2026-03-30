@@ -1,25 +1,137 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Dashboard Ejecutivo";
 }
 
-<div class="row g-3">
-    <div class="col-md-3">
-        <div class="card"><div class="card-body"><h6>Ventas Hoy</h6><h3>@Model.SalesToday.ToString("C")</h3></div></div>
+<div class="row g-3 mb-3">
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card glass-card">
+            <div class="kpi-title">Ventas Hoy</div>
+            <div class="kpi-value text-primary">@Model.SalesToday.ToString("C")</div>
+            <span class="badge-soft badge-info">@Model.SalesCountToday transacciones</span>
+        </div>
     </div>
-    <div class="col-md-3">
-        <div class="card"><div class="card-body"><h6>Gastos Hoy</h6><h3>@Model.ExpensesToday.ToString("C")</h3></div></div>
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card glass-card">
+            <div class="kpi-title">Gastos Hoy</div>
+            <div class="kpi-value text-warning">@Model.ExpensesToday.ToString("C")</div>
+            <span class="badge-soft badge-warn">Control de egresos activo</span>
+        </div>
     </div>
-    <div class="col-md-3">
-        <div class="card"><div class="card-body"><h6>Ventas Realizadas</h6><h3>@Model.SalesCountToday</h3></div></div>
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card glass-card">
+            <div class="kpi-title">Utilidad Neta</div>
+            <div class="kpi-value @(Model.NetToday >= 0 ? "text-success" : "text-danger")">@Model.NetToday.ToString("C")</div>
+            <span class="badge-soft @(Model.NetToday >= 0 ? "badge-ok" : "badge-danger")">
+                @(Model.NetToday >= 0 ? "Rentable" : "Atencion a costos")
+            </span>
+        </div>
     </div>
-    <div class="col-md-3">
-        <div class="card"><div class="card-body"><h6>Stock Bajo</h6><h3>@Model.LowStockProducts</h3></div></div>
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card glass-card">
+            <div class="kpi-title">Stock Critico</div>
+            <div class="kpi-value text-danger">@Model.LowStockProducts</div>
+            <span class="badge-soft badge-danger">Productos con bajo inventario</span>
+        </div>
     </div>
 </div>
 
-<div class="mt-4 d-flex gap-2">
-    <a class="btn btn-primary" asp-page="/Sales/New">Registrar Venta</a>
-    <a class="btn btn-outline-primary" asp-page="/Products/Index">Catalogo</a>
+<div class="row g-3">
+    <div class="col-xl-7">
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h5 class="mb-0">Ventas Recientes</h5>
+                    <small class="text-muted">Ultimas operaciones registradas</small>
+                </div>
+                <a class="btn btn-sm btn-primary" asp-page="/Sales/New">+ Nueva venta</a>
+            </div>
+            <div class="panel-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr><th>Folio</th><th>Cliente</th><th>Fecha</th><th>Total</th></tr>
+                    </thead>
+                    <tbody>
+                    @if (Model.RecentSales.Count == 0)
+                    {
+                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aun.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var sale in Model.RecentSales)
+                        {
+                            <tr>
+                                <td><span class="badge-soft badge-info">#@sale.Id</span></td>
+                                <td>@(sale.Customer?.FullName ?? "Publico General")</td>
+                                <td>@sale.Date.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                <td class="fw-bold">@sale.TotalAmount.ToString("C")</td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-5">
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h5 class="mb-0">Top Productos</h5>
+                    <small class="text-muted">Mayor rotacion</small>
+                </div>
+            </div>
+            <div class="panel-body">
+                @if (Model.TopProducts.Count == 0)
+                {
+                    <p class="text-muted mb-0">Aun no hay datos para ranking.</p>
+                }
+                else
+                {
+                    @foreach (var item in Model.TopProducts)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>@item.ProductName</strong>
+                                <div class="text-muted small">@item.Units unidades</div>
+                            </div>
+                            <span class="badge-soft badge-ok">@item.Amount.ToString("C")</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="panel mt-3">
+            <div class="panel-header">
+                <h5 class="mb-0">Alertas de Inventario</h5>
+            </div>
+            <div class="panel-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead><tr><th>Producto</th><th>Categoria</th><th>Stock</th></tr></thead>
+                    <tbody>
+                    @if (Model.LowStockList.Count == 0)
+                    {
+                        <tr><td colspan="3" class="text-center text-muted py-3">Todo en niveles saludables.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.LowStockList)
+                        {
+                            <tr>
+                                <td>@item.Name</td>
+                                <td>@item.Category?.Name</td>
+                                <td>
+                                    <span class="badge-soft @(item.Stock <= 2 ? "badge-danger" : "badge-warn")">@item.Stock</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
 </div>

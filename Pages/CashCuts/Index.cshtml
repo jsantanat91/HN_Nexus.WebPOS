@@ -1,34 +1,56 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.CashCuts.IndexModel
 @{
-    ViewData["Title"] = "Cortes de caja";
+    ViewData["Title"] = "Cortes de Caja";
 }
 
-<h3>Cortes de caja</h3>
-<form method="post" asp-page-handler="Create" class="row g-2 mb-3">
-    <div class="col-md-4">
-        <label class="form-label">Total sistema (hoy)</label>
-        <input class="form-control" value="@Model.SuggestedSystemTotal.ToString("C")" disabled />
+<section class="panel mb-3">
+    <div class="panel-header">
+        <div>
+            <h5 class="mb-0">Nuevo Corte Diario</h5>
+            <small class="text-muted">Consolidado por método de pago</small>
+        </div>
     </div>
-    <div class="col-md-4">
-        <label class="form-label">Total fisico contado</label>
-        <input class="form-control" type="number" step="0.01" name="totalPhysical" required />
-    </div>
-    <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary">Guardar corte</button></div>
-</form>
+    <div class="panel-body">
+        <div class="row g-2 mb-3">
+            <div class="col-md-3"><div class="kpi-card glass-card"><div class="kpi-title">Efectivo</div><div class="kpi-value text-success">@Model.SuggestedCashTotal.ToString("C")</div></div></div>
+            <div class="col-md-3"><div class="kpi-card glass-card"><div class="kpi-title">Tarjeta</div><div class="kpi-value text-primary">@Model.SuggestedCardTotal.ToString("C")</div></div></div>
+            <div class="col-md-3"><div class="kpi-card glass-card"><div class="kpi-title">Transferencia</div><div class="kpi-value text-info">@Model.SuggestedTransferTotal.ToString("C")</div></div></div>
+            <div class="col-md-3"><div class="kpi-card glass-card"><div class="kpi-title">Total Sistema</div><div class="kpi-value text-dark">@Model.SuggestedSystemTotal.ToString("C")</div></div></div>
+        </div>
 
-<table class="table table-striped">
-    <thead><tr><th>Fecha</th><th>Sistema</th><th>Fisico</th><th>Diferencia</th><th>Usuario</th></tr></thead>
-    <tbody>
-    @foreach (var item in Model.Items)
-    {
-        <tr>
-            <td>@item.CutDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-            <td>@item.TotalSystem.ToString("C")</td>
-            <td>@item.TotalPhysical.ToString("C")</td>
-            <td>@item.Difference.ToString("C")</td>
-            <td>@item.User</td>
-        </tr>
-    }
-    </tbody>
-</table>
+        <form method="post" asp-page-handler="Create" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Total físico contado</label>
+                <input class="form-control" type="number" step="0.01" name="totalPhysical" required />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100">Guardar corte</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Historial de Cortes</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Fecha</th><th>Sistema</th><th>Efectivo</th><th>Tarjeta</th><th>Transfer</th><th>Físico</th><th>Diferencia</th><th>Usuario</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.CutDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@item.TotalSystem.ToString("C")</td>
+                    <td>@item.CashSales.ToString("C")</td>
+                    <td>@item.CardSales.ToString("C")</td>
+                    <td>@item.TransferSales.ToString("C")</td>
+                    <td>@item.TotalPhysical.ToString("C")</td>
+                    <td><span class="badge-soft @(item.Difference >= 0 ? "badge-ok" : "badge-danger")">@item.Difference.ToString("C")</span></td>
+                    <td>@item.User</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

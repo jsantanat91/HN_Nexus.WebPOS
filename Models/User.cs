@@ -19,5 +19,7 @@ public class User
     [MaxLength(20)]
     public string Role { get; set; } = "Cajero";
 
+    public string ModulePermissions { get; set; } = "dashboard,sales,products,customers,expenses,cashcuts,supplierorders";
+
     public bool IsActive { get; set; } = true;
 }

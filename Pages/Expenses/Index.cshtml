@@ -4,25 +4,34 @@
     ViewData["Title"] = "Gastos";
 }
 
-<h3>Gastos</h3>
-<form method="post" asp-page-handler="Create" class="row g-2 mb-3">
-    <div class="col-md-4"><input class="form-control" name="description" placeholder="Descripcion" /></div>
-    <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="amount" placeholder="Monto" /></div>
-    <div class="col-md-3"><input class="form-control" name="category" placeholder="Categoria" /></div>
-    <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
-</form>
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Registrar Gasto</h5></div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-4"><input class="form-control" name="description" placeholder="Descripcion" /></div>
+            <div class="col-md-2"><input class="form-control" type="number" step="0.01" name="amount" placeholder="Monto" /></div>
+            <div class="col-md-3"><input class="form-control" name="category" placeholder="Categoria" /></div>
+            <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</section>
 
-<table class="table table-striped">
-    <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Monto</th></tr></thead>
-    <tbody>
-    @foreach (var item in Model.Items)
-    {
-        <tr>
-            <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-            <td>@item.Description</td>
-            <td>@item.Category</td>
-            <td>@item.Amount.ToString("C")</td>
-        </tr>
-    }
-    </tbody>
-</table>
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Historial de Egresos</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Fecha</th><th>Descripcion</th><th>Categoria</th><th>Monto</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@item.Description</td>
+                    <td><span class="badge-soft badge-info">@item.Category</span></td>
+                    <td class="fw-bold text-danger">@item.Amount.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

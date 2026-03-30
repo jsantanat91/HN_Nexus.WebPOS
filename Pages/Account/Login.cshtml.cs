@@ -42,7 +42,8 @@ public class LoginModel(AppDbContext db) : PageModel
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.FullName),
             new("username", user.Username),
-            new(ClaimTypes.Role, user.Role)
+            new(ClaimTypes.Role, user.Role),
+            new("modules", user.ModulePermissions ?? string.Empty)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

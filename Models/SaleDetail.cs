@@ -12,5 +12,10 @@ public class SaleDetail
 
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
-    public decimal Total => Quantity * UnitPrice;
+
+    public decimal DiscountPercent { get; set; }
+    public decimal DiscountAmount { get; set; }
+
+    public decimal LineSubtotal => Quantity * UnitPrice;
+    public decimal Total => LineSubtotal - DiscountAmount;
 }

@@ -47,6 +47,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
             FullName = "Administrador",
             Role = "Admin",
+            ModulePermissions = string.Join(',', ModuleCatalog.All),
             IsActive = true
         });
 
@@ -64,6 +65,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             TaxId = "XAXX010101000",
             Address = "Pendiente de configurar",
             Phone = "",
+            CurrencySymbol = "$",
+            TaxRate = 16m,
             TicketHeader = "Bienvenido",
             TicketFooter = "Gracias por su compra"
         });

@@ -1,59 +1,91 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+@using HN_Nexus.WebPOS.Models
+<!DOCTYPE html>
 <html lang="es-mx">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HN Nexus WebPOS</title>
+    <title>@ViewData["Title"] - HN Nexus POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-page="/Index">HN Nexus WebPOS</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item"><a class="nav-link" asp-page="/Sales/Index">Ventas</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/Sales/New">Nueva Venta</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/Products/Index">Productos</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/Customers/Index">Clientes</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/CashCuts/Index">Cortes</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/Expenses/Index">Gastos</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-page="/SupplierOrders/Index">Pedidos</a></li>
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li class="nav-item"><a class="nav-link" asp-page="/Config/Index">Configuracion</a></li>
-                            }
-                        }
-                    </ul>
-                    <ul class="navbar-nav">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item me-3 text-white d-flex align-items-center">@User.Identity.Name</li>
-                            <li class="nav-item"><a class="btn btn-outline-light" asp-page="/Account/Logout">Salir</a></li>
-                        }
-                    </ul>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var modules = (User.FindFirstValue("modules") ?? string.Empty)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(x => x.ToLowerInvariant())
+        .ToHashSet();
+
+    bool has(string code) => User.IsInRole("Admin") || modules.Contains(code);
+
+    <div class="app-shell">
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="brand-wrap">
+                <div class="brand-logo">POS</div>
+                <div>
+                    <div class="brand-title">HN Nexus</div>
+                    <small class="brand-subtitle">Punto de Venta</small>
                 </div>
             </div>
-        </nav>
-    </header>
-    <main class="container py-4">
-        @if (TempData["Flash"] != null)
-        {
-            <div class="alert alert-info">@TempData["Flash"]</div>
-        }
+
+            <nav class="nav flex-column nav-menu">
+                @if (has(ModuleCatalog.Dashboard)) { <a class="nav-link" asp-page="/Index">Inicio</a> }
+                @if (has(ModuleCatalog.Sales)) { <a class="nav-link" asp-page="/Sales/New">Caja POS</a> }
+                @if (has(ModuleCatalog.Sales)) { <a class="nav-link" asp-page="/Sales/Index">Historial Ventas</a> }
+                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Products/Index">Productos</a> }
+                @if (has(ModuleCatalog.Customers)) { <a class="nav-link" asp-page="/Customers/Index">Clientes</a> }
+                @if (has(ModuleCatalog.Expenses)) { <a class="nav-link" asp-page="/Expenses/Index">Gastos</a> }
+                @if (has(ModuleCatalog.CashCuts)) { <a class="nav-link" asp-page="/CashCuts/Index">Cortes Caja</a> }
+                @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Pedidos</a> }
+                @if (User.IsInRole("Admin"))
+                {
+                    <a class="nav-link" asp-page="/Config/Index">Configuracion</a>
+                    <a class="nav-link" asp-page="/Config/Permissions">Permisos</a>
+                }
+            </nav>
+
+            <div class="mt-auto pt-3">
+                <a class="btn btn-outline-light w-100" asp-page="/Account/Logout">Cerrar sesion</a>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-topbar">
+                <button class="btn btn-sm btn-light d-lg-none" id="sidebarToggle" type="button">Menu</button>
+                <div>
+                    <h1 class="page-title mb-0">@ViewData["Title"]</h1>
+                    <p class="page-subtitle mb-0">Control total de ventas, inventario y caja</p>
+                </div>
+                <div class="user-chip">
+                    <span class="role-badge">@User.FindFirstValue(ClaimTypes.Role)</span>
+                    <strong>@User.Identity?.Name</strong>
+                </div>
+            </header>
+
+            <main class="app-content">
+                @if (TempData["Flash"] != null)
+                {
+                    <div class="alert app-alert">@TempData["Flash"]</div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+else
+{
+    <main class="auth-wrap container py-5">
         @RenderBody()
     </main>
+}
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

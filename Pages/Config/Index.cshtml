@@ -1,16 +1,27 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.Config.IndexModel
 @{
-    ViewData["Title"] = "Configuracion";
+    ViewData["Title"] = "Configuración";
 }
 
-<h3>Configuracion del negocio</h3>
-<form method="post" class="row g-3">
-    <div class="col-md-6"><label asp-for="Item.CompanyName" class="form-label"></label><input asp-for="Item.CompanyName" class="form-control" /></div>
-    <div class="col-md-3"><label asp-for="Item.TaxId" class="form-label">RFC</label><input asp-for="Item.TaxId" class="form-control" /></div>
-    <div class="col-md-3"><label asp-for="Item.Phone" class="form-label"></label><input asp-for="Item.Phone" class="form-control" /></div>
-    <div class="col-md-12"><label asp-for="Item.Address" class="form-label"></label><input asp-for="Item.Address" class="form-control" /></div>
-    <div class="col-md-6"><label asp-for="Item.TicketHeader" class="form-label"></label><input asp-for="Item.TicketHeader" class="form-control" /></div>
-    <div class="col-md-6"><label asp-for="Item.TicketFooter" class="form-label"></label><input asp-for="Item.TicketFooter" class="form-control" /></div>
-    <div class="col-12"><button class="btn btn-primary">Guardar</button></div>
-</form>
+<section class="panel">
+    <div class="panel-header">
+        <h5 class="mb-0">Configuración del Negocio</h5>
+    </div>
+    <div class="panel-body">
+        <form method="post" class="row g-3">
+            <div class="col-md-6"><label asp-for="Item.CompanyName" class="form-label">Razón social</label><input asp-for="Item.CompanyName" class="form-control" /></div>
+            <div class="col-md-3"><label asp-for="Item.TaxId" class="form-label">RFC</label><input asp-for="Item.TaxId" class="form-control" /></div>
+            <div class="col-md-3"><label asp-for="Item.Phone" class="form-label">Teléfono</label><input asp-for="Item.Phone" class="form-control" /></div>
+            <div class="col-md-12"><label asp-for="Item.Address" class="form-label">Dirección</label><input asp-for="Item.Address" class="form-control" /></div>
+
+            <div class="col-md-3"><label asp-for="Item.CurrencySymbol" class="form-label">Símbolo moneda</label><input asp-for="Item.CurrencySymbol" class="form-control" /></div>
+            <div class="col-md-3"><label asp-for="Item.TaxRate" class="form-label">IVA (%)</label><input asp-for="Item.TaxRate" class="form-control" type="number" step="0.01" /></div>
+            <div class="col-md-6"><label asp-for="Item.TicketPrinterName" class="form-label">Impresora ticket (opcional)</label><input asp-for="Item.TicketPrinterName" class="form-control" placeholder="Ej. EPSON TM-T20" /></div>
+
+            <div class="col-md-6"><label asp-for="Item.TicketHeader" class="form-label">Encabezado ticket</label><input asp-for="Item.TicketHeader" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Item.TicketFooter" class="form-label">Pie ticket</label><input asp-for="Item.TicketFooter" class="form-control" /></div>
+            <div class="col-12"><button class="btn btn-primary">Guardar</button></div>
+        </form>
+    </div>
+</section>

@@ -36,12 +36,15 @@ public class IndexModel(AppDbContext db) : PageModel
             current.TaxId = Item.TaxId;
             current.Address = Item.Address;
             current.Phone = Item.Phone;
+            current.CurrencySymbol = Item.CurrencySymbol;
+            current.TaxRate = Item.TaxRate;
+            current.TicketPrinterName = Item.TicketPrinterName;
             current.TicketHeader = Item.TicketHeader;
             current.TicketFooter = Item.TicketFooter;
         }
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Configuracion actualizada.";
+        TempData["Flash"] = "Configuración actualizada.";
         return RedirectToPage();
     }
 }

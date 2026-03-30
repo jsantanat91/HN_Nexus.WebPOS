@@ -7,6 +7,11 @@ public class AppConfig
     public string TaxId { get; set; } = "XAXX010101000";
     public string Address { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
+
+    public string CurrencySymbol { get; set; } = "$";
+    public decimal TaxRate { get; set; } = 16m;
+    public string? TicketPrinterName { get; set; }
+
     public string? TicketHeader { get; set; }
     public string? TicketFooter { get; set; }
     public string? CerPath { get; set; }

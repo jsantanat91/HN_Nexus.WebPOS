@@ -1,44 +1,110 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.Sales.NewModel
 @{
-    ViewData["Title"] = "Nueva venta";
+    ViewData["Title"] = "Caja POS";
 }
 
-<h3>Nueva venta</h3>
-<form method="post">
-    <div asp-validation-summary="All" class="text-danger"></div>
-
-    <div class="row g-3 mb-3">
-        <div class="col-md-5">
-            <label class="form-label">Cliente (opcional)</label>
-            <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select">
-                <option value="">Publico general</option>
-            </select>
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <div class="form-check">
-                <input class="form-check-input" asp-for="IsInvoice" />
-                <label class="form-check-label" asp-for="IsInvoice">Requiere factura</label>
+<form method="post" class="pos-grid" id="posForm" data-tax="@Model.Config.TaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-currency="@Model.Config.CurrencySymbol">
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h5 class="mb-0">Caja dinámica</h5>
+                <small class="text-muted">Atajos: F2 buscar, + suma, - resta, F4 cobrar</small>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <input type="text" id="productSearch" class="form-control form-control-sm" placeholder="Buscar producto..." style="width:220px;" />
+                <span class="badge-soft badge-info">@Model.Products.Count productos</span>
             </div>
         </div>
-    </div>
+        <div class="panel-body">
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-    <table class="table table-sm table-striped">
-        <thead><tr><th>Producto</th><th>Categoria</th><th>Precio</th><th>Stock</th><th style="width:120px;">Cantidad</th></tr></thead>
-        <tbody>
-        @foreach (var product in Model.Products)
-        {
-            <tr>
-                <td>@product.Name</td>
-                <td>@product.Category?.Name</td>
-                <td>@product.Price.ToString("C")</td>
-                <td>@product.Stock</td>
-                <td><input type="number" min="0" max="@product.Stock" class="form-control" name="qty_@product.Id" value="0" /></td>
-            </tr>
-        }
-        </tbody>
-    </table>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Cliente</label>
+                    <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select">
+                        <option value="">Público general</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Método de pago</label>
+                    <select asp-for="PaymentMethod" class="form-select" id="paymentMethod">
+                        <option value="Cash">Efectivo</option>
+                        <option value="Card">Tarjeta</option>
+                        <option value="Transfer">Transferencia</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Monto recibido</label>
+                    <input asp-for="AmountReceived" id="amountReceived" type="number" step="0.01" class="form-control" />
+                </div>
 
-    <button class="btn btn-primary">Confirmar venta</button>
-    <a class="btn btn-outline-secondary" asp-page="/Sales/Index">Cancelar</a>
+                <div class="col-md-4">
+                    <label class="form-label">Descuento global (%)</label>
+                    <input asp-for="GlobalDiscountPercent" id="globalDiscountPercent" type="number" min="0" max="100" step="0.01" class="form-control" value="0" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" asp-for="IsInvoice" />
+                        <label class="form-check-label" asp-for="IsInvoice">Requiere factura CFDI</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                @foreach (var product in Model.Products)
+                {
+                    <article class="product-card" data-price="@product.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-name="@product.Name.ToLowerInvariant()" data-code="@product.Barcode.ToLowerInvariant()" data-product-id="@product.Id">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge-soft badge-info">@product.Category?.Name</span>
+                            <span class="badge-soft @(product.Stock <= 3 ? "badge-danger" : "badge-ok")">Stock @product.Stock</span>
+                        </div>
+                        <div class="product-name">@product.Name</div>
+                        <div class="product-meta mb-2">Cod: @product.Barcode</div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="price-chip">@product.Price.ToString("C")</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <button class="btn btn-sm btn-outline-primary px-2 btn-dec" type="button">-</button>
+                                <input type="number" min="0" max="@product.Stock" class="form-control qty-input" name="qty_@product.Id" value="0" data-product-id="@product.Id" />
+                                <button class="btn btn-sm btn-outline-primary px-2 btn-inc" type="button">+</button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label small mb-1">Desc. línea (%)</label>
+                            <input type="number" min="0" max="100" step="0.01" class="form-control form-control-sm line-discount-input" name="disc_@product.Id" value="0" data-product-id="@product.Id" />
+                        </div>
+                    </article>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h5 class="mb-0">Carrito y Cobro</h5>
+                <small class="text-muted">Resumen de ticket en tiempo real</small>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div id="cartRows" class="mb-3" style="max-height:260px; overflow:auto;"></div>
+
+            <div class="ticket-preview mb-3">
+                <div class="ticket-row"><span>Items</span><strong id="posItems">0</strong></div>
+                <div class="ticket-row"><span>Subtotal</span><strong id="posSubtotal">$0.00</strong></div>
+                <div class="ticket-row"><span>Descuentos</span><strong id="posDiscount">$0.00</strong></div>
+                <div class="ticket-row"><span>IVA (@Model.Config.TaxRate%)</span><strong id="posIva">$0.00</strong></div>
+                <hr />
+                <div class="ticket-row ticket-total"><span>Total</span><span id="posTotal">$0.00</span></div>
+                <div class="ticket-row"><span>Recibido</span><strong id="posReceived">$0.00</strong></div>
+                <div class="ticket-row"><span>Cambio</span><strong id="posChange">$0.00</strong></div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary btn-lg" type="submit" id="btnCharge">Terminar venta (F4)</button>
+                <a class="btn btn-outline-primary" asp-page="/Sales/Index">Ver historial</a>
+            </div>
+            <small class="text-muted d-block mt-2">Impresión: al terminar podrás usar ticket HTML con Ctrl+P para impresora térmica.</small>
+        </div>
+    </section>
 </form>
