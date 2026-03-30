@@ -21,3 +21,4 @@ public class CashCut
 
     public string User { get; set; } = string.Empty;
 }
+

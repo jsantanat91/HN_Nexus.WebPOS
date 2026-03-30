@@ -17,3 +17,4 @@ public class Customer
     public string PaymentMethodSat { get; set; } = "PUE";
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
 }
+

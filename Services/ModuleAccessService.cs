@@ -43,3 +43,4 @@ public class ModuleAccessService(AppDbContext db) : IModuleAccessService
         return set.Contains(moduleCode.ToLowerInvariant());
     }
 }
+

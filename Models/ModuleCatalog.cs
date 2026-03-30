@@ -38,8 +38,8 @@ public static class ModuleCatalog
         [Products] = "Inventario",
         [Customers] = "Clientes",
         [Expenses] = "Gastos",
-        [CashCuts] = "Cortes de Caja",
-        [CashShifts] = "Turnos de Caja",
+        [CashCuts] = "Corte",
+        [CashShifts] = "Turno",
         [SupplierOrders] = "Pedidos a Proveedor",
         [Reports] = "Reportes",
         [Config] = "Configuración",
@@ -47,3 +47,4 @@ public static class ModuleCatalog
         [Branches] = "Sucursales"
     };
 }
+

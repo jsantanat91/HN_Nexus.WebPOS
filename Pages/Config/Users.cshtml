@@ -1,38 +1,19 @@
 ﻿@page
-@using HN_Nexus.WebPOS.Models
 @model HN_Nexus.WebPOS.Pages.Config.UsersModel
 @{
-    ViewData["Title"] = "Usuarios y Roles";
+    ViewData["Title"] = "Usuarios y roles";
 }
 
 <section class="panel mb-3">
-    <div class="panel-header"><h5 class="mb-0">Crear Usuario</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Crear usuario</h5></div>
     <div class="panel-body">
         <form method="post" asp-page-handler="Create" class="row g-3">
             <div class="col-md-3"><label class="form-label">Nombre completo</label><input asp-for="Input.FullName" class="form-control" /></div>
             <div class="col-md-2"><label class="form-label">Usuario</label><input asp-for="Input.Username" class="form-control" /></div>
             <div class="col-md-2"><label class="form-label">Contraseña</label><input asp-for="Input.Password" class="form-control" type="password" /></div>
-            <div class="col-md-2">
-                <label class="form-label">Rol</label>
-                <select asp-for="Input.Role" class="form-select">
-                    <option value="Cajero">Cajero</option>
-                    <option value="Admin">Administrador</option>
-                </select>
-            </div>
-
-            <div class="col-12">
-                <strong class="d-block mb-2">Módulos</strong>
-                <div class="row g-2">
-                    @foreach (var module in ModuleCatalog.Labels)
-                    {
-                        <div class="col-md-3 col-sm-6">
-                            <label class="form-check-label d-flex align-items-center gap-2 border rounded p-2">
-                                <input class="form-check-input" type="checkbox" name="mod_@module.Key" checked />
-                                <span>@module.Value</span>
-                            </label>
-                        </div>
-                    }
-                </div>
+            <div class="col-md-3">
+                <label class="form-label">Perfil</label>
+                <select asp-for="Input.ProfileId" asp-items="Model.Profiles" class="form-select"></select>
             </div>
 
             <div class="col-12">
@@ -50,7 +31,7 @@
                 </div>
             </div>
 
-            <div class="col-12"><button class="btn btn-primary">Crear usuario</button></div>
+            <div class="col-12"><button class="btn btn-save">Crear usuario</button></div>
         </form>
     </div>
 </section>
@@ -59,22 +40,75 @@
     <div class="panel-header"><h5 class="mb-0">Usuarios creados</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estatus</th><th></th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Usuario</th><th>Perfil</th><th>Estatus</th><th></th></tr></thead>
             <tbody>
             @foreach (var u in Model.Users)
             {
+                var branchSet = Model.UserBranchMap.ContainsKey(u.Id) ? Model.UserBranchMap[u.Id] : new HashSet<int>();
                 <tr>
                     <td>@u.FullName</td>
                     <td>@u.Username</td>
-                    <td><span class="badge-soft badge-info">@u.Role</span></td>
+                    <td><span class="badge-soft badge-info">@(u.PermissionProfile?.Name ?? u.Role)</span></td>
                     <td><span class="badge-soft @(u.IsActive ? "badge-ok" : "badge-danger")">@(u.IsActive ? "Activo" : "Inactivo")</span></td>
-                    <td>
-                        <form method="post" asp-page-handler="Toggle" class="d-inline">
-                            <input type="hidden" name="id" value="@u.Id" />
-                            <button class="btn btn-sm btn-outline-primary">Cambiar estatus</button>
-                        </form>
+                    <td class="d-flex gap-2">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editUserModal-@u.Id">Editar</button>
+                        @if (!u.Username.Equals("admin", StringComparison.OrdinalIgnoreCase) && u.IsActive)
+                        {
+                            <form method="post" asp-page-handler="Deactivate" class="d-inline">
+                                <input type="hidden" name="id" value="@u.Id" />
+                                <button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar usuario?');">Desactivar</button>
+                            </form>
+                        }
                     </td>
                 </tr>
+
+                <div class="modal fade" id="editUserModal-@u.Id" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar usuario: @u.Username</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" asp-page-handler="Edit">
+                                <input type="hidden" name="id" value="@u.Id" />
+                                <div class="modal-body">
+                                    <div class="row g-2">
+                                        <div class="col-md-5"><label class="form-label">Nombre completo</label><input class="form-control" name="fullName" value="@u.FullName" /></div>
+                                        <div class="col-md-4"><label class="form-label">Perfil</label>
+                                            <select class="form-select" name="profileId">
+                                                @foreach (var p in Model.Profiles)
+                                                {
+                                                    var selected = u.PermissionProfileId.HasValue && u.PermissionProfileId.Value.ToString() == p.Value;
+                                                    <option value="@p.Value" selected="@selected">@p.Text</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3"><label class="form-label">Nueva contraseña</label><input class="form-control" type="password" name="password" placeholder="Opcional" /></div>
+
+                                        <div class="col-12"><strong class="d-block mb-1">Sucursales visibles</strong></div>
+                                        @foreach (var b in Model.Branches)
+                                        {
+                                            var checkedBranch = branchSet.Contains(b.Id);
+                                            <div class="col-md-4">
+                                                <label class="form-check-label d-flex align-items-center gap-2 border rounded p-2">
+                                                    <input class="form-check-input" type="checkbox" name="ebr_@b.Id" checked="@checkedBranch" />
+                                                    <span>@b.Name</span>
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                                    <button class="btn btn-save">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             }
             </tbody>
         </table>

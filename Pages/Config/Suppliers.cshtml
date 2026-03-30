@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model HN_Nexus.WebPOS.Pages.Config.SuppliersModel
 @{
     ViewData["Title"] = "Proveedores";
@@ -6,7 +6,7 @@
 
 <section class="panel mb-3">
     <div class="panel-header">
-        <h5 class="mb-0">Alta de Proveedor</h5>
+        <h5 class="mb-0">Alta de proveedor</h5>
     </div>
     <div class="panel-body">
         <form method="post" asp-page-handler="Create" class="row g-2">
@@ -20,7 +20,7 @@
 </section>
 
 <section class="panel">
-    <div class="panel-header"><h5 class="mb-0">Listado de Proveedores</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Listado de proveedores</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
             <thead><tr><th>Proveedor</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Estatus</th><th></th></tr></thead>
@@ -33,13 +33,41 @@
                     <td>@item.Phone</td>
                     <td>@item.Email</td>
                     <td><span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span></td>
-                    <td>
-                        <form method="post" asp-page-handler="Toggle" class="d-inline">
-                            <input type="hidden" name="id" value="@item.Id" />
-                            <button class="btn btn-sm btn-outline-primary">Cambiar</button>
-                        </form>
+                    <td class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#supplierModal-@item.Id">Editar</button>
+                        @if (item.IsActive)
+                        {
+                            <form method="post" asp-page-handler="Deactivate" class="d-inline">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar proveedor?');">Desactivar</button>
+                            </form>
+                        }
                     </td>
                 </tr>
+
+                <div class="modal fade" id="supplierModal-@item.Id" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar proveedor</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" asp-page-handler="Edit">
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <div class="modal-body row g-2">
+                                    <div class="col-12"><label class="form-label">Proveedor</label><input class="form-control" name="name" value="@item.Name" /></div>
+                                    <div class="col-12"><label class="form-label">Contacto</label><input class="form-control" name="contactName" value="@item.ContactName" /></div>
+                                    <div class="col-12"><label class="form-label">Teléfono</label><input class="form-control" name="phone" value="@item.Phone" /></div>
+                                    <div class="col-12"><label class="form-label">Correo</label><input class="form-control" name="email" value="@item.Email" /></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                                    <button class="btn btn-save">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             }
             </tbody>
         </table>

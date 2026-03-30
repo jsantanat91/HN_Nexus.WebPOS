@@ -103,3 +103,4 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         return RedirectToPage(new { branchId });
     }
 }
+

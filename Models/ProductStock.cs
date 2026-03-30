@@ -13,3 +13,4 @@ public class ProductStock
     public int Stock { get; set; }
     public int MinStock { get; set; } = 5;
 }
+

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -126,3 +126,4 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         public decimal Amount { get; set; }
     }
 }
+

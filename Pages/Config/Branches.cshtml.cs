@@ -39,7 +39,7 @@ public class BranchesModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostToggleAsync(int id)
+    public async Task<IActionResult> OnPostEditAsync(int id, string code, string name, string address)
     {
         var branch = await db.Branches.FirstOrDefaultAsync(x => x.Id == id);
         if (branch is null)
@@ -47,9 +47,26 @@ public class BranchesModel(AppDbContext db) : PageModel
             return RedirectToPage();
         }
 
-        branch.IsActive = !branch.IsActive;
+        branch.Code = string.IsNullOrWhiteSpace(code) ? branch.Code : code.Trim().ToUpperInvariant();
+        branch.Name = string.IsNullOrWhiteSpace(name) ? branch.Name : name.Trim();
+        branch.Address = string.IsNullOrWhiteSpace(address) ? branch.Address : address.Trim();
+
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Estatus de sucursal actualizado.";
+        TempData["Flash"] = "Sucursal actualizada.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeactivateAsync(int id)
+    {
+        var branch = await db.Branches.FirstOrDefaultAsync(x => x.Id == id);
+        if (branch is null)
+        {
+            return RedirectToPage();
+        }
+
+        branch.IsActive = false;
+        await db.SaveChangesAsync();
+        TempData["Flash"] = "Sucursal desactivada.";
         return RedirectToPage();
     }
 }

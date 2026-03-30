@@ -1,14 +1,121 @@
 ﻿@page
 @model HN_Nexus.WebPOS.Pages.Config.PermissionsModel
 @{
-    ViewData["Title"] = "Permisos por Módulo y Sucursal";
+    ViewData["Title"] = "Permisos por módulo y sucursal";
 }
+
+<section class="panel mb-3">
+    <div class="panel-header">
+        <div>
+            <h5 class="mb-0">Perfiles de permisos</h5>
+            <small class="text-muted">Administrador y Caja por default, puedes crear más.</small>
+        </div>
+    </div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="CreateProfile" class="row g-2 mb-3">
+            <div class="col-md-4"><label class="form-label">Nombre de perfil</label><input asp-for="ProfileName" class="form-control" placeholder="Ej. Supervisor" /></div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" asp-for="ProfileIsAdmin" />
+                    <label class="form-check-label" asp-for="ProfileIsAdmin">Perfil administrador</label>
+                </div>
+            </div>
+            <div class="col-12">
+                <strong class="d-block mb-2">Módulos del perfil</strong>
+                <div class="row g-2">
+                @foreach (var module in Model.Modules)
+                {
+                    <div class="col-md-3 col-sm-6">
+                        <label class="form-check-label d-flex align-items-center gap-2 border rounded p-2">
+                            <input class="form-check-input" type="checkbox" name="pmod_@module.Key" checked />
+                            <span>@module.Value</span>
+                        </label>
+                    </div>
+                }
+                </div>
+            </div>
+            <div class="col-12"><button class="btn btn-save">Crear perfil</button></div>
+        </form>
+
+        <div class="cards-grid">
+            @foreach (var p in Model.Profiles)
+            {
+                var set = p.ModulePermissions.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).ToHashSet();
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>@p.Name</strong>
+                        <span class="badge-soft @(p.IsAdmin ? "badge-info" : "badge-warn")">@(p.IsAdmin ? "Admin" : "Operativo")</span>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-primary mb-2" type="button" data-bs-toggle="modal" data-bs-target="#profileModal-@p.Id">Editar</button>
+                    @if (!p.IsAdmin)
+                    {
+                        <form method="post" asp-page-handler="DeactivateProfile" class="d-inline">
+                            <input type="hidden" name="profileId" value="@p.Id" />
+                            <button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar perfil?');">Desactivar</button>
+                        </form>
+                    }
+
+                    <div class="mt-2 d-flex flex-wrap gap-1">
+                        @foreach (var module in Model.Modules)
+                        {
+                            if (set.Contains(module.Key))
+                            {
+                                <span class="badge-soft badge-ok">@module.Value</span>
+                            }
+                        }
+                    </div>
+                </article>
+
+                <div class="modal fade" id="profileModal-@p.Id" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar perfil: @p.Name</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" asp-page-handler="UpdateProfile">
+                                <input type="hidden" name="profileId" value="@p.Id" />
+                                <div class="modal-body">
+                                    <div class="row g-2">
+                                        <div class="col-md-5"><label class="form-label">Nombre</label><input class="form-control" name="profileName" value="@p.Name" /></div>
+                                        <div class="col-md-4 d-flex align-items-end">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="profileIsAdmin" checked="@p.IsAdmin" />
+                                                <label class="form-check-label">Perfil administrador</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12"><strong class="d-block mb-2">Módulos</strong></div>
+                                        @foreach (var module in Model.Modules)
+                                        {
+                                            var isChecked = set.Contains(module.Key);
+                                            <div class="col-md-3 col-sm-6">
+                                                <label class="form-check-label d-flex align-items-center gap-2 border rounded p-2">
+                                                    <input class="form-check-input" type="checkbox" name="upmod_@module.Key" checked="@isChecked" />
+                                                    <span>@module.Value</span>
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                                    <button class="btn btn-save">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
 
 <section class="panel">
     <div class="panel-header">
         <div>
-            <h5 class="mb-0">Gestión de Permisos</h5>
-            <small class="text-muted">Módulos + acceso multi-sucursal</small>
+            <h5 class="mb-0">Gestión por usuario</h5>
+            <small class="text-muted">Módulos y sucursales por usuario.</small>
         </div>
     </div>
 
@@ -54,7 +161,7 @@
                     </div>
 
                     <div class="mt-3">
-                        <button class="btn btn-primary btn-sm">Guardar cambios</button>
+                        <button class="btn btn-save btn-sm">Guardar cambios</button>
                     </div>
                 </div>
             </form>

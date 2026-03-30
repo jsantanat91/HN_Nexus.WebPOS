@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -138,7 +138,7 @@ public class IndexModel(AppDbContext db) : PageModel
             created++;
         }
 
-        TempData["Flash"] = $"Importaci�n completada. Productos creados: {created}.";
+        TempData["Flash"] = $"Importación completada. Productos creados: {created}.";
         return RedirectToPage();
     }
 
@@ -176,3 +176,4 @@ public class IndexModel(AppDbContext db) : PageModel
         Items = await query.OrderBy(x => x.ProductNumber).ToListAsync();
     }
 }
+

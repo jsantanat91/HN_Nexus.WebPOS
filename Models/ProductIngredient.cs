@@ -16,3 +16,4 @@ public class ProductIngredient
 
     public decimal Quantity { get; set; }
 }
+

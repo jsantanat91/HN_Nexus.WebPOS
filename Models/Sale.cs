@@ -33,3 +33,4 @@ public class Sale
 
     public List<SaleDetail> Details { get; set; } = new();
 }
+

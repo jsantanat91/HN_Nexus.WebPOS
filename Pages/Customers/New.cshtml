@@ -14,18 +14,28 @@
             <div class="col-md-4"><label asp-for="Item.PhoneNumber" class="form-label">Teléfono</label><input asp-for="Item.PhoneNumber" class="form-control" /></div>
             <div class="col-md-4"><label asp-for="Item.Email" class="form-label">Correo</label><input asp-for="Item.Email" class="form-control" /></div>
             <div class="col-md-4"><label asp-for="Item.Address" class="form-label">Dirección</label><input asp-for="Item.Address" class="form-control" /></div>
-            <div class="col-md-4"><label asp-for="Item.CfdiUse" class="form-label">Uso CFDI</label><input asp-for="Item.CfdiUse" class="form-control text-uppercase" /></div>
-            <div class="col-md-4"><label asp-for="Item.FiscalRegime" class="form-label">Régimen fiscal</label><input asp-for="Item.FiscalRegime" class="form-control" /></div>
+
+            <div class="col-md-4">
+                <label asp-for="Item.CfdiUse" class="form-label">Uso CFDI</label>
+                <select asp-for="Item.CfdiUse" asp-items="Model.UsoCfdiOptions" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Item.FiscalRegime" class="form-label">Régimen fiscal</label>
+                <select asp-for="Item.FiscalRegime" asp-items="Model.RegimenFiscalOptions" class="form-select"></select>
+            </div>
             <div class="col-md-4">
                 <label asp-for="Item.InvoiceType" class="form-label">Tipo de comprobante</label>
-                <select asp-for="Item.InvoiceType" class="form-select">
-                    <option value="I">I - Ingreso</option>
-                    <option value="E">E - Egreso</option>
-                    <option value="P">P - Pago</option>
-                </select>
+                <select asp-for="Item.InvoiceType" asp-items="Model.TipoComprobanteOptions" class="form-select"></select>
             </div>
-            <div class="col-md-4"><label asp-for="Item.PaymentForm" class="form-label">Forma de pago SAT</label><input asp-for="Item.PaymentForm" class="form-control" /></div>
-            <div class="col-md-4"><label asp-for="Item.PaymentMethodSat" class="form-label">Método de pago SAT</label><input asp-for="Item.PaymentMethodSat" class="form-control text-uppercase" /></div>
+            <div class="col-md-4">
+                <label asp-for="Item.PaymentForm" class="form-label">Forma de pago SAT</label>
+                <select asp-for="Item.PaymentForm" asp-items="Model.FormaPagoOptions" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Item.PaymentMethodSat" class="form-label">Método de pago SAT</label>
+                <select asp-for="Item.PaymentMethodSat" asp-items="Model.MetodoPagoOptions" class="form-select"></select>
+            </div>
+
             <div class="col-12">
                 <button class="btn btn-save">Guardar</button>
                 <a class="btn btn-cancel" asp-page="/Customers/Index">Cancelar</a>
@@ -33,3 +43,4 @@
         </form>
     </div>
 </section>
+

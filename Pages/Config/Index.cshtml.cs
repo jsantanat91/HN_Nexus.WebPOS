@@ -49,3 +49,4 @@ public class IndexModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 }
+

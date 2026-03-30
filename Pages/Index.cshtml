@@ -1,4 +1,4 @@
-@page
+ï»¿@page
 @using System.Text.Json
 @model IndexModel
 @{
@@ -34,13 +34,13 @@
             <div class="kpi-title">Utilidad Neta</div>
             <div class="kpi-value @(Model.NetToday >= 0 ? "text-success" : "text-danger")">@Model.NetToday.ToString("C")</div>
             <span class="badge-soft @(Model.NetToday >= 0 ? "badge-ok" : "badge-danger")">
-                @(Model.NetToday >= 0 ? "Rentable" : "Atención a costos")
+                @(Model.NetToday >= 0 ? "Rentable" : "AtenciÃ³n a costos")
             </span>
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
         <div class="kpi-card glass-card kpi-gradient kpi-red">
-            <div class="kpi-title">Stock Crítico</div>
+            <div class="kpi-title">Stock CrÃ­tico</div>
             <div class="kpi-value text-danger">@Model.LowStockProducts</div>
             <span class="badge-soft badge-danger">Productos con bajo inventario</span>
         </div>
@@ -52,7 +52,7 @@
         <section class="panel">
             <div class="panel-header">
                 <div>
-                    <h5 class="mb-0">Ventas y Rentabilidad (7 días)</h5>
+                    <h5 class="mb-0">Ventas y Rentabilidad (7 dÃ­as)</h5>
                     <small class="text-muted">Comparativo ventas vs gastos</small>
                 </div>
             </div>
@@ -65,8 +65,8 @@
         <section class="panel">
             <div class="panel-header">
                 <div>
-                    <h5 class="mb-0">Métodos de Pago</h5>
-                    <small class="text-muted">Distribución semanal</small>
+                    <h5 class="mb-0">MÃ©todos de Pago</h5>
+                    <small class="text-muted">DistribuciÃ³n semanal</small>
                 </div>
             </div>
             <div class="panel-body">
@@ -82,7 +82,7 @@
             <div class="panel-header">
                 <div>
                     <h5 class="mb-0">Ventas Recientes</h5>
-                    <small class="text-muted">Últimas operaciones registradas</small>
+                    <small class="text-muted">Ãšltimas operaciones registradas</small>
                 </div>
                 <a class="btn btn-sm btn-primary" asp-page="/Sales/New" asp-route-branchId="@Model.BranchId">+ Nueva venta</a>
             </div>
@@ -94,7 +94,7 @@
                     <tbody>
                     @if (Model.RecentSales.Count == 0)
                     {
-                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aún.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aÃºn.</td></tr>
                     }
                     else
                     {
@@ -102,7 +102,7 @@
                         {
                             <tr>
                                 <td><span class="badge-soft badge-info">#@sale.Id</span></td>
-                                <td>@(sale.Customer?.FullName ?? "Público General")</td>
+                                <td>@(sale.Customer?.FullName ?? "PÃºblico General")</td>
                                 <td>@sale.Date.ToLocalTime().ToString("dd/MM HH:mm")</td>
                                 <td class="fw-bold">@sale.TotalAmount.ToString("C")</td>
                             </tr>
@@ -119,13 +119,13 @@
             <div class="panel-header">
                 <div>
                     <h5 class="mb-0">Top Productos</h5>
-                    <small class="text-muted">Mayor rotación</small>
+                    <small class="text-muted">Mayor rotaciÃ³n</small>
                 </div>
             </div>
             <div class="panel-body">
                 @if (Model.TopProducts.Count == 0)
                 {
-                    <p class="text-muted mb-0">Aún no hay datos para ranking.</p>
+                    <p class="text-muted mb-0">AÃºn no hay datos para ranking.</p>
                 }
                 else
                 {
@@ -149,7 +149,7 @@
             </div>
             <div class="panel-body p-0">
                 <table class="table table-modern mb-0">
-                    <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th></tr></thead>
+                    <thead><tr><th>Producto</th><th>CategorÃ­a</th><th>Stock</th></tr></thead>
                     <tbody>
                     @if (Model.LowStockList.Count == 0)
                     {
@@ -161,7 +161,9 @@
                         {
                             <tr>
                                 <td>@item.Product?.Name</td>
-                                <td><span class="badge-soft badge-warn">@item.Product?.Category?.Name</span></td>
+                                <td>
+                                    <span class="badge-soft category-pill" data-category="@item.Product?.Category?.Name">@item.Product?.Category?.Name</span>
+                                </td>
                                 <td>
                                     <span class="badge-soft @(item.Stock <= item.MinStock ? "badge-danger" : "badge-warn")">@item.Stock</span>
                                 </td>
@@ -236,3 +238,4 @@
 })();
 </script>
 }
+

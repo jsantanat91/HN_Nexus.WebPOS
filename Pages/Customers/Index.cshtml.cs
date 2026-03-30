@@ -24,3 +24,4 @@ public class IndexModel(AppDbContext db) : PageModel
         Items = await query.OrderBy(x => x.FullName).ToListAsync();
     }
 }
+

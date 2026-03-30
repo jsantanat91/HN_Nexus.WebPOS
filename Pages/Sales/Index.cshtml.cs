@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -58,7 +58,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
         if (branch is null)
         {
-            TempData["Flash"] = "Sucursal no v�lida.";
+            TempData["Flash"] = "Sucursal no válida.";
             return RedirectToPage(new { branchId });
         }
 
@@ -165,3 +165,4 @@ th,td {{ border-bottom: 1px dashed #999; text-align: left; padding: 4px; font-si
 </html>";
     }
 }
+

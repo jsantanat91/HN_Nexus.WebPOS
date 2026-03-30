@@ -1,4 +1,4 @@
-@page
+Ôªø@page
 @model HN_Nexus.WebPOS.Pages.Sales.NewModel
 @{
     ViewData["Title"] = "Caja";
@@ -14,7 +14,7 @@
                 </div>
                 <div class="col-md-3"><button class="btn btn-primary w-100">Cambiar sucursal</button></div>
                 <div class="col-md-5">
-                    <label class="form-label">Esc·ner cÛdigo de barras</label>
+                    <label class="form-label">Esc√°ner c√≥digo de barras</label>
                     <input id="barcodeInput" class="form-control" placeholder="Escanea y Enter..." autocomplete="off" />
                 </div>
             </div>
@@ -23,10 +23,10 @@
     <div class="col-lg-4">
         <div class="panel">
             <div class="panel-body">
-                <div class="d-flex justify-content-between align-items-center mb-2"><strong>Accesos r·pidos</strong></div>
+                <div class="d-flex justify-content-between align-items-center mb-2"><strong>Accesos r√°pidos</strong></div>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#quickProductModal">+ Producto r·pido</button>
-                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#quickCustomerModal">+ Cliente r·pido</button>
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#quickProductModal">+ Producto r√°pido</button>
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#quickCustomerModal">+ Cliente r√°pido</button>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Nuevo producto r·pido</h5>
+                <h5 class="modal-title">Nuevo producto r√°pido</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="QuickProduct">
@@ -45,7 +45,7 @@
                 <div class="modal-body">
                     <div class="row g-2">
                         <div class="col-md-6"><label class="form-label">Nombre</label><input asp-for="QuickProductName" class="form-control" placeholder="Nombre" /></div>
-                        <div class="col-md-3"><label class="form-label">CÛdigo</label><input asp-for="QuickProductCode" class="form-control" placeholder="CÛdigo" /></div>
+                        <div class="col-md-3"><label class="form-label">C√≥digo</label><input asp-for="QuickProductCode" class="form-control" placeholder="C√≥digo" /></div>
                         <div class="col-md-3"><label class="form-label">Precio</label><input asp-for="QuickProductPrice" type="number" step="0.01" class="form-control" placeholder="Precio" /></div>
                         <div class="col-md-3"><label class="form-label">Stock</label><input asp-for="QuickProductStock" type="number" class="form-control" placeholder="Stock" /></div>
                     </div>
@@ -63,7 +63,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Nuevo cliente r·pido</h5>
+                <h5 class="modal-title">Nuevo cliente r√°pido</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-page-handler="QuickCustomer">
@@ -89,7 +89,7 @@
     <section class="panel">
         <div class="panel-header">
             <div>
-                <h5 class="mb-0">Caja din·mica</h5>
+                <h5 class="mb-0">Caja din√°mica</h5>
                 <small class="text-muted">Atajos: F2 buscar, + suma, - resta, F4 cobrar</small>
             </div>
             <div class="d-flex gap-2 align-items-center">
@@ -104,11 +104,11 @@
                 <div class="col-md-6">
                     <label class="form-label">Cliente</label>
                     <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select">
-                        <option value="">P˙blico general</option>
+                        <option value="">P√∫blico general</option>
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">MÈtodo de pago</label>
+                    <label class="form-label">M√©todo de pago</label>
                     <select asp-for="PaymentMethod" class="form-select" id="paymentMethod">
                         <option value="Cash">Efectivo</option>
                         <option value="Card">Tarjeta</option>
@@ -137,8 +137,8 @@
                     </div>
                 </div>
                 <div class="col-md-4" id="authCodeWrap" style="display:none;">
-                    <label class="form-label">No. autorizaciÛn tarjeta</label>
-                    <input asp-for="AuthorizationCode" id="authorizationCode" class="form-control" placeholder="N˙mero de autorizaciÛn" />
+                    <label class="form-label">No. autorizaci√≥n tarjeta</label>
+                    <input asp-for="AuthorizationCode" id="authorizationCode" class="form-control" placeholder="N√∫mero de autorizaci√≥n" />
                 </div>
             </div>
 
@@ -161,7 +161,7 @@
                             </div>
                         </div>
                         <div class="mt-2">
-                            <label class="form-label small mb-1">Desc. lÌnea (%)</label>
+                            <label class="form-label small mb-1">Desc. l√≠nea (%)</label>
                             <input type="number" min="0" max="100" step="0.01" class="form-control form-control-sm line-discount-input" name="disc_@item.ProductId" value="0" data-product-id="@item.ProductId" />
                         </div>
                     </article>
@@ -195,7 +195,7 @@
                 <button class="btn btn-primary btn-lg" type="submit" id="btnCharge">Terminar venta (F4)</button>
                 <a class="btn btn-outline-primary" asp-page="/Sales/Index" asp-route-branchId="@Model.BranchId">Ver historial</a>
             </div>
-            <small class="text-muted d-block mt-2">ImpresiÛn: al terminar podr·s usar ticket HTML con Ctrl+P para impresora tÈrmica.</small>
+            <small class="text-muted d-block mt-2">Impresi√≥n: al terminar podr√°s usar ticket HTML con Ctrl+P para impresora t√©rmica.</small>
         </div>
     </section>
 </form>
@@ -220,22 +220,9 @@
 @section Scripts {
 <script>
 (() => {
-  document.querySelectorAll('.category-pill').forEach((pill) => {
-    const key = (pill.dataset.category || '').trim();
-    const palette = [
-      ['#dbeafe', '#1d4ed8', '#93c5fd'],
-      ['#dcfce7', '#166534', '#86efac'],
-      ['#fef3c7', '#92400e', '#fcd34d'],
-      ['#fee2e2', '#991b1b', '#fca5a5'],
-      ['#e0f2fe', '#0e7490', '#7dd3fc'],
-      ['#ede9fe', '#5b21b6', '#c4b5fd']
-    ];
-    const idx = key.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % palette.length;
-    const [bg, fg, bd] = palette[idx];
-    pill.style.backgroundColor = bg;
-    pill.style.color = fg;
-    pill.style.borderColor = bd;
-  });
+  if (typeof window.paintCategoryPills === 'function') {
+    window.paintCategoryPills();
+  }
 
   const payment = document.getElementById('paymentMethod');
   const wrap = document.getElementById('authCodeWrap');
@@ -258,3 +245,4 @@
 })();
 </script>
 }
+

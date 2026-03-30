@@ -24,3 +24,4 @@ public class Product
     public string SatProductCode { get; set; } = "01010101";
     public string SatUnitCode { get; set; } = "H87";
 }
+

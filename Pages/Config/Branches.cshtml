@@ -5,19 +5,19 @@
 }
 
 <section class="panel mb-3">
-    <div class="panel-header"><h5 class="mb-0">Nueva Sucursal</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Nueva sucursal</h5></div>
     <div class="panel-body">
         <form method="post" asp-page-handler="Create" class="row g-2">
             <div class="col-md-2"><input asp-for="NewBranch.Code" class="form-control" placeholder="Código" /></div>
             <div class="col-md-4"><input asp-for="NewBranch.Name" class="form-control" placeholder="Nombre" /></div>
             <div class="col-md-4"><input asp-for="NewBranch.Address" class="form-control" placeholder="Dirección" /></div>
-            <div class="col-md-2"><button class="btn btn-primary w-100">Guardar</button></div>
+            <div class="col-md-2"><button class="btn btn-save w-100">Guardar</button></div>
         </form>
     </div>
 </section>
 
 <section class="panel">
-    <div class="panel-header"><h5 class="mb-0">Listado de Sucursales</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Listado de sucursales</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
             <thead><tr><th>Código</th><th>Nombre</th><th>Dirección</th><th>Estatus</th><th></th></tr></thead>
@@ -29,13 +29,40 @@
                     <td class="fw-semibold">@b.Name</td>
                     <td>@b.Address</td>
                     <td><span class="badge-soft @(b.IsActive ? "badge-ok" : "badge-danger")">@(b.IsActive ? "Activa" : "Inactiva")</span></td>
-                    <td>
-                        <form method="post" asp-page-handler="Toggle" class="d-inline">
-                            <input type="hidden" name="id" value="@b.Id" />
-                            <button class="btn btn-sm btn-outline-primary">Cambiar</button>
-                        </form>
+                    <td class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#branchModal-@b.Id">Editar</button>
+                        @if (b.IsActive)
+                        {
+                            <form method="post" asp-page-handler="Deactivate" class="d-inline">
+                                <input type="hidden" name="id" value="@b.Id" />
+                                <button class="btn btn-sm btn-cancel" onclick="return confirm('¿Desactivar sucursal?');">Desactivar</button>
+                            </form>
+                        }
                     </td>
                 </tr>
+
+                <div class="modal fade" id="branchModal-@b.Id" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar sucursal</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="post" asp-page-handler="Edit">
+                                <input type="hidden" name="id" value="@b.Id" />
+                                <div class="modal-body row g-2">
+                                    <div class="col-12"><label class="form-label">Código</label><input class="form-control" name="code" value="@b.Code" /></div>
+                                    <div class="col-12"><label class="form-label">Nombre</label><input class="form-control" name="name" value="@b.Name" /></div>
+                                    <div class="col-12"><label class="form-label">Dirección</label><input class="form-control" name="address" value="@b.Address" /></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+                                    <button class="btn btn-save">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             }
             </tbody>
         </table>

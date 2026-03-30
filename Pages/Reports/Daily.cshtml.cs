@@ -47,6 +47,15 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
         var branchList = await userContext.GetAccessibleBranchesAsync(User);
         Branches = branchList.Select(b => new SelectListItem($"{b.Code} - {b.Name}", b.Id.ToString())).ToList();
 
+        Config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
+
+        if (Branches.Count == 0)
+        {
+            Sales = [];
+            BranchId = 0;
+            return;
+        }
+
         if (BranchId <= 0 && Branches.Count > 0)
         {
             BranchId = int.Parse(Branches[0].Value!);
@@ -61,7 +70,6 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
             .Where(x => x.BranchId == BranchId && x.Date >= start && x.Date < end)
             .OrderByDescending(x => x.Date)
             .ToListAsync();
-
-        Config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
     }
 }
+

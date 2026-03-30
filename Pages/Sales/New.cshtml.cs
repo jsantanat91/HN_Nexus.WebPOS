@@ -1,4 +1,4 @@
-using System.Globalization;
+ï»¿using System.Globalization;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -78,13 +78,13 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         await LoadAsync();
         if (BranchId <= 0)
         {
-            TempData["Flash"] = "Selecciona sucursal para crear producto rápido.";
+            TempData["Flash"] = "Selecciona sucursal para crear producto rÃ¡pido.";
             return RedirectToPage(new { branchId = BranchId });
         }
 
         if (string.IsNullOrWhiteSpace(QuickProductName) || QuickProductPrice <= 0)
         {
-            TempData["Flash"] = "Completa nombre y precio del producto rápido.";
+            TempData["Flash"] = "Completa nombre y precio del producto rÃ¡pido.";
             return RedirectToPage(new { branchId = BranchId });
         }
 
@@ -126,7 +126,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Producto rápido agregado.";
+        TempData["Flash"] = "Producto rÃ¡pido agregado.";
         return RedirectToPage(new { branchId = BranchId });
     }
 
@@ -158,7 +158,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Cliente rápido agregado.";
+        TempData["Flash"] = "Cliente rÃ¡pido agregado.";
         return RedirectToPage(new { branchId = BranchId });
     }
 
@@ -246,7 +246,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         if (normalizedPayment.Equals("Card", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(AuthorizationCode))
         {
-            ModelState.AddModelError(string.Empty, "Captura el número de autorización del ticket de tarjeta.");
+            ModelState.AddModelError(string.Empty, "Captura el nÃºmero de autorizaciÃ³n del ticket de tarjeta.");
             return Page();
         }
 
@@ -309,13 +309,37 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             BranchId = int.Parse(Branches[0].Value!);
         }
 
-        var products = await db.ProductStocks
+        var branchStocks = await db.ProductStocks
             .Include(ps => ps.Product)!.ThenInclude(p => p!.Category)
             .Where(ps => ps.BranchId == BranchId)
             .OrderBy(ps => ps.Product!.Name)
             .ToListAsync();
 
-        Products = products.Select(ps => new ProductPosItem
+        if (branchStocks.Count == 0)
+        {
+            var baseProducts = await db.Products.Include(p => p.Category).OrderBy(p => p.Name).ToListAsync();
+            if (baseProducts.Count > 0)
+            {
+                var newStocks = baseProducts.Select(p => new ProductStock
+                {
+                    ProductId = p.Id,
+                    BranchId = BranchId,
+                    Stock = p.Stock,
+                    MinStock = 5
+                }).ToList();
+
+                db.ProductStocks.AddRange(newStocks);
+                await db.SaveChangesAsync();
+
+                branchStocks = await db.ProductStocks
+                    .Include(ps => ps.Product)!.ThenInclude(p => p!.Category)
+                    .Where(ps => ps.BranchId == BranchId)
+                    .OrderBy(ps => ps.Product!.Name)
+                    .ToListAsync();
+            }
+        }
+
+        Products = branchStocks.Select(ps => new ProductPosItem
         {
             ProductId = ps.ProductId,
             Name = ps.Product?.Name ?? string.Empty,
@@ -345,3 +369,5 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         public int Stock { get; set; }
     }
 }
+
+

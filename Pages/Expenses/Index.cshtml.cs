@@ -19,7 +19,7 @@ public class IndexModel(AppDbContext db) : PageModel
     {
         if (string.IsNullOrWhiteSpace(description) || amount <= 0)
         {
-            TempData["Flash"] = "Captura descripcion y monto valido.";
+            TempData["Flash"] = "Captura descripción y monto válido.";
             return RedirectToPage();
         }
 
@@ -36,3 +36,4 @@ public class IndexModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 }
+

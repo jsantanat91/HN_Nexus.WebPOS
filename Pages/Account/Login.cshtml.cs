@@ -65,3 +65,4 @@ public class LoginModel(AppDbContext db) : PageModel
         return RedirectToPage("/Index");
     }
 }
+

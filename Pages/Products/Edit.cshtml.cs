@@ -1,4 +1,4 @@
-using HN_Nexus.WebPOS.Data;
+﻿using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -63,3 +63,4 @@ public class EditModel(AppDbContext db) : PageModel
             .ToListAsync();
     }
 }
+

@@ -6,6 +6,7 @@ namespace HN_Nexus.WebPOS.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<PermissionProfile> PermissionProfiles => Set<PermissionProfile>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductStock> ProductStocks => Set<ProductStock>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
@@ -55,6 +56,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new Category { Id = 2, Name = "Textil" },
             new Category { Id = 3, Name = "Cerámica" },
             new Category { Id = 4, Name = "Tecnología" }
+        );
+
+        modelBuilder.Entity<PermissionProfile>().HasData(
+            new PermissionProfile
+            {
+                Id = 1,
+                Name = "Administrador",
+                IsAdmin = true,
+                IsActive = true,
+                ModulePermissions = string.Join(',', ModuleCatalog.All)
+            },
+            new PermissionProfile
+            {
+                Id = 2,
+                Name = "Caja",
+                IsAdmin = false,
+                IsActive = true,
+                ModulePermissions = string.Join(',', new[]
+                {
+                    ModuleCatalog.Dashboard,
+                    ModuleCatalog.Sales,
+                    ModuleCatalog.Customers,
+                    ModuleCatalog.CashCuts,
+                    ModuleCatalog.CashShifts
+                })
+            }
         );
 
         modelBuilder.Entity<Branch>().HasData(new Branch

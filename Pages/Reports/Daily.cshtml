@@ -24,6 +24,16 @@
     </div>
 </section>
 
+@if (Model.Branches.Count == 0)
+{
+    <section class="panel">
+        <div class="panel-body">
+            <p class="mb-0">No tienes sucursales asignadas para consultar reportes.</p>
+        </div>
+    </section>
+    return;
+}
+
 <section class="panel" id="dailySummaryTicket">
     <div class="panel-header"><h5 class="mb-0">Resumen imprimible</h5></div>
     <div class="panel-body">
@@ -51,3 +61,4 @@
         </table>
     </div>
 </section>
+

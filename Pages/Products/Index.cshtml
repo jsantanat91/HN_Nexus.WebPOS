@@ -1,4 +1,4 @@
-@page
+ï»¿@page
 @model HN_Nexus.WebPOS.Pages.Products.IndexModel
 @{
     ViewData["Title"] = "Inventario de Productos";
@@ -8,10 +8,10 @@
     <div class="panel-header">
         <div>
             <h5 class="mb-0">Inventario</h5>
-            <small class="text-muted">Catálogo principal de productos</small>
+            <small class="text-muted">CatÃ¡logo principal de productos</small>
         </div>
         <div class="d-flex gap-2">
-            <a class="btn btn-outline-primary" asp-page="/Config/Categories">Categorías</a>
+            <a class="btn btn-outline-primary" asp-page="/Config/Categories">CategorÃ­as</a>
             <button class="btn btn-save" type="button" data-bs-toggle="modal" data-bs-target="#importProductsModal">Importar Excel</button>
             <a class="btn btn-primary" asp-page="/Products/New">+ Nuevo producto</a>
         </div>
@@ -19,45 +19,42 @@
 
     <div class="panel-body">
         <form method="get" class="row g-2 mb-3">
-            <div class="col-md-4"><input class="form-control" name="q" value="@Model.Q" placeholder="Buscar por nombre o código" /></div>
+            <div class="col-md-4"><input class="form-control" name="q" value="@Model.Q" placeholder="Buscar por nombre o cÃ³digo" /></div>
             <div class="col-auto"><button class="btn btn-outline-primary">Buscar</button></div>
         </form>
-    </div>
 
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>ID</th><th>Producto</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>IVA</th><th></th></tr></thead>
-            <tbody>
+        <div class="cards-grid">
             @foreach (var item in Model.Items)
             {
-                <tr>
-                    <td><span class="badge-soft badge-info">PROD-@item.ProductNumber.ToString("D6")</span></td>
-                    <td class="fw-semibold">@item.Name</td>
-                    <td>@item.Barcode</td>
-                    <td><span class="badge-soft badge-warn">@item.Category?.Name</span></td>
-                    <td><span class="badge-soft @(item.Stock <= 5 ? "badge-danger" : "badge-ok")">@item.Stock</span></td>
-                    <td class="fw-bold">@item.Price.ToString("C")</td>
-                    <td><span class="badge-soft @(item.PriceIncludesTax ? "badge-ok" : "badge-info")">@(item.PriceIncludesTax ? "Incluido" : "Separado")</span></td>
-                    <td>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-primary btn-edit-product"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editProductModal"
-                                data-id="@item.Id"
-                                data-name="@item.Name"
-                                data-barcode="@item.Barcode"
-                                data-price="@item.Price"
-                                data-cost="@item.Cost"
-                                data-stock="@item.Stock"
-                                data-category-id="@item.CategoryId"
-                                data-price-includes-tax="@item.PriceIncludesTax">
-                            Editar
-                        </button>
-                    </td>
-                </tr>
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">PROD-@item.ProductNumber.ToString("D6")</span>
+                        <span class="badge-soft @(item.Stock <= 5 ? "badge-danger" : "badge-ok")">Stock @item.Stock</span>
+                    </div>
+                    <h6 class="mb-1">@item.Name</h6>
+                    <div class="product-meta mb-2">CÃ³digo: @item.Barcode</div>
+                    <div class="d-flex gap-2 mb-2">
+                        <span class="badge-soft category-pill" data-category="@item.Category?.Name">@item.Category?.Name</span>
+                        <span class="badge-soft @(item.PriceIncludesTax ? "badge-ok" : "badge-info")">IVA @(item.PriceIncludesTax ? "incluido" : "separado")</span>
+                    </div>
+                    <div class="fw-bold fs-5 mb-2">@item.Price.ToString("C")</div>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary btn-edit-product"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editProductModal"
+                            data-id="@item.Id"
+                            data-name="@item.Name"
+                            data-barcode="@item.Barcode"
+                            data-price="@item.Price"
+                            data-cost="@item.Cost"
+                            data-stock="@item.Stock"
+                            data-category-id="@item.CategoryId"
+                            data-price-includes-tax="@item.PriceIncludesTax">
+                        Editar
+                    </button>
+                </article>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>
 
@@ -70,7 +67,7 @@
             </div>
             <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
                 <div class="modal-body">
-                    <p class="small text-muted">Descarga la plantilla CSV, llénala en Excel y súbela aquí.</p>
+                    <p class="small text-muted">Descarga la plantilla CSV, llÃ©nala en Excel y sÃºbela aquÃ­.</p>
                     <a class="btn btn-outline-primary btn-sm mb-3" asp-page="/Products/Index" asp-page-handler="Template">Descargar plantilla</a>
                     <input type="file" class="form-control" name="file" accept=".csv" required />
                 </div>
@@ -95,8 +92,8 @@
                     <input type="hidden" asp-for="EditId" id="editId" />
                     <div class="row g-2">
                         <div class="col-md-6"><label class="form-label">Nombre</label><input asp-for="EditName" id="editName" class="form-control" /></div>
-                        <div class="col-md-3"><label class="form-label">Código</label><input asp-for="EditBarcode" id="editBarcode" class="form-control" /></div>
-                        <div class="col-md-3"><label class="form-label">Categoría</label><select asp-for="EditCategoryId" id="editCategoryId" class="form-select">
+                        <div class="col-md-3"><label class="form-label">CÃ³digo</label><input asp-for="EditBarcode" id="editBarcode" class="form-control" /></div>
+                        <div class="col-md-3"><label class="form-label">CategorÃ­a</label><select asp-for="EditCategoryId" id="editCategoryId" class="form-select">
                             @foreach (var cat in Model.Categories)
                             {
                                 <option value="@cat.Id">@cat.Name</option>

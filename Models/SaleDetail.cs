@@ -19,3 +19,4 @@ public class SaleDetail
     public decimal LineSubtotal => Quantity * UnitPrice;
     public decimal Total => LineSubtotal - DiscountAmount;
 }
+

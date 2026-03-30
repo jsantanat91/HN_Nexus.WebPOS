@@ -16,3 +16,4 @@ public class SupplierOrder
     public string Status { get; set; } = "Pendiente";
     public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 }
+

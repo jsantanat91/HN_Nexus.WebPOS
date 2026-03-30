@@ -77,3 +77,4 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         SuggestedTransferTotal = await sales.Where(x => x.PaymentMethod == "Transfer").SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
     }
 }
+

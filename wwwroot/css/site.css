@@ -84,6 +84,29 @@ body {
   border: 1px solid transparent;
 }
 
+.config-menu {
+  margin-bottom: .35rem;
+}
+
+.config-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.config-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.config-submenu {
+  margin-left: .35rem;
+  border-left: 1px dashed rgba(255, 255, 255, 0.25);
+  padding-left: .45rem;
+}
+
+.sub-link {
+  font-size: .93rem;
+}
+
 .nav-menu .nav-link:hover,
 .nav-menu .nav-link.active,
 .nav-menu .nav-link:focus {
@@ -292,6 +315,12 @@ body {
   padding-right: .2rem;
 }
 
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: .85rem;
+}
+
 .product-card {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -439,6 +468,21 @@ body {
   background: #f8f4cf;
 }
 
+.login-badges {
+  display: flex;
+  justify-content: space-between;
+  gap: .6rem;
+}
+
+.login-badge {
+  border: 1px solid rgba(125, 211, 252, 0.5);
+  border-radius: 999px;
+  padding: .25rem .65rem;
+  color: #dbeafe;
+  font-size: .8rem;
+  background: rgba(30, 64, 175, 0.24);
+}
+
 .kpi-gradient {
   border-width: 1px;
 }
@@ -517,3 +561,4 @@ body {
     padding-left: 0;
   }
 }
+

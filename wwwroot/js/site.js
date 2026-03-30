@@ -29,6 +29,31 @@
     active.classList.add("active");
   }
 
+  window.paintCategoryPills = function () {
+    const palette = [
+      ["#dbeafe", "#1d4ed8", "#93c5fd"],
+      ["#dcfce7", "#166534", "#86efac"],
+      ["#fef3c7", "#92400e", "#fcd34d"],
+      ["#fee2e2", "#991b1b", "#fca5a5"],
+      ["#e0f2fe", "#0e7490", "#7dd3fc"],
+      ["#ede9fe", "#5b21b6", "#c4b5fd"],
+      ["#fce7f3", "#9d174d", "#f9a8d4"],
+      ["#ecfccb", "#3f6212", "#bef264"],
+      ["#ffedd5", "#9a3412", "#fdba74"]
+    ];
+
+    document.querySelectorAll(".category-pill").forEach((pill) => {
+      const key = (pill.getAttribute("data-category") || pill.textContent || "").trim().toLowerCase();
+      const hash = key.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      const [bg, fg, bd] = palette[hash % palette.length];
+      pill.style.backgroundColor = bg;
+      pill.style.color = fg;
+      pill.style.borderColor = bd;
+    });
+  };
+
+  window.paintCategoryPills();
+
   const posForm = document.getElementById("posForm");
   if (!posForm) {
     return;
@@ -249,3 +274,4 @@
   attachSearchAndHotkeys();
   refreshPosSummary();
 })();
+

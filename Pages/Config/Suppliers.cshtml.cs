@@ -1,4 +1,4 @@
-using HN_Nexus.WebPOS.Data;
+﻿using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,7 +43,7 @@ public class SuppliersModel(AppDbContext db) : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostToggleAsync(int id)
+    public async Task<IActionResult> OnPostEditAsync(int id, string name, string contactName, string phone, string email)
     {
         var supplier = await db.Suppliers.FirstOrDefaultAsync(s => s.Id == id);
         if (supplier is null)
@@ -51,9 +51,27 @@ public class SuppliersModel(AppDbContext db) : PageModel
             return RedirectToPage();
         }
 
-        supplier.IsActive = !supplier.IsActive;
+        supplier.Name = string.IsNullOrWhiteSpace(name) ? supplier.Name : name.Trim();
+        supplier.ContactName = contactName?.Trim() ?? string.Empty;
+        supplier.Phone = phone?.Trim() ?? string.Empty;
+        supplier.Email = email?.Trim() ?? string.Empty;
+
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Estatus de proveedor actualizado.";
+        TempData["Flash"] = "Proveedor actualizado.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeactivateAsync(int id)
+    {
+        var supplier = await db.Suppliers.FirstOrDefaultAsync(s => s.Id == id);
+        if (supplier is null)
+        {
+            return RedirectToPage();
+        }
+
+        supplier.IsActive = false;
+        await db.SaveChangesAsync();
+        TempData["Flash"] = "Proveedor desactivado.";
         return RedirectToPage();
     }
 

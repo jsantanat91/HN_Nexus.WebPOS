@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model HN_Nexus.WebPOS.Pages.Config.CategoriesModel
 @{
     ViewData["Title"] = "Categorías";
@@ -6,7 +6,7 @@
 
 <section class="panel mb-3">
     <div class="panel-header">
-        <h5 class="mb-0">Nueva Categoría</h5>
+        <h5 class="mb-0">Nueva categoría</h5>
     </div>
     <div class="panel-body">
         <form method="post" asp-page-handler="Create" class="row g-2">
@@ -23,7 +23,7 @@
 
 <section class="panel">
     <div class="panel-header">
-        <h5 class="mb-0">Listado de Categorías</h5>
+        <h5 class="mb-0">Listado de categorías</h5>
     </div>
     <div class="panel-body">
         <div class="d-flex flex-wrap gap-2">
@@ -32,6 +32,7 @@
                 <form method="post" asp-page-handler="Rename" class="d-flex gap-2 align-items-center category-chip-form">
                     <input type="hidden" name="id" value="@item.Id" />
                     <span class="badge-soft badge-info">#@item.Id</span>
+                    <span class="badge-soft category-pill" data-category="@item.Name">@item.Name</span>
                     <input type="text" name="name" value="@item.Name" class="form-control form-control-sm" style="max-width:220px;" />
                     <button class="btn btn-sm btn-save" type="submit">Guardar</button>
                     <button class="btn btn-sm btn-cancel" type="submit" formaction="?handler=Delete" onclick="return confirm('¿Eliminar categoría?');">Eliminar</button>

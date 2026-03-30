@@ -20,3 +20,4 @@ public class CashShift
 
     public string Status { get; set; } = "Open";
 }
+

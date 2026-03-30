@@ -1,4 +1,4 @@
-using HN_Nexus.WebPOS.Data;
+ï»¿using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -22,7 +22,7 @@ public class IndexModel(AppDbContext db) : PageModel
     {
         if (supplierId <= 0 || productId <= 0 || quantity <= 0)
         {
-            TempData["Flash"] = "Captura datos válidos para el pedido.";
+            TempData["Flash"] = "Captura datos vÃ¡lidos para el pedido.";
             return RedirectToPage();
         }
 
@@ -31,7 +31,7 @@ public class IndexModel(AppDbContext db) : PageModel
 
         if (supplier is null || product is null)
         {
-            TempData["Flash"] = "Proveedor o producto inválido.";
+            TempData["Flash"] = "Proveedor o producto invÃ¡lido.";
             return RedirectToPage();
         }
 
@@ -102,3 +102,4 @@ public class IndexModel(AppDbContext db) : PageModel
             .ToListAsync();
     }
 }
+
