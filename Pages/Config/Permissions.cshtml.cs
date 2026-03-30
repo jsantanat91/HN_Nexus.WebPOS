@@ -12,9 +12,12 @@ public class PermissionsModel(AppDbContext db) : PageModel
 {
     public List<UserPermissionRow> Users { get; private set; } = new();
     public Dictionary<string, string> Modules { get; } = ModuleCatalog.Labels;
+    public List<Branch> Branches { get; private set; } = new();
 
     public async Task OnGetAsync()
     {
+        Branches = await db.Branches.Where(b => b.IsActive).OrderBy(x => x.Name).ToListAsync();
+
         Users = await db.Users
             .OrderBy(u => u.FullName)
             .Select(u => new UserPermissionRow
@@ -27,6 +30,12 @@ public class PermissionsModel(AppDbContext db) : PageModel
                 Permissions = u.ModulePermissions
             })
             .ToListAsync();
+
+        var access = await db.UserBranchAccesses.ToListAsync();
+        foreach (var user in Users)
+        {
+            user.BranchSet = access.Where(a => a.UserId == user.Id).Select(a => a.BranchId).ToHashSet();
+        }
     }
 
     public async Task<IActionResult> OnPostSaveAsync(int userId)
@@ -37,22 +46,45 @@ public class PermissionsModel(AppDbContext db) : PageModel
             return RedirectToPage();
         }
 
-        if (user.Role == "Admin")
-        {
-            user.ModulePermissions = string.Join(',', ModuleCatalog.All);
-            await db.SaveChangesAsync();
-            TempData["Flash"] = "Usuario administrador conserva acceso completo.";
-            return RedirectToPage();
-        }
-
-        var selected = ModuleCatalog.All
+        var selectedModules = ModuleCatalog.All
             .Where(m => Request.Form[$"perm_{m}"].Count > 0)
             .ToList();
 
-        user.ModulePermissions = string.Join(',', selected);
-        await db.SaveChangesAsync();
+        if (user.Role == "Admin")
+        {
+            user.ModulePermissions = string.Join(',', ModuleCatalog.All);
+        }
+        else
+        {
+            user.ModulePermissions = string.Join(',', selectedModules);
+        }
 
-        TempData["Flash"] = $"Permisos actualizados para {user.FullName}.";
+        var selectedBranches = await db.Branches
+            .Where(b => b.IsActive)
+            .Select(b => b.Id)
+            .Where(id => Request.Form[$"branch_{id}"].Count > 0)
+            .ToListAsync();
+
+        if (selectedBranches.Count == 0)
+        {
+            var defaultBranch = await db.Branches.Where(b => b.IsActive).OrderBy(b => b.Id).FirstOrDefaultAsync();
+            if (defaultBranch is not null)
+            {
+                selectedBranches.Add(defaultBranch.Id);
+            }
+        }
+
+        var current = await db.UserBranchAccesses.Where(x => x.UserId == userId).ToListAsync();
+        db.UserBranchAccesses.RemoveRange(current.Where(c => !selectedBranches.Contains(c.BranchId)));
+
+        var currentBranchIds = current.Select(c => c.BranchId).ToHashSet();
+        foreach (var branchId in selectedBranches.Where(id => !currentBranchIds.Contains(id)))
+        {
+            db.UserBranchAccesses.Add(new UserBranchAccess { UserId = userId, BranchId = branchId });
+        }
+
+        await db.SaveChangesAsync();
+        TempData["Flash"] = $"Permisos y sucursales actualizados para {user.FullName}.";
         return RedirectToPage();
     }
 
@@ -64,6 +96,7 @@ public class PermissionsModel(AppDbContext db) : PageModel
         public string Role { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public string Permissions { get; set; } = string.Empty;
+        public HashSet<int> BranchSet { get; set; } = [];
 
         public HashSet<string> PermissionSet => Permissions
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

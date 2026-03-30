@@ -3,9 +3,16 @@
 public class SupplierOrder
 {
     public int Id { get; set; }
-    public string ProviderName { get; set; } = string.Empty;
-    public string ProductName { get; set; } = string.Empty;
+
+    public int SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
+
+    public int ProductId { get; set; }
+    public Product? Product { get; set; }
+
     public int Quantity { get; set; }
+    public decimal UnitCost { get; set; }
+
     public string Status { get; set; } = "Pendiente";
     public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 }

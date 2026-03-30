@@ -8,13 +8,26 @@
     });
   }
 
-  const path = window.location.pathname.toLowerCase();
-  document.querySelectorAll(".nav-menu .nav-link").forEach((link) => {
-    const href = (link.getAttribute("href") || "").toLowerCase();
-    if (href && path.startsWith(href)) {
-      link.classList.add("active");
-    }
+  const path = window.location.pathname.toLowerCase().replace(/\/+$/, "") || "/";
+  const links = Array.from(document.querySelectorAll(".nav-menu .nav-link"));
+  links.forEach((link) => link.classList.remove("active"));
+  links.sort((a, b) => (b.getAttribute("href") || "").length - (a.getAttribute("href") || "").length);
+
+  const normalize = (value) => {
+    const clean = (value || "").split("?")[0].split("#")[0].toLowerCase().replace(/\/+$/, "");
+    return clean || "/";
+  };
+
+  const active = links.find((link) => {
+    const href = normalize(link.getAttribute("href") || "");
+    if (!href) return false;
+    if (href === "/" || href === "/index") return path === "/" || path === "/index";
+    return path === href || path.startsWith(`${href}/`);
   });
+
+  if (active) {
+    active.classList.add("active");
+  }
 
   const posForm = document.getElementById("posForm");
   if (!posForm) {
@@ -30,7 +43,9 @@
   const paymentMethod = document.getElementById("paymentMethod");
   const amountReceived = document.getElementById("amountReceived");
   const globalDiscountPercent = document.getElementById("globalDiscountPercent");
+  const pricesIncludeTax = document.getElementById("pricesIncludeTax");
   const searchInput = document.getElementById("productSearch");
+  const barcodeInput = document.getElementById("barcodeInput");
   const cartRows = document.getElementById("cartRows");
 
   const taxRate = parseFloat(posForm.getAttribute("data-tax") || "16") / 100;
@@ -103,9 +118,11 @@
     const globalDiscPercent = Math.max(0, Math.min(100, parseFloat(globalDiscountPercent?.value || "0") || 0));
     const globalDiscAmount = (gross - discountAmount) * (globalDiscPercent / 100);
 
-    const subtotal = gross - discountAmount - globalDiscAmount;
-    const iva = subtotal * taxRate;
-    const total = subtotal + iva;
+    const discounted = gross - discountAmount - globalDiscAmount;
+    const includesTax = pricesIncludeTax?.checked === true;
+    const subtotal = includesTax ? (taxRate > 0 ? discounted / (1 + taxRate) : discounted) : discounted;
+    const iva = includesTax ? discounted - subtotal : subtotal * taxRate;
+    const total = includesTax ? discounted : subtotal + iva;
 
     const received = parseFloat(amountReceived?.value || "0") || 0;
     const change = (paymentMethod?.value || "Cash") === "Cash" ? received - total : 0;
@@ -153,6 +170,7 @@
 
     amountReceived?.addEventListener("input", refreshPosSummary);
     globalDiscountPercent?.addEventListener("input", refreshPosSummary);
+    pricesIncludeTax?.addEventListener("change", refreshPosSummary);
 
     paymentMethod?.addEventListener("change", () => {
       normalizePaymentFields();
@@ -160,7 +178,33 @@
     });
   }
 
+  function increaseByBarcode(code) {
+    const q = (code || "").trim().toLowerCase();
+    if (!q) return;
+
+    const card = getCards().find(c => (c.getAttribute("data-code") || "") === q);
+    if (!card) return;
+
+    const input = getQtyInput(card);
+    if (!input) return;
+
+    const max = parseInt(input.max || "999", 10);
+    const val = parseInt(input.value || "0", 10);
+    input.value = String(Math.min(max, val + 1));
+    refreshPosSummary();
+  }
+
   function attachSearchAndHotkeys() {
+    if (barcodeInput) {
+      barcodeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          increaseByBarcode(barcodeInput.value);
+          barcodeInput.value = "";
+        }
+      });
+    }
+
     if (searchInput) {
       searchInput.addEventListener("input", () => {
         const q = searchInput.value.trim().toLowerCase();
@@ -186,10 +230,10 @@
       }
 
       if (e.key === "+" || e.key === "-") {
-        const active = document.activeElement;
-        if (active && active.classList.contains("qty-input")) {
+        const activeEl = document.activeElement;
+        if (activeEl && activeEl.classList.contains("qty-input")) {
           e.preventDefault();
-          const input = active;
+          const input = activeEl;
           const max = parseInt(input.max || "999", 10);
           const val = parseInt(input.value || "0", 10);
           input.value = e.key === "+" ? String(Math.min(max, val + 1)) : String(Math.max(0, val - 1));

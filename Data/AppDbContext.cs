@@ -7,11 +7,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductStock> ProductStocks => Set<ProductStock>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Sale> Sales => Set<Sale>();
     public DbSet<SaleDetail> SaleDetails => Set<SaleDetail>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<UserBranchAccess> UserBranchAccesses => Set<UserBranchAccess>();
+    public DbSet<CashShift> CashShifts => Set<CashShift>();
     public DbSet<CashCut> CashCuts => Set<CashCut>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<SupplierOrder> SupplierOrders => Set<SupplierOrder>();
@@ -33,12 +38,43 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(p => p.IngredientId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<UserBranchAccess>()
+            .HasIndex(x => new { x.UserId, x.BranchId })
+            .IsUnique();
+
+        modelBuilder.Entity<ProductStock>()
+            .HasIndex(x => new { x.ProductId, x.BranchId })
+            .IsUnique();
+
+        modelBuilder.Entity<Product>()
+            .HasIndex(x => x.ProductNumber)
+            .IsUnique();
+
         modelBuilder.Entity<Category>().HasData(
             new Category { Id = 1, Name = "General" },
             new Category { Id = 2, Name = "Textil" },
-            new Category { Id = 3, Name = "Ceramica" },
-            new Category { Id = 4, Name = "Tecnologia" }
+            new Category { Id = 3, Name = "Cerámica" },
+            new Category { Id = 4, Name = "Tecnología" }
         );
+
+        modelBuilder.Entity<Branch>().HasData(new Branch
+        {
+            Id = 1,
+            Code = "MATRIZ",
+            Name = "Sucursal Matriz",
+            Address = "Pendiente por configurar",
+            IsActive = true
+        });
+
+        modelBuilder.Entity<Supplier>().HasData(new Supplier
+        {
+            Id = 1,
+            Name = "Proveedor General",
+            ContactName = "",
+            Phone = "",
+            Email = "",
+            IsActive = true
+        });
 
         modelBuilder.Entity<User>().HasData(new User
         {
@@ -51,11 +87,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             IsActive = true
         });
 
+        modelBuilder.Entity<UserBranchAccess>().HasData(new UserBranchAccess
+        {
+            Id = 1,
+            UserId = 1,
+            BranchId = 1
+        });
+
         modelBuilder.Entity<Product>().HasData(
-            new Product { Id = 1, Name = "Taza Ceramica 11oz", Barcode = "1001", Price = 70m, Cost = 35m, Stock = 50, CategoryId = 3, SatProductCode = "01010101", SatUnitCode = "H87" },
-            new Product { Id = 2, Name = "Playera Estampada", Barcode = "1002", Price = 150m, Cost = 80m, Stock = 20, CategoryId = 2, SatProductCode = "01010101", SatUnitCode = "H87" },
-            new Product { Id = 3, Name = "Gorra Trucker", Barcode = "1003", Price = 90m, Cost = 40m, Stock = 15, CategoryId = 2, SatProductCode = "01010101", SatUnitCode = "H87" },
-            new Product { Id = 4, Name = "Termo Digital", Barcode = "1004", Price = 220m, Cost = 120m, Stock = 10, CategoryId = 4, SatProductCode = "01010101", SatUnitCode = "H87" }
+            new Product { Id = 1, ProductNumber = 1, Name = "Taza Cerámica 11oz", Barcode = "1001", Price = 70m, Cost = 35m, Stock = 50, PriceIncludesTax = false, CategoryId = 3, SatProductCode = "01010101", SatUnitCode = "H87" },
+            new Product { Id = 2, ProductNumber = 2, Name = "Playera Estampada", Barcode = "1002", Price = 150m, Cost = 80m, Stock = 20, PriceIncludesTax = false, CategoryId = 2, SatProductCode = "01010101", SatUnitCode = "H87" },
+            new Product { Id = 3, ProductNumber = 3, Name = "Gorra Trucker", Barcode = "1003", Price = 90m, Cost = 40m, Stock = 15, PriceIncludesTax = false, CategoryId = 2, SatProductCode = "01010101", SatUnitCode = "H87" },
+            new Product { Id = 4, ProductNumber = 4, Name = "Termo Digital", Barcode = "1004", Price = 220m, Cost = 120m, Stock = 10, PriceIncludesTax = false, CategoryId = 4, SatProductCode = "01010101", SatUnitCode = "H87" }
+        );
+
+        modelBuilder.Entity<ProductStock>().HasData(
+            new ProductStock { Id = 1, ProductId = 1, BranchId = 1, Stock = 50, MinStock = 5 },
+            new ProductStock { Id = 2, ProductId = 2, BranchId = 1, Stock = 20, MinStock = 5 },
+            new ProductStock { Id = 3, ProductId = 3, BranchId = 1, Stock = 15, MinStock = 5 },
+            new ProductStock { Id = 4, ProductId = 4, BranchId = 1, Stock = 10, MinStock = 5 }
         );
 
         modelBuilder.Entity<AppConfig>().HasData(new AppConfig

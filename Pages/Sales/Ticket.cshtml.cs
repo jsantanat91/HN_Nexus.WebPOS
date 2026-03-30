@@ -15,7 +15,8 @@ public class TicketModel(AppDbContext db) : PageModel
     {
         Sale = await db.Sales
             .Include(x => x.Details).ThenInclude(x => x.Product)
-            .Include(x => x.Customer)
+             .Include(x => x.Customer)
+            .Include(x => x.Branch)
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -28,3 +29,5 @@ public class TicketModel(AppDbContext db) : PageModel
         return Page();
     }
 }
+
+

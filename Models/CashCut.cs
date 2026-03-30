@@ -7,6 +7,10 @@ public class CashCut
     [Key]
     public int Id { get; set; }
     public DateTime CutDate { get; set; } = DateTime.UtcNow;
+
+    public int BranchId { get; set; }
+    public Branch? Branch { get; set; }
+
     public decimal TotalSystem { get; set; }
     public decimal TotalPhysical { get; set; }
     public decimal Difference { get; set; }

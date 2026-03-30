@@ -34,22 +34,29 @@
 
             <nav class="nav flex-column nav-menu">
                 @if (has(ModuleCatalog.Dashboard)) { <a class="nav-link" asp-page="/Index">Inicio</a> }
-                @if (has(ModuleCatalog.Sales)) { <a class="nav-link" asp-page="/Sales/New">Caja POS</a> }
-                @if (has(ModuleCatalog.Sales)) { <a class="nav-link" asp-page="/Sales/Index">Historial Ventas</a> }
+                @if (has(ModuleCatalog.Sales)) { <a class="nav-link" asp-page="/Sales/New">Caja</a> }
+                @if (has(ModuleCatalog.Sales)) { <a class="nav-link" asp-page="/Sales/Index">Historial de Ventas</a> }
                 @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Products/Index">Productos</a> }
                 @if (has(ModuleCatalog.Customers)) { <a class="nav-link" asp-page="/Customers/Index">Clientes</a> }
                 @if (has(ModuleCatalog.Expenses)) { <a class="nav-link" asp-page="/Expenses/Index">Gastos</a> }
                 @if (has(ModuleCatalog.CashCuts)) { <a class="nav-link" asp-page="/CashCuts/Index">Cortes Caja</a> }
+                @if (has(ModuleCatalog.CashShifts)) { <a class="nav-link" asp-page="/CashShifts/Index">Turnos Caja</a> }
                 @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Pedidos</a> }
+                @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Daily">Reportes</a> }
+
                 @if (User.IsInRole("Admin"))
                 {
-                    <a class="nav-link" asp-page="/Config/Index">Configuracion</a>
+                    <a class="nav-link" asp-page="/Config/Index">Configuración</a>
+                    <a class="nav-link" asp-page="/Config/Users">Usuarios</a>
+                    <a class="nav-link" asp-page="/Config/Branches">Sucursales</a>
                     <a class="nav-link" asp-page="/Config/Permissions">Permisos</a>
+                    <a class="nav-link" asp-page="/Config/Categories">Categorías</a>
+                    <a class="nav-link" asp-page="/Config/Suppliers">Proveedores</a>
                 }
             </nav>
 
             <div class="mt-auto pt-3">
-                <a class="btn btn-outline-light w-100" asp-page="/Account/Logout">Cerrar sesion</a>
+                <a class="btn btn-cancel w-100" asp-page="/Account/Logout">Cerrar sesión</a>
             </div>
         </aside>
 
@@ -58,7 +65,7 @@
                 <button class="btn btn-sm btn-light d-lg-none" id="sidebarToggle" type="button">Menu</button>
                 <div>
                     <h1 class="page-title mb-0">@ViewData["Title"]</h1>
-                    <p class="page-subtitle mb-0">Control total de ventas, inventario y caja</p>
+                    <p class="page-subtitle mb-0">Control total de ventas, inventario, sucursales y caja</p>
                 </div>
                 <div class="user-chip">
                     <span class="role-badge">@User.FindFirstValue(ClaimTypes.Role)</span>
@@ -78,7 +85,7 @@
 }
 else
 {
-    <main class="auth-wrap container py-5">
+    <main class="auth-wrap">
         @RenderBody()
     </main>
 }
@@ -89,3 +96,4 @@ else
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+

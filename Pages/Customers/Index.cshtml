@@ -22,13 +22,15 @@
 
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Nombre</th><th>RFC</th><th>Telefono</th><th>Email</th><th>Estatus</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>RFC</th><th>CFDI</th><th>Pago SAT</th><th>Teléfono</th><th>Email</th><th>Estatus</th></tr></thead>
             <tbody>
             @foreach (var item in Model.Items)
             {
                 <tr>
                     <td class="fw-semibold">@item.FullName</td>
                     <td>@item.Rfc</td>
+                    <td><span class="badge-soft badge-info">@item.CfdiUse</span></td>
+                    <td><span class="badge-soft badge-warn">@item.PaymentForm / @item.PaymentMethodSat</span></td>
                     <td>@item.PhoneNumber</td>
                     <td>@item.Email</td>
                     <td><span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span></td>

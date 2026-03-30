@@ -1,39 +1,78 @@
-ï»¿@page
+@page
+@using System.Text.Json
 @model IndexModel
 @{
     ViewData["Title"] = "Dashboard Ejecutivo";
 }
 
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Actualizar</button></div>
+        </form>
+    </div>
+</section>
+
 <div class="row g-3 mb-3">
     <div class="col-xl-3 col-md-6">
-        <div class="kpi-card glass-card">
+        <div class="kpi-card glass-card kpi-gradient kpi-blue">
             <div class="kpi-title">Ventas Hoy</div>
             <div class="kpi-value text-primary">@Model.SalesToday.ToString("C")</div>
             <span class="badge-soft badge-info">@Model.SalesCountToday transacciones</span>
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
-        <div class="kpi-card glass-card">
+        <div class="kpi-card glass-card kpi-gradient kpi-amber">
             <div class="kpi-title">Gastos Hoy</div>
             <div class="kpi-value text-warning">@Model.ExpensesToday.ToString("C")</div>
             <span class="badge-soft badge-warn">Control de egresos activo</span>
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
-        <div class="kpi-card glass-card">
+        <div class="kpi-card glass-card kpi-gradient kpi-green">
             <div class="kpi-title">Utilidad Neta</div>
             <div class="kpi-value @(Model.NetToday >= 0 ? "text-success" : "text-danger")">@Model.NetToday.ToString("C")</div>
             <span class="badge-soft @(Model.NetToday >= 0 ? "badge-ok" : "badge-danger")">
-                @(Model.NetToday >= 0 ? "Rentable" : "Atencion a costos")
+                @(Model.NetToday >= 0 ? "Rentable" : "Atención a costos")
             </span>
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
-        <div class="kpi-card glass-card">
-            <div class="kpi-title">Stock Critico</div>
+        <div class="kpi-card glass-card kpi-gradient kpi-red">
+            <div class="kpi-title">Stock Crítico</div>
             <div class="kpi-value text-danger">@Model.LowStockProducts</div>
             <span class="badge-soft badge-danger">Productos con bajo inventario</span>
         </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-xl-8">
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h5 class="mb-0">Ventas y Rentabilidad (7 días)</h5>
+                    <small class="text-muted">Comparativo ventas vs gastos</small>
+                </div>
+            </div>
+            <div class="panel-body">
+                <canvas id="salesChart" height="120"></canvas>
+            </div>
+        </section>
+    </div>
+    <div class="col-xl-4">
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h5 class="mb-0">Métodos de Pago</h5>
+                    <small class="text-muted">Distribución semanal</small>
+                </div>
+            </div>
+            <div class="panel-body">
+                <canvas id="paymentChart" height="220"></canvas>
+            </div>
+        </section>
     </div>
 </div>
 
@@ -43,9 +82,9 @@
             <div class="panel-header">
                 <div>
                     <h5 class="mb-0">Ventas Recientes</h5>
-                    <small class="text-muted">Ultimas operaciones registradas</small>
+                    <small class="text-muted">Últimas operaciones registradas</small>
                 </div>
-                <a class="btn btn-sm btn-primary" asp-page="/Sales/New">+ Nueva venta</a>
+                <a class="btn btn-sm btn-primary" asp-page="/Sales/New" asp-route-branchId="@Model.BranchId">+ Nueva venta</a>
             </div>
             <div class="panel-body p-0">
                 <table class="table table-modern mb-0">
@@ -55,7 +94,7 @@
                     <tbody>
                     @if (Model.RecentSales.Count == 0)
                     {
-                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aun.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aún.</td></tr>
                     }
                     else
                     {
@@ -63,7 +102,7 @@
                         {
                             <tr>
                                 <td><span class="badge-soft badge-info">#@sale.Id</span></td>
-                                <td>@(sale.Customer?.FullName ?? "Publico General")</td>
+                                <td>@(sale.Customer?.FullName ?? "Público General")</td>
                                 <td>@sale.Date.ToLocalTime().ToString("dd/MM HH:mm")</td>
                                 <td class="fw-bold">@sale.TotalAmount.ToString("C")</td>
                             </tr>
@@ -80,13 +119,13 @@
             <div class="panel-header">
                 <div>
                     <h5 class="mb-0">Top Productos</h5>
-                    <small class="text-muted">Mayor rotacion</small>
+                    <small class="text-muted">Mayor rotación</small>
                 </div>
             </div>
             <div class="panel-body">
                 @if (Model.TopProducts.Count == 0)
                 {
-                    <p class="text-muted mb-0">Aun no hay datos para ranking.</p>
+                    <p class="text-muted mb-0">Aún no hay datos para ranking.</p>
                 }
                 else
                 {
@@ -110,7 +149,7 @@
             </div>
             <div class="panel-body p-0">
                 <table class="table table-modern mb-0">
-                    <thead><tr><th>Producto</th><th>Categoria</th><th>Stock</th></tr></thead>
+                    <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th></tr></thead>
                     <tbody>
                     @if (Model.LowStockList.Count == 0)
                     {
@@ -121,10 +160,10 @@
                         @foreach (var item in Model.LowStockList)
                         {
                             <tr>
-                                <td>@item.Name</td>
-                                <td>@item.Category?.Name</td>
+                                <td>@item.Product?.Name</td>
+                                <td><span class="badge-soft badge-warn">@item.Product?.Category?.Name</span></td>
                                 <td>
-                                    <span class="badge-soft @(item.Stock <= 2 ? "badge-danger" : "badge-warn")">@item.Stock</span>
+                                    <span class="badge-soft @(item.Stock <= item.MinStock ? "badge-danger" : "badge-warn")">@item.Stock</span>
                                 </td>
                             </tr>
                         }
@@ -135,3 +174,65 @@
         </section>
     </div>
 </div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+  const weekLabels = @Html.Raw(JsonSerializer.Serialize(Model.WeekLabels));
+  const weekSales = @Html.Raw(JsonSerializer.Serialize(Model.WeekSales));
+  const weekCosts = @Html.Raw(JsonSerializer.Serialize(Model.WeekCosts));
+  const paymentLabels = @Html.Raw(JsonSerializer.Serialize(Model.PaymentLabels));
+  const paymentTotals = @Html.Raw(JsonSerializer.Serialize(Model.PaymentTotals));
+
+  const salesCanvas = document.getElementById('salesChart');
+  if (salesCanvas) {
+    new Chart(salesCanvas, {
+      type: 'line',
+      data: {
+        labels: weekLabels,
+        datasets: [
+          {
+            label: 'Ventas',
+            data: weekSales,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.15)',
+            fill: true,
+            tension: 0.35
+          },
+          {
+            label: 'Gastos',
+            data: weekCosts,
+            borderColor: '#f43f5e',
+            backgroundColor: 'rgba(244, 63, 94, 0.12)',
+            fill: true,
+            tension: 0.35
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+  }
+
+  const paymentCanvas = document.getElementById('paymentChart');
+  if (paymentCanvas) {
+    new Chart(paymentCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: paymentLabels,
+        datasets: [{
+          data: paymentTotals,
+          backgroundColor: ['#22c55e', '#3b82f6', '#06b6d4', '#eab308'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: { responsive: true }
+    });
+  }
+})();
+</script>
+}

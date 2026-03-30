@@ -13,6 +13,7 @@ public class NewModel(AppDbContext db) : PageModel
     public Product Item { get; set; } = new();
 
     public List<SelectListItem> Categories { get; set; } = new();
+    public int NextNumber { get; set; }
 
     public async Task OnGetAsync()
     {
@@ -21,6 +22,8 @@ public class NewModel(AppDbContext db) : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        Item.ProductNumber = (await db.Products.MaxAsync(x => (int?)x.ProductNumber) ?? 0) + 1;
+
         if (!ModelState.IsValid)
         {
             await LoadAsync();
@@ -35,6 +38,12 @@ public class NewModel(AppDbContext db) : PageModel
 
     private async Task LoadAsync()
     {
+        NextNumber = (await db.Products.MaxAsync(x => (int?)x.ProductNumber) ?? 0) + 1;
+        if (Item.ProductNumber <= 0)
+        {
+            Item.ProductNumber = NextNumber;
+        }
+
         Categories = await db.Categories.OrderBy(x => x.Name)
             .Select(x => new SelectListItem(x.Name, x.Id.ToString()))
             .ToListAsync();

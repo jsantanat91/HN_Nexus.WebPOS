@@ -33,9 +33,14 @@ public class LoginModel(AppDbContext db) : PageModel
         var user = await db.Users.FirstOrDefaultAsync(x => x.Username == Input.Username && x.IsActive);
         if (user is null || !BCrypt.Net.BCrypt.Verify(Input.Password, user.PasswordHash))
         {
-            ModelState.AddModelError(string.Empty, "Usuario o contrasena invalidos.");
+            ModelState.AddModelError(string.Empty, "Usuario o contraseña inválidos.");
             return Page();
         }
+
+        var branches = await db.UserBranchAccesses
+            .Where(x => x.UserId == user.Id)
+            .Select(x => x.BranchId)
+            .ToListAsync();
 
         var claims = new List<Claim>
         {
@@ -43,7 +48,8 @@ public class LoginModel(AppDbContext db) : PageModel
             new(ClaimTypes.Name, user.FullName),
             new("username", user.Username),
             new(ClaimTypes.Role, user.Role),
-            new("modules", user.ModulePermissions ?? string.Empty)
+            new("modules", user.ModulePermissions ?? string.Empty),
+            new("branches", string.Join(',', branches))
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

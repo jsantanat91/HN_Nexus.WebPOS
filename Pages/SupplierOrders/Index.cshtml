@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model HN_Nexus.WebPOS.Pages.SupplierOrders.IndexModel
 @{
     ViewData["Title"] = "Pedidos a Proveedor";
@@ -8,10 +8,23 @@
     <div class="panel-header"><h5 class="mb-0">Nuevo Pedido</h5></div>
     <div class="panel-body">
         <form method="post" asp-page-handler="Create" class="row g-2">
-            <div class="col-md-4"><input class="form-control" name="providerName" placeholder="Proveedor" /></div>
-            <div class="col-md-4"><input class="form-control" name="productName" placeholder="Producto" /></div>
-            <div class="col-md-2"><input class="form-control" type="number" name="quantity" placeholder="Cantidad" /></div>
-            <div class="col-md-2"><button class="btn btn-primary">Guardar</button></div>
+            <div class="col-md-4">
+                <label class="form-label">Proveedor</label>
+                <select class="form-select" name="supplierId" asp-items="Model.Suppliers"></select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Producto</label>
+                <select class="form-select" name="productId" asp-items="Model.Products"></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Cantidad</label>
+                <input class="form-control" type="number" min="1" name="quantity" placeholder="Cantidad" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Costo unitario</label>
+                <input class="form-control" type="number" min="0" step="0.01" name="unitCost" placeholder="Costo" />
+            </div>
+            <div class="col-md-3"><button class="btn btn-save">Guardar</button></div>
         </form>
     </div>
 </section>
@@ -20,15 +33,16 @@
     <div class="panel-header"><h5 class="mb-0">Seguimiento de Pedidos</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Estatus</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Producto</th><th>Cant.</th><th>Costo</th><th>Estatus</th><th></th></tr></thead>
             <tbody>
             @foreach (var item in Model.Items)
             {
                 <tr>
                     <td>@item.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@item.ProviderName</td>
-                    <td>@item.ProductName</td>
+                    <td>@item.Supplier?.Name</td>
+                    <td>@item.Product?.Name</td>
                     <td>@item.Quantity</td>
+                    <td>@item.UnitCost.ToString("C")</td>
                     <td><span class="badge-soft @(item.Status == "Recibido" ? "badge-ok" : "badge-warn")">@item.Status</span></td>
                     <td>
                         @if (item.Status != "Recibido")

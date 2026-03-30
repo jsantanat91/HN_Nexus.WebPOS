@@ -1,0 +1,62 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.CashShifts.IndexModel
+@{
+    ViewData["Title"] = "Turnos de Caja";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Apertura / Cierre por turno</h5></div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Sucursal</label>
+                <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
+        </form>
+
+        @if (Model.OpenShift is null)
+        {
+            <form method="post" asp-page-handler="Open" class="row g-2">
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <div class="col-md-4"><label class="form-label">Fondo inicial</label><input name="openingFloat" type="number" step="0.01" class="form-control" required /></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100">Abrir turno</button></div>
+            </form>
+        }
+        else
+        {
+            <div class="alert app-alert">Turno abierto desde @Model.OpenShift.OpenedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") en @Model.OpenShift.Branch?.Name.</div>
+            <form method="post" asp-page-handler="Close" class="row g-2">
+                <input type="hidden" name="shiftId" value="@Model.OpenShift.Id" />
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <div class="col-md-4"><label class="form-label">Arqueo final (efectivo contado)</label><input name="closingDeclared" type="number" step="0.01" class="form-control" required /></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-danger w-100">Cerrar turno</button></div>
+            </form>
+        }
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Historial de turnos</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Sucursal</th><th>Usuario</th><th>Apertura</th><th>Cierre</th><th>Fondo inicial</th><th>Sistema</th><th>Declarado</th><th>Diferencia</th><th>Estatus</th></tr></thead>
+            <tbody>
+            @foreach (var s in Model.Shifts)
+            {
+                <tr>
+                    <td>@s.Branch?.Name</td>
+                    <td>@s.User?.FullName</td>
+                    <td>@s.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                    <td>@(s.ClosedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</td>
+                    <td>@s.OpeningFloat.ToString("C")</td>
+                    <td>@(s.SystemCashTotal?.ToString("C") ?? "-")</td>
+                    <td>@(s.ClosingDeclared?.ToString("C") ?? "-")</td>
+                    <td>@(s.Difference?.ToString("C") ?? "-")</td>
+                    <td><span class="badge-soft @(s.Status == "Open" ? "badge-warn" : "badge-ok")">@s.Status</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

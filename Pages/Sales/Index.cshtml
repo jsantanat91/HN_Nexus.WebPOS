@@ -1,16 +1,39 @@
-ï»¿@page
+@page
 @model HN_Nexus.WebPOS.Pages.Sales.IndexModel
 @{
     ViewData["Title"] = "Historial de Ventas";
 }
 
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Sucursal</label>
+                <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha para exportar</label>
+                <input asp-for="Date" type="date" class="form-control" />
+            </div>
+            <div class="col-md-2"><button class="btn btn-primary w-100">Filtrar</button></div>
+            <div class="col-md-3"><a class="btn btn-outline-primary w-100" asp-page="/Sales/New" asp-route-branchId="@Model.BranchId">Nueva venta</a></div>
+        </form>
+
+        <form method="post" asp-page-handler="Export" id="exportDailyForm" class="d-flex gap-2 mt-3">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <input type="hidden" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="format" id="exportFormat" value="pdf" />
+            <button type="button" id="btnExportDaily" class="btn btn-save">Exportar venta diaria</button>
+        </form>
+    </div>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <div>
             <h5 class="mb-0">Historial de Ventas</h5>
-            <small class="text-muted">Control detallado de operaciones POS</small>
+            <small class="text-muted">Control detallado por sucursal</small>
         </div>
-        <a class="btn btn-primary" asp-page="/Sales/New">+ Nueva venta</a>
     </div>
 
     <div class="panel-body p-0">
@@ -19,6 +42,7 @@
                 <tr>
                     <th>Folio</th>
                     <th>Fecha</th>
+                    <th>Sucursal</th>
                     <th>Cliente</th>
                     <th>Pago</th>
                     <th>Cajero</th>
@@ -33,7 +57,8 @@
                 <tr>
                     <td><span class="badge-soft badge-info">#@item.Id</span></td>
                     <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@(item.Customer?.FullName ?? "PÃºblico General")</td>
+                    <td>@item.Branch?.Name</td>
+                    <td>@(item.Customer?.FullName ?? "Público General")</td>
                     <td>@item.PaymentMethod</td>
                     <td>@item.User?.FullName</td>
                     <td>
@@ -46,6 +71,7 @@
                         {
                             <form method="post" asp-page-handler="Cancel" class="d-inline cancel-sale-form">
                                 <input type="hidden" name="id" value="@item.Id" />
+                                <input type="hidden" name="branchId" value="@Model.BranchId" />
                                 <input type="hidden" name="reason" value="" class="cancel-reason" />
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar</button>
                             </form>
@@ -62,13 +88,27 @@
 <script>
 document.querySelectorAll('.cancel-sale-form').forEach(function(form){
   form.addEventListener('submit', function(e){
-    var reason = prompt('Motivo de cancelaciÃ³n/devoluciÃ³n:');
+    var reason = prompt('Motivo de cancelación/devolución:');
     if(reason === null){
       e.preventDefault();
       return;
     }
     form.querySelector('.cancel-reason').value = reason;
   });
+});
+
+document.getElementById('btnExportDaily')?.addEventListener('click', function(){
+  var option = prompt('Exportar como: escribe PDF o TICKET', 'PDF');
+  if(option === null) return;
+
+  var normalized = (option || '').trim().toLowerCase();
+  if(normalized !== 'pdf' && normalized !== 'ticket'){
+    alert('Opción inválida. Usa PDF o TICKET.');
+    return;
+  }
+
+  document.getElementById('exportFormat').value = normalized;
+  document.getElementById('exportDailyForm').submit();
 });
 </script>
 }

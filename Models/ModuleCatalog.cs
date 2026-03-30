@@ -8,8 +8,12 @@ public static class ModuleCatalog
     public const string Customers = "customers";
     public const string Expenses = "expenses";
     public const string CashCuts = "cashcuts";
+    public const string CashShifts = "cashshifts";
     public const string SupplierOrders = "supplierorders";
+    public const string Reports = "reports";
     public const string Config = "config";
+    public const string Users = "users";
+    public const string Branches = "branches";
 
     public static readonly string[] All =
     [
@@ -19,19 +23,27 @@ public static class ModuleCatalog
         Customers,
         Expenses,
         CashCuts,
+        CashShifts,
         SupplierOrders,
-        Config
+        Reports,
+        Config,
+        Users,
+        Branches
     ];
 
     public static readonly Dictionary<string, string> Labels = new()
     {
-        [Dashboard] = "Dashboard",
+        [Dashboard] = "Inicio",
         [Sales] = "Ventas y Caja",
         [Products] = "Inventario",
         [Customers] = "Clientes",
         [Expenses] = "Gastos",
         [CashCuts] = "Cortes de Caja",
+        [CashShifts] = "Turnos de Caja",
         [SupplierOrders] = "Pedidos a Proveedor",
-        [Config] = "Configuración"
+        [Reports] = "Reportes",
+        [Config] = "Configuración",
+        [Users] = "Usuarios",
+        [Branches] = "Sucursales"
     };
 }

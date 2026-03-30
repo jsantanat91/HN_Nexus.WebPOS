@@ -5,12 +5,17 @@ public class Sale
     public int Id { get; set; }
     public DateTime Date { get; set; } = DateTime.UtcNow;
 
+    public int BranchId { get; set; }
+    public Branch? Branch { get; set; }
+
     public decimal SubtotalAmount { get; set; }
     public decimal TaxAmount { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal TotalAmount { get; set; }
 
     public string PaymentMethod { get; set; } = "Cash";
+    public string? AuthorizationCode { get; set; }
+    public bool PricesIncludeTax { get; set; }
     public decimal AmountReceived { get; set; }
     public decimal ChangeAmount { get; set; }
 

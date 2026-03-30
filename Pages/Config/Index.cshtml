@@ -9,19 +9,61 @@
         <h5 class="mb-0">Configuración del Negocio</h5>
     </div>
     <div class="panel-body">
-        <form method="post" class="row g-3">
-            <div class="col-md-6"><label asp-for="Item.CompanyName" class="form-label">Razón social</label><input asp-for="Item.CompanyName" class="form-control" /></div>
-            <div class="col-md-3"><label asp-for="Item.TaxId" class="form-label">RFC</label><input asp-for="Item.TaxId" class="form-control" /></div>
-            <div class="col-md-3"><label asp-for="Item.Phone" class="form-label">Teléfono</label><input asp-for="Item.Phone" class="form-control" /></div>
-            <div class="col-md-12"><label asp-for="Item.Address" class="form-label">Dirección</label><input asp-for="Item.Address" class="form-control" /></div>
+        <form method="post" class="row g-3" id="configForm">
+            <div class="col-md-6"><label asp-for="Item.CompanyName" class="form-label">Razón social</label><input asp-for="Item.CompanyName" class="form-control" id="cfgCompanyName" /></div>
+            <div class="col-md-3"><label asp-for="Item.TaxId" class="form-label">RFC</label><input asp-for="Item.TaxId" class="form-control text-uppercase" id="cfgTaxId" style="text-transform:uppercase;" /></div>
+            <div class="col-md-3"><label asp-for="Item.Phone" class="form-label">Teléfono</label><input asp-for="Item.Phone" class="form-control" id="cfgPhone" /></div>
+            <div class="col-md-12"><label asp-for="Item.Address" class="form-label">Dirección</label><input asp-for="Item.Address" class="form-control" id="cfgAddress" /></div>
 
-            <div class="col-md-3"><label asp-for="Item.CurrencySymbol" class="form-label">Símbolo moneda</label><input asp-for="Item.CurrencySymbol" class="form-control" /></div>
-            <div class="col-md-3"><label asp-for="Item.TaxRate" class="form-label">IVA (%)</label><input asp-for="Item.TaxRate" class="form-control" type="number" step="0.01" /></div>
+            <div class="col-md-3"><label asp-for="Item.CurrencySymbol" class="form-label">Símbolo moneda</label><input asp-for="Item.CurrencySymbol" class="form-control" id="cfgCurrency" /></div>
+            <div class="col-md-3"><label asp-for="Item.TaxRate" class="form-label">IVA (%)</label><input asp-for="Item.TaxRate" class="form-control" type="number" step="0.01" id="cfgTaxRate" /></div>
             <div class="col-md-6"><label asp-for="Item.TicketPrinterName" class="form-label">Impresora ticket (opcional)</label><input asp-for="Item.TicketPrinterName" class="form-control" placeholder="Ej. EPSON TM-T20" /></div>
 
-            <div class="col-md-6"><label asp-for="Item.TicketHeader" class="form-label">Encabezado ticket</label><input asp-for="Item.TicketHeader" class="form-control" /></div>
-            <div class="col-md-6"><label asp-for="Item.TicketFooter" class="form-label">Pie ticket</label><input asp-for="Item.TicketFooter" class="form-control" /></div>
-            <div class="col-12"><button class="btn btn-primary">Guardar</button></div>
+            <div class="col-md-6"><label asp-for="Item.TicketHeader" class="form-label">Encabezado ticket</label><input asp-for="Item.TicketHeader" class="form-control" id="cfgHeader" /></div>
+            <div class="col-md-6"><label asp-for="Item.TicketFooter" class="form-label">Pie ticket</label><input asp-for="Item.TicketFooter" class="form-control" id="cfgFooter" /></div>
+            <div class="col-12"><button class="btn btn-save">Guardar</button></div>
         </form>
     </div>
 </section>
+
+<section class="panel mt-3">
+    <div class="panel-header"><h5 class="mb-0">Vista previa de ticket</h5></div>
+    <div class="panel-body">
+        <div class="ticket-preview thermal-ticket" id="ticketPreviewBox" style="max-width:360px;">
+            <h5 class="text-center mb-1" id="pvCompany">@Model.Item.CompanyName</h5>
+            <p class="text-center small mb-1" id="pvAddress">@Model.Item.Address</p>
+            <p class="text-center small mb-1">RFC: <span id="pvTaxId">@Model.Item.TaxId</span></p>
+            <p class="text-center small mb-2">Tel: <span id="pvPhone">@Model.Item.Phone</span></p>
+            <p class="text-center fw-semibold" id="pvHeader">@Model.Item.TicketHeader</p>
+            <hr />
+            <div class="ticket-row"><span>Producto demo x1</span><strong><span id="pvCurrency">@Model.Item.CurrencySymbol</span>199.00</strong></div>
+            <div class="ticket-row"><span>IVA (<span id="pvTaxRate">@Model.Item.TaxRate</span>%)</span><strong><span id="pvCurrency2">@Model.Item.CurrencySymbol</span>31.84</strong></div>
+            <div class="ticket-row ticket-total"><span>Total</span><span><span id="pvCurrency3">@Model.Item.CurrencySymbol</span>230.84</span></div>
+            <p class="text-center mt-3" id="pvFooter">@Model.Item.TicketFooter</p>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+function syncPreview(){
+  const val = (id) => document.getElementById(id)?.value ?? '';
+  const text = (id, value) => { const el = document.getElementById(id); if(el) el.textContent = value; };
+
+  const cur = val('cfgCurrency') || '$';
+  text('pvCompany', val('cfgCompanyName'));
+  text('pvAddress', val('cfgAddress'));
+  text('pvTaxId', val('cfgTaxId'));
+  text('pvPhone', val('cfgPhone'));
+  text('pvHeader', val('cfgHeader'));
+  text('pvFooter', val('cfgFooter'));
+  text('pvTaxRate', val('cfgTaxRate'));
+  text('pvCurrency', cur);
+  text('pvCurrency2', cur);
+  text('pvCurrency3', cur);
+}
+['cfgCompanyName','cfgAddress','cfgTaxId','cfgPhone','cfgHeader','cfgFooter','cfgTaxRate','cfgCurrency']
+.forEach(id => document.getElementById(id)?.addEventListener('input', syncPreview));
+syncPreview();
+</script>
+}

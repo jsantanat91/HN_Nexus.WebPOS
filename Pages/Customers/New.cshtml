@@ -4,16 +4,32 @@
     ViewData["Title"] = "Nuevo cliente";
 }
 
-<h3>Nuevo cliente</h3>
-<form method="post" class="row g-3">
-    <div class="col-md-6"><label asp-for="Item.FullName" class="form-label"></label><input asp-for="Item.FullName" class="form-control" /></div>
-    <div class="col-md-3"><label asp-for="Item.Rfc" class="form-label"></label><input asp-for="Item.Rfc" class="form-control" /></div>
-    <div class="col-md-3"><label asp-for="Item.PostalCode" class="form-label"></label><input asp-for="Item.PostalCode" class="form-control" /></div>
-    <div class="col-md-4"><label asp-for="Item.PhoneNumber" class="form-label"></label><input asp-for="Item.PhoneNumber" class="form-control" /></div>
-    <div class="col-md-4"><label asp-for="Item.Email" class="form-label"></label><input asp-for="Item.Email" class="form-control" /></div>
-    <div class="col-md-4"><label asp-for="Item.Address" class="form-label"></label><input asp-for="Item.Address" class="form-control" /></div>
-    <div class="col-12">
-        <button class="btn btn-primary">Guardar</button>
-        <a class="btn btn-outline-secondary" asp-page="/Customers/Index">Cancelar</a>
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Nuevo cliente</h5></div>
+    <div class="panel-body">
+        <form method="post" class="row g-3">
+            <div class="col-md-6"><label asp-for="Item.FullName" class="form-label">Nombre completo</label><input asp-for="Item.FullName" class="form-control" /></div>
+            <div class="col-md-3"><label asp-for="Item.Rfc" class="form-label">RFC</label><input asp-for="Item.Rfc" class="form-control text-uppercase" style="text-transform:uppercase;" /></div>
+            <div class="col-md-3"><label asp-for="Item.PostalCode" class="form-label">Código postal</label><input asp-for="Item.PostalCode" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.PhoneNumber" class="form-label">Teléfono</label><input asp-for="Item.PhoneNumber" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.Email" class="form-label">Correo</label><input asp-for="Item.Email" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.Address" class="form-label">Dirección</label><input asp-for="Item.Address" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.CfdiUse" class="form-label">Uso CFDI</label><input asp-for="Item.CfdiUse" class="form-control text-uppercase" /></div>
+            <div class="col-md-4"><label asp-for="Item.FiscalRegime" class="form-label">Régimen fiscal</label><input asp-for="Item.FiscalRegime" class="form-control" /></div>
+            <div class="col-md-4">
+                <label asp-for="Item.InvoiceType" class="form-label">Tipo de comprobante</label>
+                <select asp-for="Item.InvoiceType" class="form-select">
+                    <option value="I">I - Ingreso</option>
+                    <option value="E">E - Egreso</option>
+                    <option value="P">P - Pago</option>
+                </select>
+            </div>
+            <div class="col-md-4"><label asp-for="Item.PaymentForm" class="form-label">Forma de pago SAT</label><input asp-for="Item.PaymentForm" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.PaymentMethodSat" class="form-label">Método de pago SAT</label><input asp-for="Item.PaymentMethodSat" class="form-control text-uppercase" /></div>
+            <div class="col-12">
+                <button class="btn btn-save">Guardar</button>
+                <a class="btn btn-cancel" asp-page="/Customers/Index">Cancelar</a>
+            </div>
+        </form>
     </div>
-</form>
+</section>

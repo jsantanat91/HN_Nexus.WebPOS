@@ -26,6 +26,7 @@ public class IndexModel(AppDbContext db) : PageModel
         }
 
         var current = await db.AppConfigs.FirstOrDefaultAsync();
+        Item.TaxId = (Item.TaxId ?? string.Empty).Trim().ToUpperInvariant();
         if (current is null)
         {
             db.AppConfigs.Add(Item);

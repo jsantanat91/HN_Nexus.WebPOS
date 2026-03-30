@@ -19,6 +19,11 @@ public class NewModel(AppDbContext db) : PageModel
             return Page();
         }
 
+        Item.Rfc = (Item.Rfc ?? string.Empty).Trim().ToUpperInvariant();
+        Item.CfdiUse = string.IsNullOrWhiteSpace(Item.CfdiUse) ? "G03" : Item.CfdiUse.Trim().ToUpperInvariant();
+        Item.FiscalRegime = string.IsNullOrWhiteSpace(Item.FiscalRegime) ? "601" : Item.FiscalRegime.Trim();
+        Item.PaymentMethodSat = string.IsNullOrWhiteSpace(Item.PaymentMethodSat) ? "PUE" : Item.PaymentMethodSat.Trim().ToUpperInvariant();
+        Item.PaymentForm = string.IsNullOrWhiteSpace(Item.PaymentForm) ? "01" : Item.PaymentForm.Trim();
         db.Customers.Add(Item);
         await db.SaveChangesAsync();
         TempData["Flash"] = "Cliente guardado.";

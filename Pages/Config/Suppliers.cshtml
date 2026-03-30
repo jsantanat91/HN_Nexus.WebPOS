@@ -1,0 +1,47 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.SuppliersModel
+@{
+    ViewData["Title"] = "Proveedores";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header">
+        <h5 class="mb-0">Alta de Proveedor</h5>
+    </div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-3"><input asp-for="Input.Name" class="form-control" placeholder="Proveedor" /></div>
+            <div class="col-md-3"><input asp-for="Input.ContactName" class="form-control" placeholder="Contacto" /></div>
+            <div class="col-md-2"><input asp-for="Input.Phone" class="form-control" placeholder="Teléfono" /></div>
+            <div class="col-md-3"><input asp-for="Input.Email" class="form-control" placeholder="Correo" /></div>
+            <div class="col-md-1 d-flex align-items-end"><button class="btn btn-save w-100">Guardar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Listado de Proveedores</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Proveedor</th><th>Contacto</th><th>Teléfono</th><th>Correo</th><th>Estatus</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td class="fw-semibold">@item.Name</td>
+                    <td>@item.ContactName</td>
+                    <td>@item.Phone</td>
+                    <td>@item.Email</td>
+                    <td><span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span></td>
+                    <td>
+                        <form method="post" asp-page-handler="Toggle" class="d-inline">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <button class="btn btn-sm btn-outline-primary">Cambiar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

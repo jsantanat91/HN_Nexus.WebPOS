@@ -26,9 +26,15 @@
                         <hr />
                         <div class="ticket-row"><span>Folio</span><strong>#@Model.Sale.Id</strong></div>
                         <div class="ticket-row"><span>Fecha</span><strong>@Model.Sale.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong></div>
+                        <div class="ticket-row"><span>Sucursal</span><strong>@Model.Sale.Branch?.Name</strong></div>
                         <div class="ticket-row"><span>Cliente</span><strong>@(Model.Sale.Customer?.FullName ?? "Público General")</strong></div>
                         <div class="ticket-row"><span>Cajero</span><strong>@Model.Sale.User?.FullName</strong></div>
                         <div class="ticket-row"><span>Pago</span><strong>@Model.Sale.PaymentMethod</strong></div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Sale.AuthorizationCode))
+                        {
+                            <div class="ticket-row"><span>Autorización</span><strong>@Model.Sale.AuthorizationCode</strong></div>
+                        }
+                        <div class="ticket-row"><span>IVA en precio</span><strong>@(Model.Sale.PricesIncludeTax ? "Sí" : "No")</strong></div>
 
                         <hr />
                         @foreach (var d in Model.Sale.Details)
@@ -73,3 +79,4 @@
 }
 </style>
 }
+

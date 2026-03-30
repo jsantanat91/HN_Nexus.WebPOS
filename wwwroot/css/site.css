@@ -185,6 +185,8 @@ body {
   font-size: 1.8rem;
   margin: .2rem 0;
   font-weight: 800;
+  line-height: 1.1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .kpi-trend {
@@ -233,6 +235,31 @@ body {
   box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
 }
 
+.btn-save {
+  border: none;
+  color: #fff;
+  background: linear-gradient(120deg, #16a34a, #10b981);
+  box-shadow: 0 8px 16px rgba(22, 163, 74, 0.25);
+}
+
+.btn-save:hover,
+.btn-save:focus {
+  color: #fff;
+  background: linear-gradient(120deg, #15803d, #059669);
+}
+
+.btn-cancel {
+  color: #fff;
+  border: 1px solid #dc2626;
+  background: linear-gradient(120deg, #ef4444, #dc2626);
+}
+
+.btn-cancel:hover,
+.btn-cancel:focus {
+  color: #fff;
+  background: linear-gradient(120deg, #dc2626, #b91c1c);
+}
+
 .btn-outline-primary {
   border-color: #93c5fd;
   color: #1d4ed8;
@@ -269,7 +296,13 @@ body {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: .8rem;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16);
 }
 
 .product-name {
@@ -315,7 +348,10 @@ body {
 }
 
 .auth-wrap {
-  max-width: 480px;
+  min-height: 100vh;
+  margin: 0;
+  max-width: none;
+  padding: 0;
 }
 
 .login-card {
@@ -323,6 +359,119 @@ body {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+}
+
+.login-hero {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.28), transparent 30%),
+    radial-gradient(circle at 80% 30%, rgba(6, 182, 212, 0.2), transparent 40%),
+    linear-gradient(140deg, #020617 0%, #0b1f52 45%, #0f3a75 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 90px 90px, 90px 90px;
+  mask-image: radial-gradient(circle at center, #000 40%, transparent 95%);
+}
+
+.login-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 420px;
+  gap: 3rem;
+  align-items: center;
+  padding: 2rem;
+}
+
+.login-copy {
+  color: #eef6ff;
+}
+
+.login-copy h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 900;
+  margin: 0 0 .9rem;
+}
+
+.login-copy p {
+  font-size: 1.2rem;
+  max-width: 620px;
+  color: #d6e8ff;
+}
+
+.login-copy ul {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  color: #bae6fd;
+}
+
+.login-chip {
+  display: inline-block;
+  border: 1px solid rgba(191, 219, 254, 0.6);
+  border-radius: 999px;
+  padding: .28rem .7rem;
+  font-size: .82rem;
+  color: #dbeafe;
+  margin-bottom: .8rem;
+}
+
+.login-panel {
+  background: linear-gradient(180deg, rgba(3, 7, 18, 0.82), rgba(15, 23, 42, 0.9));
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
+.login-panel .form-label {
+  color: #e2e8f0;
+}
+
+.login-input {
+  background: #f8f4cf;
+}
+
+.kpi-gradient {
+  border-width: 1px;
+}
+
+.kpi-blue {
+  background: linear-gradient(160deg, rgba(37, 99, 235, 0.12), #fff 62%);
+}
+
+.kpi-green {
+  background: linear-gradient(160deg, rgba(22, 163, 74, 0.12), #fff 62%);
+}
+
+.kpi-red {
+  background: linear-gradient(160deg, rgba(220, 38, 38, 0.12), #fff 62%);
+}
+
+.kpi-amber {
+  background: linear-gradient(160deg, rgba(245, 158, 11, 0.16), #fff 62%);
+}
+
+.kpi-cyan {
+  background: linear-gradient(160deg, rgba(8, 145, 178, 0.14), #fff 62%);
+}
+
+.kpi-slate {
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.08), #fff 62%);
+}
+
+.category-chip-form {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: .5rem .6rem;
 }
 
 @media (max-width: 1100px) {
@@ -351,5 +500,20 @@ body {
 
   .app-main {
     padding: .8rem;
+  }
+
+  .login-content {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .login-copy {
+    text-align: center;
+  }
+
+  .login-copy ul {
+    list-style: none;
+    padding-left: 0;
   }
 }

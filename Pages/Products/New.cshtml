@@ -4,46 +4,68 @@
     ViewData["Title"] = "Nuevo producto";
 }
 
-<h3>Nuevo producto</h3>
+<section class="panel">
+<div class="panel-header">
+    <div>
+        <h5 class="mb-0">Nuevo producto</h5>
+        <small class="text-muted">Control total de ventas, inventario y caja</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-primary" asp-page="/Config/Categories">Administrar categorías</a>
+    </div>
+</div>
+<div class="panel-body">
 <form method="post" class="row g-3">
     <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="col-md-3">
+        <label class="form-label">ID consecutivo</label>
+        <input class="form-control" value="@($"PROD-{Model.NextNumber:D6}")" readonly />
+    </div>
     <div class="col-md-6">
-        <label asp-for="Item.Name" class="form-label"></label>
-        <input asp-for="Item.Name" class="form-control" />
+        <label asp-for="Item.Name" class="form-label">Nombre</label>
+        <input asp-for="Item.Name" class="form-control" placeholder="Nombre del producto" />
     </div>
     <div class="col-md-3">
-        <label asp-for="Item.Barcode" class="form-label"></label>
+        <label asp-for="Item.Barcode" class="form-label">Código de barras</label>
         <input asp-for="Item.Barcode" class="form-control" />
     </div>
     <div class="col-md-3">
-        <label asp-for="Item.CategoryId" class="form-label">Categoria</label>
+        <label asp-for="Item.CategoryId" class="form-label">Categoría</label>
         <select asp-for="Item.CategoryId" asp-items="Model.Categories" class="form-select"></select>
     </div>
     <div class="col-md-3">
-        <label asp-for="Item.Price" class="form-label"></label>
+        <label asp-for="Item.Price" class="form-label">Precio venta</label>
         <input asp-for="Item.Price" class="form-control" />
     </div>
     <div class="col-md-3">
-        <label asp-for="Item.Cost" class="form-label"></label>
+        <label asp-for="Item.Cost" class="form-label">Costo</label>
         <input asp-for="Item.Cost" class="form-control" />
     </div>
     <div class="col-md-3">
-        <label asp-for="Item.Stock" class="form-label"></label>
+        <label asp-for="Item.Stock" class="form-label">Stock</label>
         <input asp-for="Item.Stock" class="form-control" />
     </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check form-switch">
+            <input class="form-check-input" asp-for="Item.PriceIncludesTax" />
+            <label class="form-check-label" asp-for="Item.PriceIncludesTax">Precio incluye IVA</label>
+        </div>
+    </div>
     <div class="col-md-3">
-        <label asp-for="Item.SatProductCode" class="form-label"></label>
+        <label asp-for="Item.SatProductCode" class="form-label">Clave SAT producto</label>
         <input asp-for="Item.SatProductCode" class="form-control" />
     </div>
     <div class="col-md-3">
-        <label asp-for="Item.SatUnitCode" class="form-label"></label>
+        <label asp-for="Item.SatUnitCode" class="form-label">Clave SAT unidad</label>
         <input asp-for="Item.SatUnitCode" class="form-control" />
     </div>
     <div class="col-12">
-        <button class="btn btn-primary">Guardar</button>
-        <a class="btn btn-outline-secondary" asp-page="/Products/Index">Cancelar</a>
+        <button class="btn btn-save">Guardar</button>
+        <a class="btn btn-cancel" asp-page="/Products/Index">Cancelar</a>
     </div>
 </form>
+</div>
+</section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
