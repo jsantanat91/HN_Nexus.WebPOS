@@ -1,4 +1,4 @@
-﻿using HN_Nexus.WebPOS.Data;
+using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -82,7 +82,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IWebHo
             Entity = "CashShift",
             BranchId = branchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"Apertura de turno con fondo inicial {openingFloat:N2}."
         });
 
@@ -138,7 +138,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IWebHo
             EntityId = shift.Id,
             BranchId = shift.BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"Cierre de turno. Declarado={closingDeclared:N2}, Sistema={shift.SystemCashTotal:N2}, Firma={shift.ClosingSignature}."
         });
 
@@ -147,3 +147,5 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IWebHo
         return RedirectToPage(new { branchId });
     }
 }
+
+

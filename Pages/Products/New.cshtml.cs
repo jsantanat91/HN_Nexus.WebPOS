@@ -1,4 +1,4 @@
-﻿using HN_Nexus.WebPOS.Data;
+using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +33,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         var existsCode = await db.Products.AnyAsync(p => p.ProductNumber == Item.ProductNumber);
         if (existsCode)
         {
-            ModelState.AddModelError(string.Empty, "El código de producto ya existe.");
+            ModelState.AddModelError(string.Empty, "El c�digo de producto ya existe.");
         }
 
         Item.Barcode = string.IsNullOrWhiteSpace(Item.Barcode) ? $"PROD-{Item.ProductNumber:D6}" : Item.Barcode.Trim();
@@ -63,7 +63,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             EntityId = Item.Id,
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"Alta de producto '{Item.Name}' en sucursal {BranchId}."
         });
 
@@ -102,3 +102,5 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         }
     }
 }
+
+

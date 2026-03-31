@@ -2,25 +2,37 @@
 @model HN_Nexus.WebPOS.Pages.Config.PricingModel
 @{
     ViewData["Title"] = "Motor de Precios";
+    var wholesaleLists = Model.Lists.Count(x => x.IsWholesale);
+    var retailLists = Model.Lists.Count - wholesaleLists;
 }
 
 <section class="panel mb-3">
     <div class="panel-header"><h5 class="mb-0">Listas de precio / cliente / mayoreo</h5></div>
     <div class="panel-body">
+        <div class="cards-grid compact mb-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Listas</div><div class="kpi-value text-primary">@Model.Lists.Count</div><span class="badge-soft badge-info">Configuradas</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Mayoreo</div><div class="kpi-value text-success">@wholesaleLists</div><span class="badge-soft badge-ok">Volumen</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-cyan"><div class="kpi-title">Mostrador</div><div class="kpi-value text-info">@retailLists</div><span class="badge-soft badge-info">Publico general</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Reglas activas</div><div class="kpi-value text-warning">@Model.Items.Count</div><span class="badge-soft badge-warn">Por producto</span></div>
+        </div>
+
         <div class="row g-2 mb-3">
-            <div class="col-md-4">
-                <form method="post" asp-page-handler="CreateList" class="d-flex gap-2">
-                    <input name="name" class="form-control" placeholder="Nueva lista (ej. Distribuidor)" />
-                    <div class="form-check mt-2">
-                        <input id="isWholesale" name="isWholesale" value="true" type="checkbox" class="form-check-input" />
-                        <label class="form-check-label" for="isWholesale">Mayoreo</label>
+            <div class="col-md-6">
+                <form method="post" asp-page-handler="CreateList" class="row g-2">
+                    <div class="col-md-6"><input name="name" class="form-control" placeholder="Nueva lista (ej. Distribuidor)" /></div>
+                    <div class="col-md-3 d-flex align-items-center">
+                        <div class="form-check">
+                            <input id="isWholesale" name="isWholesale" value="true" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label" for="isWholesale">Mayoreo</label>
+                        </div>
                     </div>
-                    <button class="btn btn-save">Crear</button>
+                    <div class="col-md-3"><button class="btn btn-save w-100">Crear</button></div>
                 </form>
             </div>
-            <div class="col-md-4">
-                <form method="get">
-                    <select asp-for="PriceListId" asp-items="Model.PriceListsOptions" class="form-select" onchange="this.form.submit()"></select>
+            <div class="col-md-6">
+                <form method="get" class="row g-2">
+                    <div class="col-md-8"><select asp-for="PriceListId" asp-items="Model.PriceListsOptions" class="form-select"></select></div>
+                    <div class="col-md-4"><button class="btn btn-outline-primary w-100">Ver lista</button></div>
                 </form>
             </div>
         </div>
@@ -43,23 +55,30 @@
 
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Reglas de precios</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Lista</th><th>Producto</th><th>Desde qty</th><th>Precio</th></tr></thead>
-            <tbody>
-            @foreach (var item in Model.Items)
-            {
-                <tr>
-                    <td>
-                        <span class="badge-soft @(item.PriceList?.IsWholesale == true ? "badge-warning" : "badge-info")">@item.PriceList?.Name</span>
-                    </td>
-                    <td>@item.Product?.Name</td>
-                    <td>@item.MinQty</td>
-                    <td class="fw-bold">@item.Price.ToString("C")</td>
-                </tr>
-            }
-            </tbody>
-        </table>
+    <div class="panel-body">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="text-muted">No hay reglas cargadas para la lista seleccionada.</div>
+        }
+        else
+        {
+            <div class="cards-grid">
+                @foreach (var item in Model.Items)
+                {
+                    <article class="product-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge-soft @(item.PriceList?.IsWholesale == true ? "badge-warn" : "badge-info")">@item.PriceList?.Name</span>
+                            <span class="badge-soft badge-ok">@item.Price.ToString("C")</span>
+                        </div>
+                        <div class="fw-semibold mb-1">@item.Product?.Name</div>
+                        <div class="product-meta mb-2">Aplicar desde @item.MinQty unidades</div>
+                        <div class="d-flex gap-1 flex-wrap">
+                            <span class="badge-soft badge-info">Producto #@item.ProductId</span>
+                            <span class="badge-soft badge-warn">Min qty: @item.MinQty</span>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
     </div>
 </section>
-

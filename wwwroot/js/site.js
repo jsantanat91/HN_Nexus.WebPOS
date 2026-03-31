@@ -33,16 +33,7 @@
     const pinned = (menu.getAttribute("data-pinned") || "").toLowerCase() === "true";
     if (pinned) {
       menu.setAttribute("open", "");
-      return;
     }
-
-    menu.addEventListener("mouseenter", () => {
-      menu.setAttribute("open", "");
-    });
-
-    menu.addEventListener("mouseleave", () => {
-      menu.removeAttribute("open");
-    });
   });
 
   window.paintCategoryPills = function () {

@@ -27,18 +27,40 @@
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Movimientos</h5></div>
     <div class="panel-body">
-        <div class="cards-grid">
-            @foreach (var r in Model.Rows)
-            {
-                <article class="product-card">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="badge-soft badge-info">@r.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
-                        <span class="badge-soft @(r.Type == "Entrada" ? "badge-ok" : "badge-danger")">@r.Type @r.Quantity</span>
-                    </div>
-                    <div class="fw-semibold">@r.Reference</div>
-                    <div class="product-meta">@r.Notes</div>
-                </article>
-            }
-        </div>
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="text-muted">Sin movimientos para el filtro seleccionado.</div>
+        }
+        else
+        {
+            <div class="cards-grid">
+                @foreach (var r in Model.Rows)
+                {
+                    <article class="product-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge-soft badge-info">@r.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                            <span class="badge-soft @(r.Type == "Entrada" ? "badge-ok" : "badge-danger")">@r.Type @r.Quantity</span>
+                        </div>
+                        <div class="fw-semibold mb-1">@r.Reference</div>
+                        <div class="d-flex gap-1 flex-wrap mb-2">
+                            <span class="badge-soft badge-info">Origen: @(string.IsNullOrWhiteSpace(r.Source) ? "-" : r.Source)</span>
+                            @if (!string.IsNullOrWhiteSpace(r.Actor))
+                            {
+                                <span class="badge-soft badge-warn">Usuario: @r.Actor</span>
+                            }
+                            @if (r.UnitPrice.HasValue)
+                            {
+                                <span class="badge-soft badge-info">Precio: @r.UnitPrice.Value.ToString("C")</span>
+                            }
+                            @if (r.LineTotal.HasValue)
+                            {
+                                <span class="badge-soft badge-ok">Importe: @r.LineTotal.Value.ToString("C")</span>
+                            }
+                        </div>
+                        <div class="product-meta">Detalle: @r.Notes</div>
+                    </article>
+                }
+            </div>
+        }
     </div>
 </section>

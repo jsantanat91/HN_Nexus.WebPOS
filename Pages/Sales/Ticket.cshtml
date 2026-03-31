@@ -1,6 +1,11 @@
-﻿@page "{id:int}"
+@page "{id:int}"
 @model HN_Nexus.WebPOS.Pages.Sales.TicketModel
 @{
+    if (Model.Embed)
+    {
+        Layout = null;
+    }
+
     ViewData["Title"] = "Ticket";
     var symbol = string.IsNullOrWhiteSpace(Model.Config.CurrencySymbol) ? "$" : Model.Config.CurrencySymbol;
     string money(decimal val) => $"{symbol}{val:N2}";
@@ -60,8 +65,16 @@
                     </div>
 
                     <div class="d-grid gap-2 mt-3 d-print-none">
-                        <button class="btn btn-primary" onclick="window.print()">Imprimir ticket</button>
-                        <a class="btn btn-outline-primary" asp-page="/Sales/Index">Volver a ventas</a>
+                        @if (Model.Embed)
+                        {
+                            <button type="button" class="btn btn-primary" id="btnPrintAndClose">Imprimir ticket</button>
+                            <button type="button" class="btn btn-outline-primary" id="btnBackAndClose">Volver a ventas</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" onclick="window.print()">Imprimir ticket</button>
+                            <a class="btn btn-outline-primary" asp-page="/Sales/Index">Volver a ventas</a>
+                        }
                     </div>
                 </div>
             </div>
@@ -70,14 +83,26 @@
 }
 
 @section Scripts {
+@if (Model.Embed)
+{
+<script>
+(() => {
+  const closeModal = () => window.parent?.postMessage({ type: 'closeTicketModal' }, '*');
+  document.getElementById('btnBackAndClose')?.addEventListener('click', closeModal);
+  document.getElementById('btnPrintAndClose')?.addEventListener('click', () => {
+    window.print();
+    setTimeout(closeModal, 400);
+  });
+})();
+</script>
+}
 <style>
 @@media print {
-  body { background: #fff !important; }
+  body { background: #fff !important; margin: 0; }
   .app-sidebar, .app-topbar, .d-print-none { display: none !important; }
   .app-main { padding: 0 !important; }
   .thermal-ticket { width: 80mm; margin: 0 auto; font-size: 12px; }
 }
 </style>
 }
-
 

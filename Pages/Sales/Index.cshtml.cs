@@ -1,4 +1,4 @@
-ï»¿using System.Text;
+using System.Text;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -59,7 +59,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
         if (branch is null)
         {
-            TempData["Flash"] = "Sucursal no vÃ¡lida.";
+            TempData["Flash"] = "Sucursal no válida.";
             return RedirectToPage(new { branchId });
         }
 
@@ -178,8 +178,8 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             EntityId = sale.Id,
             BranchId = sale.BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
-            Details = $"Venta cancelada. RazÃ³n: {sale.CancelReason}"
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+            Details = $"Venta cancelada. Razón: {sale.CancelReason}"
         });
 
         await db.SaveChangesAsync();
@@ -212,14 +212,14 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
 
         if (sale.CfdiStatus == "Timbrado")
         {
-            TempData["Flash"] = "La venta ya estÃ¡ timbrada.";
+            TempData["Flash"] = "La venta ya está timbrada.";
             return RedirectToPage(new { branchId });
         }
 
         var config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
         if (string.IsNullOrWhiteSpace(config.PacProvider))
         {
-            TempData["Flash"] = "Configura proveedor PAC antes de timbrar (ConfiguraciÃ³n > CFDI/PAC).";
+            TempData["Flash"] = "Configura proveedor PAC antes de timbrar (Configuración > CFDI/PAC).";
             return RedirectToPage(new { branchId });
         }
 
@@ -260,8 +260,8 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             EntityId = sale.Id,
             BranchId = sale.BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
-            Details = $"Timbrado CFDI (modo integraciÃ³n base) UUID={uuid}, PAC={doc.PacProvider}."
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+            Details = $"Timbrado CFDI (modo integración base) UUID={uuid}, PAC={doc.PacProvider}."
         });
 
         await db.SaveChangesAsync();
@@ -297,7 +297,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             EntityId = sale.Id,
             BranchId = sale.BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"CFDI cancelado. UUID={doc.Uuid}. Motivo={doc.ErrorMessage}"
         });
 
@@ -356,4 +356,6 @@ th,td {{ border-bottom: 1px dashed #999; text-align: left; padding: 4px; font-si
 </html>";
     }
 }
+
+
 

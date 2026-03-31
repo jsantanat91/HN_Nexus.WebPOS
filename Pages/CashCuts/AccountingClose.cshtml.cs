@@ -62,7 +62,7 @@ public class AccountingCloseModel(AppDbContext db, IUserContextService userConte
             Entity = "AccountingClosure",
             BranchId = branchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"Cierre contable {closureDate:yyyy-MM-dd}. {notes}"
         });
 
@@ -98,7 +98,7 @@ public class AccountingCloseModel(AppDbContext db, IUserContextService userConte
             EntityId = item.Id,
             BranchId = item.BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"Reapertura auditada. Motivo: {item.ReopenReason}"
         });
 
@@ -130,4 +130,6 @@ public class AccountingCloseModel(AppDbContext db, IUserContextService userConte
             .ToListAsync();
     }
 }
+
+
 

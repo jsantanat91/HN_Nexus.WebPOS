@@ -1,4 +1,4 @@
-ï»¿using HN_Nexus.WebPOS.Data;
+using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +47,7 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
 
         if (FromBranchId <= 0 || ToBranchId <= 0 || ProductId <= 0 || Quantity <= 0 || FromWarehouseId <= 0 || ToWarehouseId <= 0)
         {
-            TempData["Flash"] = "Datos invÃ¡lidos para transferencia.";
+            TempData["Flash"] = "Datos inválidos para transferencia.";
             return RedirectToPage();
         }
 
@@ -55,14 +55,14 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
         var targetWarehouse = await db.Warehouses.FirstOrDefaultAsync(w => w.Id == ToWarehouseId && w.BranchId == ToBranchId);
         if (sourceWarehouse is null || targetWarehouse is null)
         {
-            TempData["Flash"] = "AlmacÃ©n origen/destino invÃ¡lido para las sucursales seleccionadas.";
+            TempData["Flash"] = "Almacén origen/destino inválido para las sucursales seleccionadas.";
             return RedirectToPage();
         }
 
         var sourceWhStock = await db.WarehouseStocks.FirstOrDefaultAsync(ps => ps.WarehouseId == FromWarehouseId && ps.ProductId == ProductId);
         if (sourceWhStock is null || sourceWhStock.Stock < Quantity)
         {
-            TempData["Flash"] = "Stock insuficiente en almacÃ©n origen.";
+            TempData["Flash"] = "Stock insuficiente en almacén origen.";
             return RedirectToPage();
         }
 
@@ -159,7 +159,7 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
             EntityId = ProductId,
             BranchId = FromBranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
             Details = $"Transferencia producto {ProductId}: {Quantity} de suc {FromBranchId}/alm {FromWarehouseId} a suc {ToBranchId}/alm {ToWarehouseId}."
         });
 
@@ -199,3 +199,5 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
             .ToListAsync();
     }
 }
+
+

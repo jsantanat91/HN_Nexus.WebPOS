@@ -10,6 +10,8 @@ public class TicketModel(AppDbContext db) : PageModel
 {
     public Sale? Sale { get; private set; }
     public AppConfig Config { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public bool Embed { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {

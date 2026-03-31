@@ -1,4 +1,4 @@
-ï»¿using System.Globalization;
+using System.Globalization;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -104,13 +104,13 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         await LoadAsync();
         if (BranchId <= 0)
         {
-            TempData["Flash"] = "Selecciona sucursal para crear producto rÃ¡pido.";
+            TempData["Flash"] = "Selecciona sucursal para crear producto rápido.";
             return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
         if (string.IsNullOrWhiteSpace(QuickProductName) || QuickProductPrice <= 0)
         {
-            TempData["Flash"] = "Completa nombre y precio del producto rÃ¡pido.";
+            TempData["Flash"] = "Completa nombre y precio del producto rápido.";
             return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
@@ -173,12 +173,12 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             EntityId = product.Id,
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
-            Details = $"Producto rÃ¡pido '{product.Name}' desde Caja."
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+            Details = $"Producto rápido '{product.Name}' desde Caja."
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Producto rÃ¡pido agregado.";
+        TempData["Flash"] = "Producto rápido agregado.";
         return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
     }
 
@@ -201,16 +201,16 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         if (QuickCustomerRequiresInvoice)
         {
             rfc = (string.IsNullOrWhiteSpace(QuickCustomerRfc) ? string.Empty : QuickCustomerRfc.Trim().ToUpperInvariant());
-            if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ã‘]{3,4}\d{6}[A-Z0-9]{3}$"))
+            if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$"))
             {
-                TempData["Flash"] = "RFC invÃ¡lido para cliente rÃ¡pido con factura.";
+                TempData["Flash"] = "RFC inválido para cliente rápido con factura.";
                 return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
             }
 
             cp = (QuickCustomerPostalCode ?? string.Empty).Trim();
             if (!System.Text.RegularExpressions.Regex.IsMatch(cp, @"^\d{5}$"))
             {
-                TempData["Flash"] = "CÃ³digo postal invÃ¡lido (debe ser de 5 dÃ­gitos) para factura.";
+                TempData["Flash"] = "Código postal inválido (debe ser de 5 dígitos) para factura.";
                 return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
             }
 
@@ -243,12 +243,12 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             Entity = "Customer",
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
-            Details = $"Cliente rÃ¡pido '{QuickCustomerName.Trim()}' desde Caja."
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+            Details = $"Cliente rápido '{QuickCustomerName.Trim()}' desde Caja."
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Cliente rÃ¡pido agregado.";
+        TempData["Flash"] = "Cliente rápido agregado.";
         return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
     }
 
@@ -499,7 +499,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         if (normalizedPayment.Equals("Card", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(AuthorizationCode))
         {
-            ModelState.AddModelError(string.Empty, "Captura el nÃºmero de autorizaciÃ³n del ticket de tarjeta.");
+            ModelState.AddModelError(string.Empty, "Captura el número de autorización del ticket de tarjeta.");
             return Page();
         }
 
@@ -567,8 +567,8 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             Entity = "Sale",
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
-            Details = $"Venta registrada. Total={total:N2}, mÃ©todo={normalizedPayment}, items={selected.Count}."
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+            Details = $"Venta registrada. Total={total:N2}, método={normalizedPayment}, items={selected.Count}."
         });
         await db.SaveChangesAsync();
 
@@ -691,5 +691,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         public int Stock { get; set; }
     }
 }
+
+
 
 

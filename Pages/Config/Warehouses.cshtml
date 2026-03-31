@@ -2,10 +2,12 @@
 @model HN_Nexus.WebPOS.Pages.Config.WarehousesModel
 @{
     ViewData["Title"] = "Almacenes";
+    var active = Model.Items.Count(x => x.IsActive);
+    var inactive = Model.Items.Count - active;
 }
 
 <section class="panel mb-3">
-    <div class="panel-header"><h5 class="mb-0">Multi-almacén por sucursal</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Multi-almacen por sucursal</h5></div>
     <div class="panel-body">
         <form method="get" class="row g-2 mb-3">
             <div class="col-md-6">
@@ -17,10 +19,16 @@
             </div>
         </form>
 
+        <div class="cards-grid compact mb-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Total almacenes</div><div class="kpi-value text-primary">@Model.Items.Count</div><span class="badge-soft badge-info">Registros</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Activos</div><div class="kpi-value text-success">@active</div><span class="badge-soft badge-ok">Operando</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Inactivos</div><div class="kpi-value text-danger">@inactive</div><span class="badge-soft badge-danger">Pausados</span></div>
+        </div>
+
         <form method="post" asp-page-handler="Create" class="row g-2">
             <input type="hidden" name="branchId" value="@Model.BranchId" />
-            <div class="col-md-3"><input class="form-control" name="code" placeholder="Código (ej. BODEGA-A)" required /></div>
-            <div class="col-md-7"><input class="form-control" name="name" placeholder="Nombre de almacén" required /></div>
+            <div class="col-md-3"><input class="form-control" name="code" placeholder="Codigo (ej. BODEGA-A)" required /></div>
+            <div class="col-md-7"><input class="form-control" name="name" placeholder="Nombre de almacen" required /></div>
             <div class="col-md-2"><button class="btn btn-save w-100">Guardar</button></div>
         </form>
     </div>
@@ -28,28 +36,31 @@
 
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Almacenes registrados</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Sucursal</th><th>Código</th><th>Nombre</th><th>Estatus</th><th></th></tr></thead>
-            <tbody>
-            @foreach (var item in Model.Items)
-            {
-                <tr>
-                    <td>@item.Branch?.Name</td>
-                    <td><span class="badge-soft badge-info">@item.Code</span></td>
-                    <td>@item.Name</td>
-                    <td><span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span></td>
-                    <td>
+    <div class="panel-body">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="text-muted">No hay almacenes para esta sucursal.</div>
+        }
+        else
+        {
+            <div class="cards-grid">
+                @foreach (var item in Model.Items)
+                {
+                    <article class="product-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge-soft badge-info">@item.Code</span>
+                            <span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span>
+                        </div>
+                        <div class="fw-semibold mb-1">@item.Name</div>
+                        <div class="product-meta mb-2">Sucursal: @item.Branch?.Name</div>
                         <form method="post" asp-page-handler="Toggle">
                             <input type="hidden" name="id" value="@item.Id" />
                             <input type="hidden" name="branchId" value="@Model.BranchId" />
-                            <button class="btn btn-sm btn-outline-primary">Cambiar</button>
+                            <button class="btn btn-sm btn-outline-primary">Cambiar estatus</button>
                         </form>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+                    </article>
+                }
+            </div>
+        }
     </div>
 </section>
-
