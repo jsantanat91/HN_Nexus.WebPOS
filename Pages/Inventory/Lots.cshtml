@@ -2,14 +2,18 @@
 @model HN_Nexus.WebPOS.Pages.Inventory.LotsModel
 @{
     ViewData["Title"] = "Lotes y Caducidades";
+    var active = Model.Items.Count(x => x.Quantity > 0);
+    var expired = Model.Items.Count(x => x.ExpirationDate.HasValue && x.ExpirationDate.Value.Date < DateTime.UtcNow.Date);
+    var nearExpire = Model.Items.Count(x => x.ExpirationDate.HasValue && x.ExpirationDate.Value.Date >= DateTime.UtcNow.Date && (x.ExpirationDate.Value.Date - DateTime.UtcNow.Date).TotalDays <= 30);
 }
 
 <section class="panel mb-3">
     <div class="panel-header">
         <h5 class="mb-0">Control de lotes / series / caducidad</h5>
+        <button class="btn btn-save" type="button" data-bs-toggle="modal" data-bs-target="#newLotModal">Nuevo lote</button>
     </div>
     <div class="panel-body">
-        <form method="get" class="row g-2">
+        <form method="get" class="row g-2 mb-3">
             <div class="col-md-4">
                 <label class="form-label">Sucursal</label>
                 <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
@@ -22,24 +26,12 @@
                 <button class="btn btn-outline-primary w-100">Filtrar</button>
             </div>
         </form>
-    </div>
-</section>
-
-<section class="panel mb-3">
-    <div class="panel-header">
-        <h5 class="mb-0">Alta de lote</h5>
-    </div>
-    <div class="panel-body">
-        <form method="post" asp-page-handler="Create" class="row g-2">
-            <input type="hidden" name="branchId" value="@Model.BranchId" />
-            <input type="hidden" name="productId" value="@Model.ProductId" />
-            <div class="col-md-3"><input name="lotNumber" class="form-control" placeholder="Lote (ej. LT-240301)" required /></div>
-            <div class="col-md-2"><input name="serialNumber" class="form-control" placeholder="Serie (opcional)" /></div>
-            <div class="col-md-2"><input name="expirationDate" type="date" class="form-control" /></div>
-            <div class="col-md-2"><input name="quantity" type="number" min="1" class="form-control" placeholder="Cantidad" required /></div>
-            <div class="col-md-2"><input name="unitCost" type="number" step="0.01" min="0" class="form-control" placeholder="Costo unitario" /></div>
-            <div class="col-md-1 d-flex align-items-center"><button class="btn btn-save w-100">Guardar</button></div>
-        </form>
+        <div class="cards-grid compact">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Lotes totales</div><div class="kpi-value text-primary">@Model.Items.Count</div><span class="badge-soft badge-info">Registros</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Lotes activos</div><div class="kpi-value text-success">@active</div><span class="badge-soft badge-ok">Con existencia</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Por vencer</div><div class="kpi-value text-warning">@nearExpire</div><span class="badge-soft badge-warn"><= 30 días</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Vencidos</div><div class="kpi-value text-danger">@expired</div><span class="badge-soft badge-danger">Revisión</span></div>
+        </div>
     </div>
 </section>
 
@@ -47,50 +39,50 @@
     <div class="panel-header">
         <h5 class="mb-0">Lotes registrados</h5>
     </div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Sucursal</th>
-                    <th>Lote</th>
-                    <th>Serie</th>
-                    <th>Caducidad</th>
-                    <th>Cantidad</th>
-                    <th>Costo</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    var days = item.ExpirationDate.HasValue ? (item.ExpirationDate.Value.Date - DateTime.UtcNow.Date).TotalDays : 9999;
-                    var badge = !item.ExpirationDate.HasValue ? "badge-info" : (days < 0 ? "badge-danger" : days <= 30 ? "badge-warning" : "badge-ok");
-                    <tr>
-                        <td>@item.Product?.Name</td>
-                        <td>@item.Branch?.Name</td>
-                        <td><span class="badge-soft badge-info">@item.LotNumber</span></td>
-                        <td>@(string.IsNullOrWhiteSpace(item.SerialNumber) ? "-" : item.SerialNumber)</td>
-                        <td>
-                            <span class="badge-soft @badge">
-                                @(item.ExpirationDate?.ToLocalTime().ToString("dd/MM/yyyy") ?? "Sin caducidad")
-                            </span>
-                        </td>
-                        <td>
-                            <form method="post" asp-page-handler="Adjust" class="d-flex gap-2 align-items-center">
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <input type="hidden" name="branchId" value="@Model.BranchId" />
-                                <input type="hidden" name="productId" value="@Model.ProductId" />
-                                <input type="number" name="quantity" value="@item.Quantity" min="0" class="form-control form-control-sm" style="max-width:100px;" />
-                                <button class="btn btn-sm btn-outline-primary">Ajustar</button>
-                            </form>
-                        </td>
-                        <td>@item.UnitCost.ToString("C")</td>
-                        <td></td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var item in Model.Items)
+            {
+                var days = item.ExpirationDate.HasValue ? (item.ExpirationDate.Value.Date - DateTime.UtcNow.Date).TotalDays : 9999;
+                var badge = !item.ExpirationDate.HasValue ? "badge-info" : (days < 0 ? "badge-danger" : days <= 30 ? "badge-warn" : "badge-ok");
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@item.Product?.Name</span>
+                        <span class="badge-soft @(item.Quantity > 0 ? "badge-ok" : "badge-danger")">Stock @item.Quantity</span>
+                    </div>
+                    <div class="product-meta mb-1">Sucursal: @item.Branch?.Name</div>
+                    <div class="mb-1"><span class="badge-soft badge-info">Lote @item.LotNumber</span></div>
+                    <div class="mb-2"><span class="badge-soft @badge">@(item.ExpirationDate?.ToLocalTime().ToString("dd/MM/yyyy") ?? "Sin caducidad")</span></div>
+                    <div class="product-meta mb-2">Serie: @(string.IsNullOrWhiteSpace(item.SerialNumber) ? "-" : item.SerialNumber)</div>
+                    <form method="post" asp-page-handler="Adjust" class="d-flex gap-2 align-items-center">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <input type="hidden" name="branchId" value="@Model.BranchId" />
+                        <input type="hidden" name="productId" value="@Model.ProductId" />
+                        <input type="number" name="quantity" value="@item.Quantity" min="0" class="form-control form-control-sm" style="max-width:96px;" />
+                        <button class="btn btn-sm btn-outline-primary">Ajustar</button>
+                    </form>
+                </article>
+            }
+        </div>
     </div>
 </section>
 
+<div class="modal fade" id="newLotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Nuevo lote</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" asp-page-handler="Create">
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <input type="hidden" name="productId" value="@Model.ProductId" />
+                <div class="modal-body row g-2">
+                    <div class="col-md-4"><label class="form-label">Lote</label><input name="lotNumber" class="form-control" placeholder="LT-240301" required /></div>
+                    <div class="col-md-3"><label class="form-label">Serie (opcional)</label><input name="serialNumber" class="form-control" /></div>
+                    <div class="col-md-3"><label class="form-label">Caducidad</label><input name="expirationDate" type="date" class="form-control" /></div>
+                    <div class="col-md-2"><label class="form-label">Cantidad</label><input name="quantity" type="number" min="1" class="form-control" required /></div>
+                    <div class="col-md-3"><label class="form-label">Costo unitario</label><input name="unitCost" type="number" step="0.01" min="0" class="form-control" /></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-save">Guardar</button></div>
+            </form>
+        </div>
+    </div>
+</div>

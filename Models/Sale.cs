@@ -7,6 +7,8 @@ public class Sale
 
     public int BranchId { get; set; }
     public Branch? Branch { get; set; }
+    public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
 
     public decimal SubtotalAmount { get; set; }
     public decimal TaxAmount { get; set; }

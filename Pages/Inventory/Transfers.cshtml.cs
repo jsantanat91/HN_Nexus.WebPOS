@@ -11,6 +11,7 @@ namespace HN_Nexus.WebPOS.Pages.Inventory;
 public class TransfersModel(AppDbContext db, IUserContextService userContext) : PageModel
 {
     public List<SelectListItem> Branches { get; private set; } = new();
+    public List<SelectListItem> Warehouses { get; private set; } = new();
     public List<SelectListItem> Products { get; private set; } = new();
     public List<StockTransfer> Items { get; private set; } = new();
 
@@ -19,6 +20,12 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
 
     [BindProperty]
     public int ToBranchId { get; set; }
+
+    [BindProperty]
+    public int FromWarehouseId { get; set; }
+
+    [BindProperty]
+    public int ToWarehouseId { get; set; }
 
     [BindProperty]
     public int ProductId { get; set; }
@@ -38,17 +45,41 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
     {
         await LoadAsync();
 
-        if (FromBranchId <= 0 || ToBranchId <= 0 || ProductId <= 0 || Quantity <= 0 || FromBranchId == ToBranchId)
+        if (FromBranchId <= 0 || ToBranchId <= 0 || ProductId <= 0 || Quantity <= 0 || FromWarehouseId <= 0 || ToWarehouseId <= 0)
         {
             TempData["Flash"] = "Datos inválidos para transferencia.";
             return RedirectToPage();
         }
 
-        var source = await db.ProductStocks.FirstOrDefaultAsync(ps => ps.BranchId == FromBranchId && ps.ProductId == ProductId);
-        if (source is null || source.Stock < Quantity)
+        var sourceWarehouse = await db.Warehouses.FirstOrDefaultAsync(w => w.Id == FromWarehouseId && w.BranchId == FromBranchId);
+        var targetWarehouse = await db.Warehouses.FirstOrDefaultAsync(w => w.Id == ToWarehouseId && w.BranchId == ToBranchId);
+        if (sourceWarehouse is null || targetWarehouse is null)
         {
-            TempData["Flash"] = "Stock insuficiente en sucursal origen.";
+            TempData["Flash"] = "Almacén origen/destino inválido para las sucursales seleccionadas.";
             return RedirectToPage();
+        }
+
+        var sourceWhStock = await db.WarehouseStocks.FirstOrDefaultAsync(ps => ps.WarehouseId == FromWarehouseId && ps.ProductId == ProductId);
+        if (sourceWhStock is null || sourceWhStock.Stock < Quantity)
+        {
+            TempData["Flash"] = "Stock insuficiente en almacén origen.";
+            return RedirectToPage();
+        }
+
+        var targetWhStock = await db.WarehouseStocks.FirstOrDefaultAsync(ps => ps.WarehouseId == ToWarehouseId && ps.ProductId == ProductId);
+        if (targetWhStock is null)
+        {
+            targetWhStock = new WarehouseStock { ProductId = ProductId, WarehouseId = ToWarehouseId, Stock = 0, MinStock = 5 };
+            db.WarehouseStocks.Add(targetWhStock);
+        }
+
+        sourceWhStock.Stock -= Quantity;
+        targetWhStock.Stock += Quantity;
+
+        var source = await db.ProductStocks.FirstOrDefaultAsync(ps => ps.BranchId == FromBranchId && ps.ProductId == ProductId);
+        if (source is not null)
+        {
+            source.Stock = Math.Max(0, source.Stock - Quantity);
         }
 
         var target = await db.ProductStocks.FirstOrDefaultAsync(ps => ps.BranchId == ToBranchId && ps.ProductId == ProductId);
@@ -57,8 +88,6 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
             target = new ProductStock { ProductId = ProductId, BranchId = ToBranchId, Stock = 0, MinStock = 5 };
             db.ProductStocks.Add(target);
         }
-
-        source.Stock -= Quantity;
         target.Stock += Quantity;
 
         var sourceLots = await db.ProductLots
@@ -113,7 +142,9 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
         {
             ProductId = ProductId,
             FromBranchId = FromBranchId,
+            FromWarehouseId = FromWarehouseId,
             ToBranchId = ToBranchId,
+            ToWarehouseId = ToWarehouseId,
             Quantity = Quantity,
             Notes = (Notes ?? string.Empty).Trim(),
             UserId = userContext.GetUserId(User),
@@ -129,7 +160,7 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
             BranchId = FromBranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "-",
-            Details = $"Transferencia producto {ProductId}: {Quantity} de sucursal {FromBranchId} a {ToBranchId}."
+            Details = $"Transferencia producto {ProductId}: {Quantity} de suc {FromBranchId}/alm {FromWarehouseId} a suc {ToBranchId}/alm {ToWarehouseId}."
         });
 
         await db.SaveChangesAsync();
@@ -143,6 +174,13 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
         Branches = branches.OrderBy(b => b.Name).Select(b => new SelectListItem($"{b.Code} - {b.Name}", b.Id.ToString())).ToList();
 
         var branchIds = branches.Select(b => b.Id).ToList();
+        Warehouses = await db.Warehouses
+            .Include(w => w.Branch)
+            .Where(w => branchIds.Contains(w.BranchId) && w.IsActive)
+            .OrderBy(w => w.BranchId)
+            .ThenBy(w => w.Name)
+            .Select(w => new SelectListItem($"[{w.Branch!.Code}] {w.Name}", w.Id.ToString()))
+            .ToListAsync();
 
         Products = await db.Products
             .Where(p => db.ProductStocks.Any(ps => ps.ProductId == p.Id && branchIds.Contains(ps.BranchId)))
@@ -154,6 +192,8 @@ public class TransfersModel(AppDbContext db, IUserContextService userContext) : 
             .Include(x => x.Product)
             .Include(x => x.FromBranch)
             .Include(x => x.ToBranch)
+            .Include(x => x.FromWarehouse)
+            .Include(x => x.ToWarehouse)
             .OrderByDescending(x => x.CreatedAt)
             .Take(200)
             .ToListAsync();

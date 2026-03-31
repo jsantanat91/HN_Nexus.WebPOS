@@ -43,6 +43,7 @@
                     <th>Folio</th>
                     <th>Fecha</th>
                     <th>Sucursal</th>
+                    <th>Almacén</th>
                     <th>Cliente</th>
                     <th>Pago</th>
                     <th>Cajero</th>
@@ -59,6 +60,7 @@
                     <td><span class="badge-soft badge-info">#@item.Id</span></td>
                     <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@item.Branch?.Name</td>
+                    <td>@(item.Warehouse?.Name ?? "-")</td>
                     <td>@(item.Customer?.FullName ?? "Público General")</td>
                     <td>@item.PaymentMethod</td>
                     <td>@item.User?.FullName</td>

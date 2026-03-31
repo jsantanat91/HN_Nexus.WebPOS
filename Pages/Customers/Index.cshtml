@@ -31,6 +31,7 @@
                     <div class="product-meta mb-1">Email: @item.Email</div>
                     <div class="product-meta mb-2">Tel: @item.PhoneNumber</div>
                     <div class="d-flex gap-1 flex-wrap">
+                        <span class="badge-soft badge-info">Lista @(item.PriceList?.Name ?? "Base")</span>
                         <span class="badge-soft badge-info">CFDI @item.CfdiUse</span>
                         <span class="badge-soft badge-warn">@item.PaymentForm / @item.PaymentMethodSat</span>
                         <span class="badge-soft category-pill" data-category="@item.FiscalRegime">Régimen @item.FiscalRegime</span>
@@ -59,6 +60,7 @@
                     <div class="col-md-4"><label asp-for="Input.PhoneNumber" class="form-label">Teléfono</label><input asp-for="Input.PhoneNumber" class="form-control" /></div>
                     <div class="col-md-4"><label asp-for="Input.Email" class="form-label">Correo</label><input asp-for="Input.Email" class="form-control" /></div>
                     <div class="col-md-4"><label asp-for="Input.Address" class="form-label">Dirección</label><input asp-for="Input.Address" class="form-control" /></div>
+                    <div class="col-md-4"><label asp-for="Input.PriceListId" class="form-label">Lista de precio</label><select asp-for="Input.PriceListId" asp-items="Model.PriceListOptions" class="form-select"><option value="">Sin lista</option></select></div>
 
                     <div id="customerInvoiceFields" class="row g-2">
                         <div class="col-md-4"><label asp-for="Input.CfdiUse" class="form-label">Uso CFDI</label><select asp-for="Input.CfdiUse" asp-items="Model.UsoCfdiOptions" class="form-select"></select></div>

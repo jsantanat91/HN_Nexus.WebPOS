@@ -34,13 +34,30 @@ public class PromotionsModel(AppDbContext db, IUserContextService userContext) :
         int buyQty,
         int payQty,
         decimal discountPercent,
-        TimeOnly? startTime,
-        TimeOnly? endTime,
+        string? startTime,
+        string? endTime,
         string? daysOfWeekCsv)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            TempData["Flash"] = "Nombre de promoción requerido.";
+            TempData["Flash"] = "Nombre de promocion requerido.";
+            return RedirectToPage(new { branchId = BranchId });
+        }
+
+        TimeOnly? start = null;
+        TimeOnly? end = null;
+        if (!string.IsNullOrWhiteSpace(startTime) && TimeOnly.TryParse(startTime, out var s))
+        {
+            start = s;
+        }
+        if (!string.IsNullOrWhiteSpace(endTime) && TimeOnly.TryParse(endTime, out var e))
+        {
+            end = e;
+        }
+
+        if (string.Equals(ruleType, "ComboPrice", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(productIdsCsv))
+        {
+            TempData["Flash"] = "Para combo captura IDs de productos (ej. 1,2,3).";
             return RedirectToPage(new { branchId = BranchId });
         }
 
@@ -56,14 +73,14 @@ public class PromotionsModel(AppDbContext db, IUserContextService userContext) :
             BuyQty = buyQty <= 0 ? 3 : buyQty,
             PayQty = payQty < 0 ? 2 : payQty,
             DiscountPercent = discountPercent < 0 ? 0 : discountPercent,
-            StartTime = startTime,
-            EndTime = endTime,
+            StartTime = start,
+            EndTime = end,
             DaysOfWeekCsv = string.IsNullOrWhiteSpace(daysOfWeekCsv) ? null : daysOfWeekCsv.Trim(),
             CreatedAt = DateTime.UtcNow
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Promoción guardada.";
+        TempData["Flash"] = "Promocion guardada.";
         return RedirectToPage(new { branchId = BranchId });
     }
 
@@ -77,7 +94,7 @@ public class PromotionsModel(AppDbContext db, IUserContextService userContext) :
 
         item.IsActive = !item.IsActive;
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Estatus de promoción actualizado.";
+        TempData["Flash"] = "Estatus de promocion actualizado.";
         return RedirectToPage(new { branchId });
     }
 

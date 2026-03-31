@@ -14,10 +14,14 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     public List<ProductPosItem> Products { get; private set; } = new();
     public List<SelectListItem> Customers { get; private set; } = new();
     public List<SelectListItem> Branches { get; private set; } = new();
+    public List<SelectListItem> Warehouses { get; private set; } = new();
     public AppConfig Config { get; private set; } = new();
 
     [BindProperty(SupportsGet = true)]
     public int BranchId { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int WarehouseId { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public int? TicketSaleId { get; set; }
@@ -101,13 +105,13 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         if (BranchId <= 0)
         {
             TempData["Flash"] = "Selecciona sucursal para crear producto rápido.";
-            return RedirectToPage(new { branchId = BranchId });
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
         if (string.IsNullOrWhiteSpace(QuickProductName) || QuickProductPrice <= 0)
         {
             TempData["Flash"] = "Completa nombre y precio del producto rápido.";
-            return RedirectToPage(new { branchId = BranchId });
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
         var cat = await db.Categories.OrderBy(x => x.Id).FirstOrDefaultAsync();
@@ -147,6 +151,20 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             MinStock = 5
         });
 
+        var warehouseId = WarehouseId > 0
+            ? WarehouseId
+            : await db.Warehouses.Where(w => w.BranchId == BranchId && w.IsActive).OrderBy(w => w.Id).Select(w => w.Id).FirstOrDefaultAsync();
+        if (warehouseId > 0)
+        {
+            db.WarehouseStocks.Add(new WarehouseStock
+            {
+                ProductId = product.Id,
+                WarehouseId = warehouseId,
+                Stock = QuickProductStock,
+                MinStock = 5
+            });
+        }
+
         db.AuditLogs.Add(new AuditLog
         {
             CreatedAt = DateTime.UtcNow,
@@ -161,7 +179,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         await db.SaveChangesAsync();
         TempData["Flash"] = "Producto rápido agregado.";
-        return RedirectToPage(new { branchId = BranchId });
+        return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
     }
 
     public async Task<IActionResult> OnPostQuickCustomerAsync()
@@ -171,7 +189,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         if (string.IsNullOrWhiteSpace(QuickCustomerName))
         {
             TempData["Flash"] = "Nombre de cliente requerido.";
-            return RedirectToPage(new { branchId = BranchId });
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
         var rfc = "XAXX010101000";
@@ -186,14 +204,14 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$"))
             {
                 TempData["Flash"] = "RFC inválido para cliente rápido con factura.";
-                return RedirectToPage(new { branchId = BranchId });
+                return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
             }
 
             cp = (QuickCustomerPostalCode ?? string.Empty).Trim();
             if (!System.Text.RegularExpressions.Regex.IsMatch(cp, @"^\d{5}$"))
             {
                 TempData["Flash"] = "Código postal inválido (debe ser de 5 dígitos) para factura.";
-                return RedirectToPage(new { branchId = BranchId });
+                return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
             }
 
             cfdiUse = QuickCustomerCfdiUse;
@@ -231,7 +249,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         await db.SaveChangesAsync();
         TempData["Flash"] = "Cliente rápido agregado.";
-        return RedirectToPage(new { branchId = BranchId });
+        return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -246,15 +264,30 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         if (hasClosedPeriod)
         {
             TempData["Flash"] = "La sucursal tiene cierre contable activo para hoy. Requiere reapertura auditada.";
-            return RedirectToPage(new { branchId = BranchId });
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
-        var stockRows = await db.ProductStocks
+        if (WarehouseId <= 0)
+        {
+            WarehouseId = await db.Warehouses
+                .Where(w => w.BranchId == BranchId && w.IsActive)
+                .OrderBy(w => w.Id)
+                .Select(w => w.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        if (WarehouseId <= 0)
+        {
+            TempData["Flash"] = "No hay almacenes activos en la sucursal.";
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
+        }
+
+        var stockRows = await db.WarehouseStocks
             .Include(ps => ps.Product)
-            .Where(ps => ps.BranchId == BranchId)
+            .Where(ps => ps.WarehouseId == WarehouseId)
             .ToListAsync();
 
-        var selected = new List<(ProductStock Stock, int Qty, decimal DiscountPercent)>();
+        var selected = new List<(WarehouseStock Stock, int Qty, decimal DiscountPercent)>();
         foreach (var row in stockRows)
         {
             var key = $"qty_{row.ProductId}";
@@ -326,7 +359,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
                 .Any(x => x == today);
         }
 
-        decimal PromoDiscount(ProductStock stock, int qty)
+        decimal PromoDiscount(WarehouseStock stock, int qty)
         {
             var product = stock.Product;
             if (product is null || qty <= 0)
@@ -406,9 +439,32 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             }
         }
 
-        var subtotalGross = selected.Sum(x => (x.Stock.Product?.Price ?? 0m) * x.Qty);
+        var customer = CustomerId.HasValue
+            ? await db.Customers.Include(c => c.PriceList).FirstOrDefaultAsync(c => c.Id == CustomerId.Value)
+            : null;
+
+        var priceListId = customer?.PriceListId;
+        var ruleCandidates = priceListId.HasValue
+            ? await db.PriceListItems.Where(x => x.PriceListId == priceListId.Value).ToListAsync()
+            : [];
+
+        decimal ResolveUnitPrice(int productId, int qty, decimal basePrice)
+        {
+            if (!priceListId.HasValue)
+            {
+                return basePrice;
+            }
+
+            var rule = ruleCandidates
+                .Where(x => x.ProductId == productId && x.MinQty <= qty)
+                .OrderByDescending(x => x.MinQty)
+                .FirstOrDefault();
+            return rule?.Price ?? basePrice;
+        }
+
+        var subtotalGross = selected.Sum(x => ResolveUnitPrice(x.Stock.ProductId, x.Qty, x.Stock.Product?.Price ?? 0m) * x.Qty);
         var promoDiscountAmount = selected.Sum(x => PromoDiscount(x.Stock, x.Qty)) + comboDiscountAmount;
-        var lineDiscountAmount = selected.Sum(x => (((x.Stock.Product?.Price ?? 0m) * x.Qty) - PromoDiscount(x.Stock, x.Qty)) * (x.DiscountPercent / 100m));
+        var lineDiscountAmount = selected.Sum(x => ((ResolveUnitPrice(x.Stock.ProductId, x.Qty, x.Stock.Product?.Price ?? 0m) * x.Qty) - PromoDiscount(x.Stock, x.Qty)) * (x.DiscountPercent / 100m));
         var subtotalAfterLineDiscount = subtotalGross - lineDiscountAmount;
         subtotalAfterLineDiscount -= promoDiscountAmount;
 
@@ -451,6 +507,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         {
             Date = DateTime.UtcNow,
             BranchId = BranchId,
+            WarehouseId = WarehouseId,
             UserId = userId.Value,
             CustomerId = CustomerId,
             IsInvoice = IsInvoice,
@@ -469,7 +526,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         foreach (var line in selected)
         {
-            var unitPrice = line.Stock.Product?.Price ?? 0m;
+            var unitPrice = ResolveUnitPrice(line.Stock.ProductId, line.Qty, line.Stock.Product?.Price ?? 0m);
             var lineSubtotal = unitPrice * line.Qty;
             var promo = PromoDiscount(line.Stock, line.Qty);
             var lineDiscount = (lineSubtotal - promo) * (line.DiscountPercent / 100m);
@@ -486,6 +543,12 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             if (line.Stock.Product is not null)
             {
                 line.Stock.Product.Stock = Math.Max(0, line.Stock.Product.Stock - line.Qty);
+            }
+
+            var branchStock = await db.ProductStocks.FirstOrDefaultAsync(x => x.BranchId == BranchId && x.ProductId == line.Stock.ProductId);
+            if (branchStock is not null)
+            {
+                branchStock.Stock = Math.Max(0, branchStock.Stock - line.Qty);
             }
 
             var lotOk = await ConsumeLotsAsync(BranchId, line.Stock.ProductId, line.Qty);
@@ -510,7 +573,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         await db.SaveChangesAsync();
 
         TempData["Flash"] = $"Venta #{sale.Id} registrada correctamente.";
-        return RedirectToPage(new { branchId = BranchId, ticketSaleId = sale.Id });
+        return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId, ticketSaleId = sale.Id });
     }
 
     private async Task LoadAsync()
@@ -525,9 +588,20 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             BranchId = int.Parse(Branches[0].Value!);
         }
 
-        var branchStocks = await db.ProductStocks
+        Warehouses = await db.Warehouses
+            .Where(w => w.BranchId == BranchId && w.IsActive)
+            .OrderBy(w => w.Name)
+            .Select(w => new SelectListItem($"{w.Code} - {w.Name}", w.Id.ToString()))
+            .ToListAsync();
+
+        if (WarehouseId <= 0 && Warehouses.Count > 0)
+        {
+            WarehouseId = int.Parse(Warehouses[0].Value!);
+        }
+
+        var branchStocks = await db.WarehouseStocks
             .Include(ps => ps.Product)!.ThenInclude(p => p!.Category)
-            .Where(ps => ps.BranchId == BranchId)
+            .Where(ps => ps.WarehouseId == WarehouseId)
             .OrderBy(ps => ps.Product!.Name)
             .ToListAsync();
 
@@ -545,9 +619,13 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             Stock = ps.Stock
         }).ToList();
 
-        Customers = await db.Customers.Where(x => x.IsActive)
+        Customers = await db.Customers
+            .Include(x => x.PriceList)
+            .Where(x => x.IsActive)
             .OrderBy(x => x.FullName)
-            .Select(x => new SelectListItem(x.FullName, x.Id.ToString()))
+            .Select(x => new SelectListItem(
+                x.PriceListId == null ? x.FullName : $"{x.FullName} ({x.PriceList!.Name})",
+                x.Id.ToString()))
             .ToListAsync();
 
         QuickCfdiUses = SatCatalogs.UsoCfdi

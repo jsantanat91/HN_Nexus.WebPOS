@@ -21,6 +21,13 @@
 
             <div class="col-md-6"><label asp-for="Item.TicketHeader" class="form-label">Encabezado ticket</label><input asp-for="Item.TicketHeader" class="form-control" id="cfgHeader" /></div>
             <div class="col-md-6"><label asp-for="Item.TicketFooter" class="form-label">Pie ticket</label><input asp-for="Item.TicketFooter" class="form-control" id="cfgFooter" /></div>
+
+            <div class="col-md-12"><h6 class="mt-3 mb-1">Cuentas contables (póliza)</h6></div>
+            <div class="col-md-4"><label asp-for="Item.SalesAccount" class="form-label">Cuenta ventas</label><input asp-for="Item.SalesAccount" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.VatAccount" class="form-label">Cuenta IVA</label><input asp-for="Item.VatAccount" class="form-control" /></div>
+            <div class="col-md-4"><label asp-for="Item.CashAccount" class="form-label">Cuenta efectivo</label><input asp-for="Item.CashAccount" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Item.CardAccount" class="form-label">Cuenta tarjeta</label><input asp-for="Item.CardAccount" class="form-control" /></div>
+            <div class="col-md-6"><label asp-for="Item.TransferAccount" class="form-label">Cuenta transferencia</label><input asp-for="Item.TransferAccount" class="form-control" /></div>
             <div class="col-12"><button class="btn btn-save">Guardar</button></div>
         </form>
     </div>
@@ -47,6 +54,8 @@
 <section class="panel mt-3">
     <div class="panel-header"><h5 class="mb-0">Módulos avanzados</h5></div>
     <div class="panel-body d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary" asp-page="/Config/Warehouses">Almacenes</a>
+        <a class="btn btn-outline-primary" asp-page="/Config/Pricing">Motor de precios</a>
         <a class="btn btn-outline-primary" asp-page="/Config/Cfdi">CFDI / PAC</a>
         <a class="btn btn-outline-primary" asp-page="/Config/Promotions">Promociones</a>
     </div>

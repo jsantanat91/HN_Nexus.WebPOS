@@ -33,25 +33,27 @@
 
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Historial de Cortes</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Fecha</th><th>Sucursal</th><th>Sistema</th><th>Efectivo</th><th>Tarjeta</th><th>Transfer</th><th>Físico</th><th>Diferencia</th><th>Usuario</th></tr></thead>
-            <tbody>
+    <div class="panel-body">
+        <div class="cards-grid">
             @foreach (var item in Model.Items)
             {
-                <tr>
-                    <td>@item.CutDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@item.Branch?.Name</td><td>@item.TotalSystem.ToString("C")</td>
-                    <td>@item.CashSales.ToString("C")</td>
-                    <td>@item.CardSales.ToString("C")</td>
-                    <td>@item.TransferSales.ToString("C")</td>
-                    <td>@item.TotalPhysical.ToString("C")</td>
-                    <td><span class="badge-soft @(item.Difference >= 0 ? "badge-ok" : "badge-danger")">@item.Difference.ToString("C")</span></td>
-                    <td>@item.User</td>
-                </tr>
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@item.CutDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="badge-soft @(item.Difference >= 0 ? "badge-ok" : "badge-danger")">@item.Difference.ToString("C")</span>
+                    </div>
+                    <div class="fw-semibold mb-1">@item.Branch?.Name</div>
+                    <div class="d-flex gap-1 flex-wrap mb-2">
+                        <span class="badge-soft badge-info">Sistema @item.TotalSystem.ToString("C")</span>
+                        <span class="badge-soft badge-ok">Efectivo @item.CashSales.ToString("C")</span>
+                        <span class="badge-soft badge-info">Tarjeta @item.CardSales.ToString("C")</span>
+                        <span class="badge-soft badge-warn">Transfer @item.TransferSales.ToString("C")</span>
+                    </div>
+                    <div class="product-meta">Fisico: @item.TotalPhysical.ToString("C")</div>
+                    <div class="product-meta">Usuario: @item.User</div>
+                </article>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>
 

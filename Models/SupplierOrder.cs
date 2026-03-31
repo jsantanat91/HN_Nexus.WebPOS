@@ -11,6 +11,8 @@ public class SupplierOrder
     public Product? Product { get; set; }
     public int BranchId { get; set; }
     public Branch? Branch { get; set; }
+    public int? WarehouseId { get; set; }
+    public Warehouse? Warehouse { get; set; }
 
     public int Quantity { get; set; }
     public decimal UnitCost { get; set; }

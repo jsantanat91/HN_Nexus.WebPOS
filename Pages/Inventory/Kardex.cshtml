@@ -2,6 +2,8 @@
 @model HN_Nexus.WebPOS.Pages.Inventory.KardexModel
 @{
     ViewData["Title"] = "Kardex";
+    var entradas = Model.Rows.Where(x => x.Type == "Entrada").Sum(x => x.Quantity);
+    var salidas = Model.Rows.Where(x => x.Type == "Salida").Sum(x => x.Quantity);
 }
 
 <section class="panel mb-3">
@@ -14,6 +16,11 @@
             <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
             <div class="col-md-2"><button class="btn btn-primary w-100">Consultar</button></div>
         </form>
+        <div class="cards-grid compact mt-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Movimientos</div><div class="kpi-value text-primary">@Model.Rows.Count</div><span class="badge-soft badge-info">Registros</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Entradas</div><div class="kpi-value text-success">@entradas</div><span class="badge-soft badge-ok">Unidades</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Salidas</div><div class="kpi-value text-danger">@salidas</div><span class="badge-soft badge-danger">Unidades</span></div>
+        </div>
     </div>
 </section>
 

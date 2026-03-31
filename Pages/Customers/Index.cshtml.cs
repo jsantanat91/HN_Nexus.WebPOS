@@ -25,6 +25,7 @@ public class IndexModel(AppDbContext db) : PageModel
     public List<SelectListItem> FormaPagoOptions { get; private set; } = [];
     public List<SelectListItem> MetodoPagoOptions { get; private set; } = [];
     public List<SelectListItem> TipoComprobanteOptions { get; private set; } = [];
+    public List<SelectListItem> PriceListOptions { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
@@ -87,7 +88,7 @@ public class IndexModel(AppDbContext db) : PageModel
     {
         LoadCatalogs();
 
-        var query = db.Customers.AsQueryable();
+        var query = db.Customers.Include(x => x.PriceList).AsQueryable();
         if (!string.IsNullOrWhiteSpace(Q))
         {
             query = query.Where(x => x.FullName.Contains(Q) || x.Rfc.Contains(Q) || x.Email.Contains(Q));
@@ -103,5 +104,6 @@ public class IndexModel(AppDbContext db) : PageModel
         FormaPagoOptions = SatCatalogs.FormaPago.Select(x => new SelectListItem($"{x.Code} - {x.Name}", x.Code)).ToList();
         MetodoPagoOptions = SatCatalogs.MetodoPago.Select(x => new SelectListItem($"{x.Code} - {x.Name}", x.Code)).ToList();
         TipoComprobanteOptions = SatCatalogs.TipoComprobante.Select(x => new SelectListItem($"{x.Code} - {x.Name}", x.Code)).ToList();
+        PriceListOptions = db.PriceLists.Where(x => x.IsActive).OrderBy(x => x.Name).Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
     }
 }

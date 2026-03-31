@@ -1,0 +1,74 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Reports.FiscalModel
+@{
+    ViewData["Title"] = "Corte Fiscal y Póliza";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Corte fiscal contable</h5></div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Desde</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hasta</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Sucursal</label>
+                <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" asp-for="AllBranches" />
+                    <label class="form-check-label" asp-for="AllBranches">General</label>
+                </div>
+            </div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
+        </form>
+        <form method="post" asp-page-handler="Export" class="d-flex gap-2 mt-3">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <input type="hidden" name="allBranches" value="@Model.AllBranches" />
+            <input type="hidden" name="from" value="@Model.From.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="to" value="@Model.To.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="format" id="fiscalFormat" value="contpaqi" />
+            <button class="btn btn-save" type="button" onclick="document.getElementById('fiscalFormat').value='contpaqi'; this.form.submit();">Exportar CONTPAQi (CSV)</button>
+            <button class="btn btn-outline-primary" type="button" onclick="document.getElementById('fiscalFormat').value='coi'; this.form.submit();">Exportar COI (TXT)</button>
+        </form>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <div class="row g-2">
+            <div class="col-md-4"><div class="kpi-card"><div class="kpi-title">Venta neta</div><div class="kpi-value text-primary">@Model.TotalSales.ToString("C")</div></div></div>
+            <div class="col-md-4"><div class="kpi-card"><div class="kpi-title">IVA trasladado</div><div class="kpi-value text-warning">@Model.TotalVat.ToString("C")</div></div></div>
+            <div class="col-md-4"><div class="kpi-card"><div class="kpi-title">Total cobrado</div><div class="kpi-value text-success">@Model.TotalIncome.ToString("C")</div></div></div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Resumen de ventas incluidas en póliza</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Fecha</th><th>Folio</th><th>Sucursal</th><th>Pago</th><th>Subtotal</th><th>IVA</th><th>Total</th></tr></thead>
+            <tbody>
+            @foreach (var s in Model.Sales)
+            {
+                <tr>
+                    <td>@s.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>#@s.Id</td>
+                    <td>@s.Branch?.Name</td>
+                    <td>@s.PaymentMethod</td>
+                    <td>@s.SubtotalAmount.ToString("C")</td>
+                    <td>@s.TaxAmount.ToString("C")</td>
+                    <td class="fw-bold">@s.TotalAmount.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

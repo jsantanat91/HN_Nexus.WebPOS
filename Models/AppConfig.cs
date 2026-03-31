@@ -27,5 +27,11 @@ public class AppConfig
     public string? PacApiKey { get; set; }
     public string? PacApiSecret { get; set; }
     public bool PacTestMode { get; set; } = true;
+
+    public string SalesAccount { get; set; } = "4000-000-000";
+    public string VatAccount { get; set; } = "2080-000-000";
+    public string CashAccount { get; set; } = "1010-000-000";
+    public string CardAccount { get; set; } = "1020-000-000";
+    public string TransferAccount { get; set; } = "1030-000-000";
 }
 

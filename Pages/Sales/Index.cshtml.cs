@@ -34,6 +34,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             .Include(x => x.User)
             .Include(x => x.Customer)
             .Include(x => x.Branch)
+            .Include(x => x.Warehouse)
             .AsQueryable();
 
         if (!User.IsInRole("Admin"))
@@ -111,6 +112,25 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             if (branchStocks.TryGetValue(detail.ProductId, out var stock))
             {
                 stock.Stock += detail.Quantity;
+            }
+
+            if (sale.WarehouseId.HasValue)
+            {
+                var whStock = await db.WarehouseStocks.FirstOrDefaultAsync(x => x.WarehouseId == sale.WarehouseId.Value && x.ProductId == detail.ProductId);
+                if (whStock is null)
+                {
+                    db.WarehouseStocks.Add(new WarehouseStock
+                    {
+                        WarehouseId = sale.WarehouseId.Value,
+                        ProductId = detail.ProductId,
+                        Stock = detail.Quantity,
+                        MinStock = 5
+                    });
+                }
+                else
+                {
+                    whStock.Stock += detail.Quantity;
+                }
             }
 
             var product = await db.Products.FirstOrDefaultAsync(p => p.Id == detail.ProductId);

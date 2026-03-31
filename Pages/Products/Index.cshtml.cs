@@ -171,6 +171,22 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             MinStock = 5
         });
 
+        var whId = await db.Warehouses
+            .Where(w => w.BranchId == BranchId && w.IsActive)
+            .OrderBy(w => w.Id)
+            .Select(w => w.Id)
+            .FirstOrDefaultAsync();
+        if (whId > 0)
+        {
+            db.WarehouseStocks.Add(new WarehouseStock
+            {
+                ProductId = product.Id,
+                WarehouseId = whId,
+                Stock = product.Stock,
+                MinStock = 5
+            });
+        }
+
         db.AuditLogs.Add(new AuditLog
         {
             CreatedAt = DateTime.UtcNow,
@@ -256,6 +272,24 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
                     existingStock.Stock += stock;
                 }
 
+                var whIdExisting = await db.Warehouses
+                    .Where(w => w.BranchId == targetBranch.Id && w.IsActive)
+                    .OrderBy(w => w.Id)
+                    .Select(w => w.Id)
+                    .FirstOrDefaultAsync();
+                if (whIdExisting > 0)
+                {
+                    var ws = await db.WarehouseStocks.FirstOrDefaultAsync(x => x.WarehouseId == whIdExisting && x.ProductId == existing.Id);
+                    if (ws is null)
+                    {
+                        db.WarehouseStocks.Add(new WarehouseStock { WarehouseId = whIdExisting, ProductId = existing.Id, Stock = stock, MinStock = 5 });
+                    }
+                    else
+                    {
+                        ws.Stock += stock;
+                    }
+                }
+
                 await db.SaveChangesAsync();
                 continue;
             }
@@ -288,6 +322,15 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             await db.SaveChangesAsync();
 
             db.ProductStocks.Add(new ProductStock { ProductId = product.Id, BranchId = targetBranch.Id, Stock = stock, MinStock = 5 });
+            var whId = await db.Warehouses
+                .Where(w => w.BranchId == targetBranch.Id && w.IsActive)
+                .OrderBy(w => w.Id)
+                .Select(w => w.Id)
+                .FirstOrDefaultAsync();
+            if (whId > 0)
+            {
+                db.WarehouseStocks.Add(new WarehouseStock { WarehouseId = whId, ProductId = product.Id, Stock = stock, MinStock = 5 });
+            }
             await db.SaveChangesAsync();
             created++;
         }
@@ -334,6 +377,25 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         {
             stock.Stock = EditStock;
             stock.MinStock = Math.Max(0, EditMinStock);
+        }
+
+        var whIdEdit = await db.Warehouses
+            .Where(w => w.BranchId == BranchId && w.IsActive)
+            .OrderBy(w => w.Id)
+            .Select(w => w.Id)
+            .FirstOrDefaultAsync();
+        if (whIdEdit > 0)
+        {
+            var whStock = await db.WarehouseStocks.FirstOrDefaultAsync(x => x.ProductId == EditId && x.WarehouseId == whIdEdit);
+            if (whStock is null)
+            {
+                db.WarehouseStocks.Add(new WarehouseStock { ProductId = EditId, WarehouseId = whIdEdit, Stock = EditStock, MinStock = Math.Max(0, EditMinStock) });
+            }
+            else
+            {
+                whStock.Stock = EditStock;
+                whStock.MinStock = Math.Max(0, EditMinStock);
+            }
         }
 
         product.ProductNumber = desiredNumber;

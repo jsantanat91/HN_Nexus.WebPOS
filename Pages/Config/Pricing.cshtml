@@ -1,0 +1,65 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.PricingModel
+@{
+    ViewData["Title"] = "Motor de Precios";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Listas de precio / cliente / mayoreo</h5></div>
+    <div class="panel-body">
+        <div class="row g-2 mb-3">
+            <div class="col-md-4">
+                <form method="post" asp-page-handler="CreateList" class="d-flex gap-2">
+                    <input name="name" class="form-control" placeholder="Nueva lista (ej. Distribuidor)" />
+                    <div class="form-check mt-2">
+                        <input id="isWholesale" name="isWholesale" value="true" type="checkbox" class="form-check-input" />
+                        <label class="form-check-label" for="isWholesale">Mayoreo</label>
+                    </div>
+                    <button class="btn btn-save">Crear</button>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form method="get">
+                    <select asp-for="PriceListId" asp-items="Model.PriceListsOptions" class="form-select" onchange="this.form.submit()"></select>
+                </form>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="AddItem" class="row g-2">
+            <input type="hidden" name="priceListId" value="@Model.PriceListId" />
+            <div class="col-md-5"><select name="productId" asp-items="Model.Products" class="form-select"></select></div>
+            <div class="col-md-2"><input name="minQty" type="number" min="1" value="1" class="form-control" placeholder="Desde qty" /></div>
+            <div class="col-md-3"><input name="price" type="number" step="0.01" class="form-control" placeholder="Precio" /></div>
+            <div class="col-md-2"><button class="btn btn-save w-100">Guardar regla</button></div>
+        </form>
+
+        <form method="post" asp-page-handler="AssignCustomer" class="row g-2 mt-3">
+            <div class="col-md-5"><select name="customerId" asp-items="Model.Customers" class="form-select"></select></div>
+            <div class="col-md-5"><select name="priceListId" asp-items="Model.PriceListsOptions" class="form-select"><option value="">Sin lista</option></select></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Asignar cliente</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Reglas de precios</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Lista</th><th>Producto</th><th>Desde qty</th><th>Precio</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>
+                        <span class="badge-soft @(item.PriceList?.IsWholesale == true ? "badge-warning" : "badge-info")">@item.PriceList?.Name</span>
+                    </td>
+                    <td>@item.Product?.Name</td>
+                    <td>@item.MinQty</td>
+                    <td class="fw-bold">@item.Price.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+

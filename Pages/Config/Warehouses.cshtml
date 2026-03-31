@@ -1,0 +1,55 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.WarehousesModel
+@{
+    ViewData["Title"] = "Almacenes";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Multi-almacén por sucursal</h5></div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Sucursal</label>
+                <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-outline-primary w-100">Filtrar</button>
+            </div>
+        </form>
+
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <div class="col-md-3"><input class="form-control" name="code" placeholder="Código (ej. BODEGA-A)" required /></div>
+            <div class="col-md-7"><input class="form-control" name="name" placeholder="Nombre de almacén" required /></div>
+            <div class="col-md-2"><button class="btn btn-save w-100">Guardar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Almacenes registrados</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Sucursal</th><th>Código</th><th>Nombre</th><th>Estatus</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.Branch?.Name</td>
+                    <td><span class="badge-soft badge-info">@item.Code</span></td>
+                    <td>@item.Name</td>
+                    <td><span class="badge-soft @(item.IsActive ? "badge-ok" : "badge-danger")">@(item.IsActive ? "Activo" : "Inactivo")</span></td>
+                    <td>
+                        <form method="post" asp-page-handler="Toggle">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input type="hidden" name="branchId" value="@Model.BranchId" />
+                            <button class="btn btn-sm btn-outline-primary">Cambiar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+

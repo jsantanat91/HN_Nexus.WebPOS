@@ -241,18 +241,31 @@
 
   function increaseByBarcode(code) {
     const q = (code || "").trim().toLowerCase();
-    if (!q) return;
+    if (!q) {
+      barcodeInput?.focus();
+      return;
+    }
 
     const card = getCards().find(c => (c.getAttribute("data-code") || "") === q);
-    if (!card) return;
+    if (!card) {
+      barcodeInput?.focus();
+      return;
+    }
 
     const input = getQtyInput(card);
-    if (!input) return;
+    if (!input) {
+      barcodeInput?.focus();
+      return;
+    }
 
     const max = parseInt(input.max || "999", 10);
     const val = parseInt(input.value || "0", 10);
     input.value = String(Math.min(max, val + 1));
     refreshPosSummary();
+    setTimeout(() => {
+      barcodeInput?.focus();
+      barcodeInput?.select();
+    }, 0);
   }
 
   function attachSearchAndHotkeys() {
@@ -262,8 +275,10 @@
           e.preventDefault();
           increaseByBarcode(barcodeInput.value);
           barcodeInput.value = "";
+          barcodeInput.focus();
         }
       });
+      setTimeout(() => barcodeInput.focus(), 0);
     }
 
     if (searchInput) {

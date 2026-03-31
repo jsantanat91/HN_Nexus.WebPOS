@@ -14,6 +14,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     public List<SelectListItem> Suppliers { get; private set; } = new();
     public List<SelectListItem> Products { get; private set; } = new();
     public List<SelectListItem> Branches { get; private set; } = new();
+    public List<SelectListItem> Warehouses { get; private set; } = new();
 
     [BindProperty(SupportsGet = true)]
     public int BranchId { get; set; }
@@ -23,10 +24,10 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         await LoadAsync();
     }
 
-    public async Task<IActionResult> OnPostCreateAsync(int branchId, int supplierId, int productId, int quantity, decimal unitCost)
+    public async Task<IActionResult> OnPostCreateAsync(int branchId, int warehouseId, int supplierId, int productId, int quantity, decimal unitCost)
     {
         BranchId = branchId;
-        if (supplierId <= 0 || productId <= 0 || quantity <= 0 || branchId <= 0)
+        if (supplierId <= 0 || productId <= 0 || quantity <= 0 || branchId <= 0 || warehouseId <= 0)
         {
             TempData["Flash"] = "Captura datos válidos para el pedido.";
             return RedirectToPage(new { branchId = BranchId });
@@ -35,8 +36,9 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         var supplier = await db.Suppliers.FirstOrDefaultAsync(s => s.Id == supplierId && s.IsActive);
         var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId);
         var stockRow = await db.ProductStocks.FirstOrDefaultAsync(ps => ps.ProductId == productId && ps.BranchId == branchId);
+        var warehouse = await db.Warehouses.FirstOrDefaultAsync(w => w.Id == warehouseId && w.BranchId == branchId && w.IsActive);
 
-        if (supplier is null || product is null || stockRow is null)
+        if (supplier is null || product is null || stockRow is null || warehouse is null)
         {
             TempData["Flash"] = "Proveedor o producto inválido para la sucursal seleccionada.";
             return RedirectToPage(new { branchId = BranchId });
@@ -47,6 +49,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             SupplierId = supplierId,
             ProductId = productId,
             BranchId = branchId,
+            WarehouseId = warehouseId,
             Quantity = quantity,
             UnitCost = unitCost < 0 ? 0 : unitCost,
             Status = "Pendiente",
@@ -80,6 +83,25 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
                 MinStock = 5
             };
             db.ProductStocks.Add(stock);
+        }
+
+        if (order.WarehouseId.HasValue)
+        {
+            var whStock = await db.WarehouseStocks.FirstOrDefaultAsync(x => x.ProductId == order.ProductId && x.WarehouseId == order.WarehouseId.Value);
+            if (whStock is null)
+            {
+                db.WarehouseStocks.Add(new WarehouseStock
+                {
+                    ProductId = order.ProductId,
+                    WarehouseId = order.WarehouseId.Value,
+                    Stock = order.Quantity,
+                    MinStock = 5
+                });
+            }
+            else
+            {
+                whStock.Stock += order.Quantity;
+            }
         }
         else
         {
@@ -157,10 +179,17 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             .Select(ps => new SelectListItem($"{ps.Product!.Name} (Stock {ps.Stock})", ps.ProductId.ToString()))
             .ToListAsync();
 
+        Warehouses = await db.Warehouses
+            .Where(w => w.BranchId == BranchId && w.IsActive)
+            .OrderBy(w => w.Name)
+            .Select(w => new SelectListItem($"{w.Code} - {w.Name}", w.Id.ToString()))
+            .ToListAsync();
+
         Items = await db.SupplierOrders
             .Include(x => x.Supplier)
             .Include(x => x.Product)
             .Include(x => x.Branch)
+            .Include(x => x.Warehouse)
             .Where(x => BranchId <= 0 || x.BranchId == BranchId)
             .OrderByDescending(x => x.OrderDate)
             .Take(200)

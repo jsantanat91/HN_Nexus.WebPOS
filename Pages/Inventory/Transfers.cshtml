@@ -2,19 +2,28 @@
 @model HN_Nexus.WebPOS.Pages.Inventory.TransfersModel
 @{
     ViewData["Title"] = "Transferencias";
+    var totalPzas = Model.Items.Sum(x => x.Quantity);
+    var rutas = Model.Items.Select(x => $"{x.FromBranchId}-{x.ToBranchId}").Distinct().Count();
 }
 
 <section class="panel mb-3">
     <div class="panel-header"><h5 class="mb-0">Transferencia entre sucursales</h5></div>
     <div class="panel-body">
         <form method="post" asp-page-handler="Create" class="row g-2">
-            <div class="col-md-3"><label class="form-label">Sucursal origen</label><select asp-for="FromBranchId" asp-items="Model.Branches" class="form-select"></select></div>
-            <div class="col-md-3"><label class="form-label">Sucursal destino</label><select asp-for="ToBranchId" asp-items="Model.Branches" class="form-select"></select></div>
-            <div class="col-md-3"><label class="form-label">Producto</label><select asp-for="ProductId" asp-items="Model.Products" class="form-select"></select></div>
+            <div class="col-md-2"><label class="form-label">Sucursal origen</label><select asp-for="FromBranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-2"><label class="form-label">Almacén origen</label><select asp-for="FromWarehouseId" asp-items="Model.Warehouses" class="form-select"></select></div>
+            <div class="col-md-2"><label class="form-label">Sucursal destino</label><select asp-for="ToBranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-2"><label class="form-label">Almacén destino</label><select asp-for="ToWarehouseId" asp-items="Model.Warehouses" class="form-select"></select></div>
+            <div class="col-md-2"><label class="form-label">Producto</label><select asp-for="ProductId" asp-items="Model.Products" class="form-select"></select></div>
             <div class="col-md-1"><label class="form-label">Cantidad</label><input asp-for="Quantity" class="form-control" type="number" min="1" /></div>
-            <div class="col-md-2"><label class="form-label">Notas</label><input asp-for="Notes" class="form-control" /></div>
+            <div class="col-md-1"><label class="form-label">Notas</label><input asp-for="Notes" class="form-control" /></div>
             <div class="col-md-2"><button class="btn btn-save w-100">Transferir</button></div>
         </form>
+        <div class="cards-grid compact mt-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Transferencias</div><div class="kpi-value text-primary">@Model.Items.Count</div><span class="badge-soft badge-info">Movimientos</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-cyan"><div class="kpi-title">Rutas activas</div><div class="kpi-value text-info">@rutas</div><span class="badge-soft badge-info">Origen-destino</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Unidades movidas</div><div class="kpi-value text-success">@totalPzas</div><span class="badge-soft badge-ok">Piezas</span></div>
+        </div>
     </div>
 </section>
 
@@ -30,7 +39,7 @@
                     <span class="badge-soft badge-warn">@t.Quantity pzas</span>
                 </div>
                 <div><strong>@t.Product?.Name</strong></div>
-                <div class="product-meta">@t.FromBranch?.Name -> @t.ToBranch?.Name</div>
+                <div class="product-meta">@t.FromBranch?.Name (@(t.FromWarehouse?.Name ?? "-")) -> @t.ToBranch?.Name (@(t.ToWarehouse?.Name ?? "-"))</div>
                 @if (!string.IsNullOrWhiteSpace(t.Notes))
                 {
                     <div class="product-meta mt-1">@t.Notes</div>

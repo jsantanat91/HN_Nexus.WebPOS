@@ -42,6 +42,11 @@ public class IndexModel(AppDbContext db) : PageModel
             current.TicketPrinterName = Item.TicketPrinterName;
             current.TicketHeader = Item.TicketHeader;
             current.TicketFooter = Item.TicketFooter;
+            current.SalesAccount = Item.SalesAccount;
+            current.VatAccount = Item.VatAccount;
+            current.CashAccount = Item.CashAccount;
+            current.CardAccount = Item.CardAccount;
+            current.TransferAccount = Item.TransferAccount;
         }
 
         await db.SaveChangesAsync();

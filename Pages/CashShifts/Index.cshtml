@@ -2,7 +2,20 @@
 @model HN_Nexus.WebPOS.Pages.CashShifts.IndexModel
 @{
     ViewData["Title"] = "Turno";
+    var openCount = Model.Shifts.Count(x => x.Status == "Open");
+    var closedCount = Model.Shifts.Count(x => x.Status == "Closed");
+    var diff = Model.Shifts.Where(x => x.Difference.HasValue).Sum(x => x.Difference ?? 0m);
 }
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <div class="cards-grid compact">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Turnos abiertos</div><div class="kpi-value text-primary">@openCount</div><span class="badge-soft badge-info">Activos</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Turnos cerrados</div><div class="kpi-value text-success">@closedCount</div><span class="badge-soft badge-ok">Historico</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Diferencia acumulada</div><div class="kpi-value @(diff >= 0 ? "text-success" : "text-danger")">@diff.ToString("C")</div><span class="badge-soft @(diff >= 0 ? "badge-ok" : "badge-danger")">Balance</span></div>
+        </div>
+    </div>
+</section>
 
 <section class="panel mb-3">
     <div class="panel-header"><h5 class="mb-0">Apertura / Cierre por turno</h5></div>
@@ -41,36 +54,31 @@
 
 <section class="panel">
     <div class="panel-header"><h5 class="mb-0">Historial de turnos</h5></div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Sucursal</th><th>Usuario</th><th>Apertura</th><th>Cierre</th><th>Fondo inicial</th><th>Sistema</th><th>Declarado</th><th>Diferencia</th><th>Firma</th><th>Evidencia</th><th>Estatus</th></tr></thead>
-            <tbody>
+    <div class="panel-body">
+        <div class="cards-grid">
             @foreach (var s in Model.Shifts)
             {
-                <tr>
-                    <td>@s.Branch?.Name</td>
-                    <td>@s.User?.FullName</td>
-                    <td>@s.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                    <td>@(s.ClosedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</td>
-                    <td>@s.OpeningFloat.ToString("C")</td>
-                    <td>@(s.SystemCashTotal?.ToString("C") ?? "-")</td>
-                    <td>@(s.ClosingDeclared?.ToString("C") ?? "-")</td>
-                    <td>@(s.Difference?.ToString("C") ?? "-")</td>
-                    <td>@(string.IsNullOrWhiteSpace(s.ClosingSignature) ? "-" : s.ClosingSignature)</td>
-                    <td>
-                        @if (string.IsNullOrWhiteSpace(s.ClosingEvidencePath))
-                        {
-                            <span>-</span>
-                        }
-                        else
-                        {
-                            <a class="btn btn-sm btn-outline-primary" href="@s.ClosingEvidencePath" target="_blank">Ver</a>
-                        }
-                    </td>
-                    <td><span class="badge-soft @(s.Status == "Open" ? "badge-warn" : "badge-ok")">@s.Status</span></td>
-                </tr>
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@s.Branch?.Name</span>
+                        <span class="badge-soft @(s.Status == "Open" ? "badge-warn" : "badge-ok")">@s.Status</span>
+                    </div>
+                    <div class="product-meta">Usuario: @s.User?.FullName</div>
+                    <div class="product-meta">Apertura: @s.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</div>
+                    <div class="product-meta">Cierre: @(s.ClosedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</div>
+                    <div class="d-flex gap-1 flex-wrap mt-2 mb-2">
+                        <span class="badge-soft badge-info">Fondo @s.OpeningFloat.ToString("C")</span>
+                        <span class="badge-soft badge-warn">Sistema @(s.SystemCashTotal?.ToString("C") ?? "-")</span>
+                        <span class="badge-soft badge-info">Declarado @(s.ClosingDeclared?.ToString("C") ?? "-")</span>
+                        <span class="badge-soft @((s.Difference ?? 0) >= 0 ? "badge-ok" : "badge-danger")">Dif @(s.Difference?.ToString("C") ?? "-")</span>
+                    </div>
+                    <div class="product-meta">Firma: @(string.IsNullOrWhiteSpace(s.ClosingSignature) ? "-" : s.ClosingSignature)</div>
+                    @if (!string.IsNullOrWhiteSpace(s.ClosingEvidencePath))
+                    {
+                        <div class="mt-2"><a class="btn btn-sm btn-outline-primary" href="@s.ClosingEvidencePath" target="_blank">Ver evidencia</a></div>
+                    }
+                </article>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>

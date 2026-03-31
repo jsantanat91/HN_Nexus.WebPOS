@@ -12,7 +12,11 @@
                     <label class="form-label">Sucursal activa</label>
                     <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
                 </div>
-                <div class="col-md-3"><button class="btn btn-primary w-100">Cambiar sucursal</button></div>
+                <div class="col-md-4">
+                    <label class="form-label">Almacén</label>
+                    <select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-select"></select>
+                </div>
+                <div class="col-md-2"><button class="btn btn-primary w-100">Aplicar</button></div>
                 <div class="col-md-5">
                     <label class="form-label">Escáner código de barras</label>
                     <input id="barcodeInput" class="form-control" placeholder="Escanea y Enter..." autocomplete="off" />
@@ -25,8 +29,8 @@
             <div class="panel-body">
                 <div class="d-flex justify-content-between align-items-center mb-2"><strong>Accesos rápidos</strong></div>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#quickProductModal">+ Producto rápido</button>
-                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#quickCustomerModal">+ Cliente rápido</button>
+                    <button class="btn btn-quick-product" type="button" data-bs-toggle="modal" data-bs-target="#quickProductModal">Producto rápido</button>
+                    <button class="btn btn-quick-customer" type="button" data-bs-toggle="modal" data-bs-target="#quickCustomerModal">Cliente rápido</button>
                 </div>
             </div>
         </div>
@@ -42,6 +46,7 @@
             </div>
             <form method="post" asp-page-handler="QuickProduct">
                 <input type="hidden" asp-for="BranchId" />
+                <input type="hidden" asp-for="WarehouseId" />
                 <div class="modal-body">
                     <div class="row g-2">
                         <div class="col-md-6"><label class="form-label">Nombre</label><input asp-for="QuickProductName" class="form-control" placeholder="Nombre" /></div>
@@ -68,6 +73,7 @@
             </div>
             <form method="post" asp-page-handler="QuickCustomer">
                 <input type="hidden" asp-for="BranchId" />
+                <input type="hidden" asp-for="WarehouseId" />
                 <div class="modal-body">
                     <div class="row g-2">
                         <div class="col-md-8"><label class="form-label">Nombre del cliente</label><input asp-for="QuickCustomerName" class="form-control" placeholder="Nombre cliente" /></div>
@@ -99,6 +105,7 @@
 
 <form method="post" class="pos-grid" id="posForm" data-tax="@Model.Config.TaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-currency="@Model.Config.CurrencySymbol">
     <input type="hidden" asp-for="BranchId" />
+    <input type="hidden" asp-for="WarehouseId" />
 
     <section class="panel">
         <div class="panel-header">

@@ -15,6 +15,8 @@ public class Customer
     public string InvoiceType { get; set; } = "I";
     public string PaymentForm { get; set; } = "01";
     public string PaymentMethodSat { get; set; } = "PUE";
+    public int? PriceListId { get; set; }
+    public PriceList? PriceList { get; set; }
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
 }
 

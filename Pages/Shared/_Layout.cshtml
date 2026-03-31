@@ -17,6 +17,7 @@
 {
     var currentPath = (Context?.Request?.Path.Value ?? string.Empty).ToLowerInvariant();
     var cajaOpen = currentPath.StartsWith("/sales") || currentPath.StartsWith("/cashcuts") || currentPath.StartsWith("/cashshifts");
+    var productsOpen = currentPath.StartsWith("/products") || currentPath.StartsWith("/inventory");
     var configOpen = currentPath.StartsWith("/config");
 
     var modules = (User.FindFirstValue("modules") ?? string.Empty)
@@ -51,14 +52,23 @@
                         </div>
                     </details>
                 }
-                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Products/Index">Productos</a> }
-                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Inventory/Kardex">Kardex</a> }
-                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Inventory/Transfers">Transferencias</a> }
-                @if (has(ModuleCatalog.Products)) { <a class="nav-link" asp-page="/Inventory/Lots">Lotes y Caducidades</a> }
+                @if (has(ModuleCatalog.Products))
+                {
+                    <details class="config-menu" @(productsOpen ? "open" : null) data-pinned="@productsOpen">
+                        <summary class="nav-link">Productos</summary>
+                        <div class="config-submenu">
+                            <a class="nav-link sub-link" asp-page="/Products/Index">Inventario</a>
+                            <a class="nav-link sub-link" asp-page="/Inventory/Kardex">Kardex</a>
+                            <a class="nav-link sub-link" asp-page="/Inventory/Transfers">Transferencias</a>
+                            <a class="nav-link sub-link" asp-page="/Inventory/Lots">Lotes y Caducidades</a>
+                        </div>
+                    </details>
+                }
                 @if (has(ModuleCatalog.Customers)) { <a class="nav-link" asp-page="/Customers/Index">Clientes</a> }
                 @if (has(ModuleCatalog.Expenses)) { <a class="nav-link" asp-page="/Expenses/Index">Gastos</a> }
                 @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Órdenes Compra</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Daily">Reportes</a> }
+                @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Fiscal">Corte Fiscal</a> }
 
                 @if (User.IsInRole("Admin"))
                 {
@@ -71,6 +81,8 @@
                             <a class="nav-link sub-link" asp-page="/Config/Permissions">Permisos</a>
                             <a class="nav-link sub-link" asp-page="/Config/Categories">Categorías</a>
                             <a class="nav-link sub-link" asp-page="/Config/Suppliers">Proveedores</a>
+                            <a class="nav-link sub-link" asp-page="/Config/Warehouses">Almacenes</a>
+                            <a class="nav-link sub-link" asp-page="/Config/Pricing">Precios</a>
                             <a class="nav-link sub-link" asp-page="/Config/Promotions">Promociones</a>
                             <a class="nav-link sub-link" asp-page="/Config/Cfdi">CFDI / PAC</a>
                             <a class="nav-link sub-link" asp-page="/Config/Audit">Bitácora</a>

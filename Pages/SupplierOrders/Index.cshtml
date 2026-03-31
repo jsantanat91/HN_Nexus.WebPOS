@@ -1,11 +1,14 @@
-﻿@page
+@page
 @model HN_Nexus.WebPOS.Pages.SupplierOrders.IndexModel
 @{
     ViewData["Title"] = "Órdenes de Compra";
+    var pendientes = Model.Items.Count(x => x.Status != "Recibido");
+    var recibidas = Model.Items.Count(x => x.Status == "Recibido");
+    var totalPiezas = Model.Items.Sum(x => x.Quantity);
 }
 
 <section class="panel mb-3">
-    <div class="panel-header"><h5 class="mb-0">Nueva orden de compra</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Gestión de órdenes</h5><button class="btn btn-save" type="button" data-bs-toggle="modal" data-bs-target="#newOrderModal">Nueva orden</button></div>
     <div class="panel-body">
         @if (Model.Branches.Count == 0)
         {
@@ -15,17 +18,15 @@
 
         <form method="get" class="row g-2 mb-3">
             <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
-            <div class="col-auto d-flex align-items-end"><button class="btn btn-outline-primary">Cambiar</button></div>
+            <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100">Cambiar</button></div>
         </form>
 
-        <form method="post" asp-page-handler="Create" class="row g-2">
-            <input type="hidden" name="branchId" value="@Model.BranchId" />
-            <div class="col-md-4"><label class="form-label">Proveedor</label><select class="form-select" name="supplierId" asp-items="Model.Suppliers"></select></div>
-            <div class="col-md-4"><label class="form-label">Producto</label><select class="form-select" name="productId" asp-items="Model.Products"></select></div>
-            <div class="col-md-2"><label class="form-label">Cantidad</label><input class="form-control" type="number" min="1" name="quantity" placeholder="Cantidad" /></div>
-            <div class="col-md-2"><label class="form-label">Costo unitario</label><input class="form-control" type="number" min="0" step="0.01" name="unitCost" placeholder="Costo" /></div>
-            <div class="col-md-3"><button class="btn btn-save">Guardar orden</button></div>
-        </form>
+        <div class="cards-grid compact">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Órdenes totales</div><div class="kpi-value text-primary">@Model.Items.Count</div><span class="badge-soft badge-info">Registros</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Pendientes</div><div class="kpi-value text-warning">@pendientes</div><span class="badge-soft badge-warn">Por recibir</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Recibidas</div><div class="kpi-value text-success">@recibidas</div><span class="badge-soft badge-ok">Completadas</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-cyan"><div class="kpi-title">Piezas</div><div class="kpi-value text-info">@totalPiezas</div><span class="badge-soft badge-info">Solicitadas</span></div>
+        </div>
     </div>
 </section>
 
@@ -43,6 +44,7 @@
                     <div class="mb-1"><strong>@item.Product?.Name</strong></div>
                     <div class="product-meta">Proveedor: @item.Supplier?.Name</div>
                     <div class="product-meta">Sucursal: @item.Branch?.Name</div>
+                    <div class="product-meta">Almacén: @(item.Warehouse?.Name ?? "Principal")</div>
                     <div class="d-flex gap-2 mt-2 mb-2">
                         <span class="badge-soft badge-info">Cant. @item.Quantity</span>
                         <span class="badge-soft badge-danger">@item.UnitCost.ToString("C")</span>
@@ -60,3 +62,23 @@
         </div>
     </div>
 </section>
+
+<div class="modal fade" id="newOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Nueva orden de compra</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="post" asp-page-handler="Create">
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <div class="modal-body row g-2">
+                    <div class="col-md-4"><label class="form-label">Proveedor</label><select class="form-select" name="supplierId" asp-items="Model.Suppliers"></select></div>
+                    <div class="col-md-4"><label class="form-label">Producto</label><select class="form-select" name="productId" asp-items="Model.Products"></select></div>
+                    <div class="col-md-4"><label class="form-label">Almacén destino</label><select class="form-select" name="warehouseId" asp-items="Model.Warehouses"></select></div>
+                    <div class="col-md-2"><label class="form-label">Cantidad</label><input class="form-control" type="number" min="1" name="quantity" /></div>
+                    <div class="col-md-3"><label class="form-label">Costo unitario</label><input class="form-control" type="number" min="0" step="0.01" name="unitCost" /></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-save">Guardar orden</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+

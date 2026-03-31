@@ -28,6 +28,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PromotionRule> PromotionRules => Set<PromotionRule>();
     public DbSet<CfdiDocument> CfdiDocuments => Set<CfdiDocument>();
     public DbSet<AccountingClosure> AccountingClosures => Set<AccountingClosure>();
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+    public DbSet<WarehouseStock> WarehouseStocks => Set<WarehouseStock>();
+    public DbSet<PriceList> PriceLists => Set<PriceList>();
+    public DbSet<PriceListItem> PriceListItems => Set<PriceListItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +66,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<CfdiDocument>()
             .HasIndex(x => x.SaleId)
+            .IsUnique();
+
+        modelBuilder.Entity<Warehouse>()
+            .HasIndex(x => new { x.BranchId, x.Code })
+            .IsUnique();
+
+        modelBuilder.Entity<WarehouseStock>()
+            .HasIndex(x => new { x.WarehouseId, x.ProductId })
+            .IsUnique();
+
+        modelBuilder.Entity<PriceListItem>()
+            .HasIndex(x => new { x.PriceListId, x.ProductId, x.MinQty })
             .IsUnique();
 
         modelBuilder.Entity<Category>().HasData(
@@ -160,5 +176,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             TicketHeader = "Bienvenido",
             TicketFooter = "Gracias por su compra"
         });
+
+        modelBuilder.Entity<Warehouse>().HasData(new Warehouse
+        {
+            Id = 1,
+            BranchId = 1,
+            Code = "PRINCIPAL",
+            Name = "Almacén Principal",
+            IsActive = true
+        });
+
+        modelBuilder.Entity<WarehouseStock>().HasData(
+            new WarehouseStock { Id = 1, WarehouseId = 1, ProductId = 1, Stock = 50, MinStock = 5 },
+            new WarehouseStock { Id = 2, WarehouseId = 1, ProductId = 2, Stock = 20, MinStock = 5 },
+            new WarehouseStock { Id = 3, WarehouseId = 1, ProductId = 3, Stock = 15, MinStock = 5 },
+            new WarehouseStock { Id = 4, WarehouseId = 1, ProductId = 4, Stock = 10, MinStock = 5 }
+        );
+
+        modelBuilder.Entity<PriceList>().HasData(
+            new PriceList { Id = 1, Name = "Mostrador", IsActive = true, IsWholesale = false },
+            new PriceList { Id = 2, Name = "Mayoreo", IsActive = true, IsWholesale = true }
+        );
     }
 }
