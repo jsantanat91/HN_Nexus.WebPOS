@@ -1,4 +1,5 @@
-﻿using HN_Nexus.WebPOS.Data;
+using System.Security.Claims;
+using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,8 @@ public class UsersModel(AppDbContext db) : PageModel
     public async Task<IActionResult> OnPostCreateAsync()
     {
         await LoadAsync();
+        var isSuperSession = IsSuperSession();
+        var currentTenantId = await ResolveCurrentTenantIdAsync();
 
         if (string.IsNullOrWhiteSpace(Input.Username) || string.IsNullOrWhiteSpace(Input.Password) || string.IsNullOrWhiteSpace(Input.FullName))
         {
@@ -37,6 +40,12 @@ public class UsersModel(AppDbContext db) : PageModel
         {
             TempData["Flash"] = "Ese usuario ya existe.";
             return RedirectToPage();
+        }
+
+        if (!isSuperSession)
+        {
+            Input.IsSuperUser = false;
+            Input.TenantId = currentTenantId;
         }
 
         var profile = await db.PermissionProfiles.FirstOrDefaultAsync(p => p.Id == Input.ProfileId && p.IsActive);
@@ -95,10 +104,25 @@ public class UsersModel(AppDbContext db) : PageModel
 
     public async Task<IActionResult> OnPostEditAsync(int id, string fullName, string? password, int? profileId, bool isSuperUser, int? tenantId)
     {
+        var isSuperSession = IsSuperSession();
+        var currentTenantId = await ResolveCurrentTenantIdAsync();
+
         var user = await db.Users.FirstOrDefaultAsync(x => x.Id == id);
         if (user is null)
         {
             return RedirectToPage();
+        }
+
+        if (!isSuperSession && (user.IsSuperUser || user.TenantId != currentTenantId))
+        {
+            TempData["Flash"] = "No puedes editar usuarios de otro tenant.";
+            return RedirectToPage();
+        }
+
+        if (!isSuperSession)
+        {
+            isSuperUser = false;
+            tenantId = currentTenantId;
         }
 
         PermissionProfile? profile = null;
@@ -173,9 +197,18 @@ public class UsersModel(AppDbContext db) : PageModel
 
     public async Task<IActionResult> OnPostDeactivateAsync(int id)
     {
+        var isSuperSession = IsSuperSession();
+        var currentTenantId = await ResolveCurrentTenantIdAsync();
+
         var user = await db.Users.FirstOrDefaultAsync(x => x.Id == id);
         if (user is null)
         {
+            return RedirectToPage();
+        }
+
+        if (!isSuperSession && (user.IsSuperUser || user.TenantId != currentTenantId))
+        {
+            TempData["Flash"] = "No puedes desactivar usuarios de otro tenant.";
             return RedirectToPage();
         }
 
@@ -193,7 +226,16 @@ public class UsersModel(AppDbContext db) : PageModel
 
     private async Task LoadAsync()
     {
-        Users = await db.Users.Include(u => u.PermissionProfile).Include(u => u.Tenant).OrderBy(x => x.FullName).ToListAsync();
+        var isSuperSession = IsSuperSession();
+        var currentTenantId = await ResolveCurrentTenantIdAsync();
+
+        var usersQuery = db.Users.Include(u => u.PermissionProfile).Include(u => u.Tenant).AsQueryable();
+        if (!isSuperSession)
+        {
+            usersQuery = usersQuery.Where(u => !u.IsSuperUser && u.TenantId == currentTenantId);
+        }
+
+        Users = await usersQuery.OrderBy(x => x.FullName).ToListAsync();
         Branches = await db.Branches.Where(b => b.IsActive).OrderBy(x => x.Name).ToListAsync();
         Profiles = await db.PermissionProfiles
             .Where(p => p.IsActive)
@@ -201,14 +243,54 @@ public class UsersModel(AppDbContext db) : PageModel
             .Select(p => new SelectListItem(p.Name, p.Id.ToString()))
             .ToListAsync();
 
-        Tenants = await db.Tenants.Where(t => t.IsActive).OrderBy(t => t.Name)
-            .Select(t => new SelectListItem($"{t.Code} - {t.Name}", t.Id.ToString()))
-            .ToListAsync();
+        if (isSuperSession)
+        {
+            Tenants = await db.Tenants.Where(t => t.IsActive).OrderBy(t => t.Name)
+                .Select(t => new SelectListItem($"{t.Code} - {t.Name}", t.Id.ToString()))
+                .ToListAsync();
+        }
+        else
+        {
+            Tenants = await db.Tenants.Where(t => t.IsActive && t.Id == currentTenantId).OrderBy(t => t.Name)
+                .Select(t => new SelectListItem($"{t.Code} - {t.Name}", t.Id.ToString()))
+                .ToListAsync();
+        }
 
         var accesses = await db.UserBranchAccesses.ToListAsync();
         UserBranchMap = accesses
             .GroupBy(x => x.UserId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.BranchId).ToHashSet());
+    }
+
+    private bool IsSuperSession()
+    {
+        return User.IsInRole("SuperUser")
+            || string.Equals(User.FindFirstValue("is_super"), "1", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<int?> ResolveCurrentTenantIdAsync()
+    {
+        var tenantCode = User.FindFirstValue("tenant_code");
+        if (!string.IsNullOrWhiteSpace(tenantCode))
+        {
+            var idFromCode = await db.Tenants
+                .Where(t => t.IsActive && t.Code.ToLower() == tenantCode.ToLower())
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
+
+            if (idFromCode.HasValue)
+            {
+                return idFromCode;
+            }
+        }
+
+        var userIdRaw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdRaw, out var userId))
+        {
+            return await db.Users.Where(u => u.Id == userId).Select(u => u.TenantId).FirstOrDefaultAsync();
+        }
+
+        return null;
     }
 
     public class NewUserInput

@@ -39,7 +39,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     public string PaymentMethod { get; set; } = "Cash";
 
     [BindProperty]
-    public string AuthorizationCode { get; set; } = string.Empty;
+    public string? AuthorizationCode { get; set; }
 
     [BindProperty]
     public decimal AmountReceived { get; set; }
@@ -48,10 +48,10 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     public decimal GlobalDiscountPercent { get; set; }
 
     [BindProperty]
-    public string QuickProductName { get; set; } = string.Empty;
+    public string? QuickProductName { get; set; }
 
     [BindProperty]
-    public string QuickProductCode { get; set; } = string.Empty;
+    public string? QuickProductCode { get; set; }
 
     [BindProperty]
     public decimal QuickProductPrice { get; set; }
@@ -60,25 +60,25 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     public int QuickProductStock { get; set; }
 
     [BindProperty]
-    public string QuickCustomerName { get; set; } = string.Empty;
+    public string? QuickCustomerName { get; set; }
 
     [BindProperty]
-    public string QuickCustomerRfc { get; set; } = string.Empty;
+    public string? QuickCustomerRfc { get; set; }
 
     [BindProperty]
-    public string QuickCustomerPostalCode { get; set; } = string.Empty;
+    public string? QuickCustomerPostalCode { get; set; }
 
     [BindProperty]
-    public string QuickCustomerEmail { get; set; } = string.Empty;
+    public string? QuickCustomerEmail { get; set; }
 
     [BindProperty]
-    public string QuickCustomerCfdiUse { get; set; } = "G03";
+    public string? QuickCustomerCfdiUse { get; set; } = "G03";
 
     [BindProperty]
-    public string QuickCustomerPaymentForm { get; set; } = "01";
+    public string? QuickCustomerPaymentForm { get; set; } = "01";
 
     [BindProperty]
-    public string QuickCustomerPaymentMethodSat { get; set; } = "PUE";
+    public string? QuickCustomerPaymentMethodSat { get; set; } = "PUE";
 
     [BindProperty]
     public bool QuickCustomerRequiresInvoice { get; set; }
@@ -255,6 +255,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadAsync();
+        ClearValidationNoiseForSale();
 
         var closureDate = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
         var hasClosedPeriod = await db.AccountingClosures.AnyAsync(x =>
@@ -598,6 +599,27 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         TempData["Flash"] = $"Venta #{sale.Id} registrada correctamente.";
         return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId, ticketSaleId = sale.Id });
+    }
+
+    private void ClearValidationNoiseForSale()
+    {
+        var keysToDrop = ModelState.Keys
+            .Where(k =>
+                k.StartsWith(nameof(QuickProductName), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickProductCode), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerName), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerRfc), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerPostalCode), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerEmail), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerCfdiUse), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerPaymentForm), StringComparison.Ordinal) ||
+                k.StartsWith(nameof(QuickCustomerPaymentMethodSat), StringComparison.Ordinal))
+            .ToList();
+
+        foreach (var key in keysToDrop)
+        {
+            ModelState.Remove(key);
+        }
     }
 
     private async Task LoadAsync()
