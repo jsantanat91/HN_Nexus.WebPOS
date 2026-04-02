@@ -637,11 +637,14 @@ app.Use(async (ctx, next) =>
             {
                 using var scope = app.Services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.Database.OpenConnectionAsync();
+                await db.Database.ExecuteSqlRawAsync("SET search_path TO \"public\", public;");
                 var fromHost = await db.Tenants
                     .Where(t => t.IsActive && t.Host != null && t.Host.ToLower() == host)
                     .Select(t => t.SchemaName)
                     .FirstOrDefaultAsync();
                 schema = SanitizeSchema(fromHost);
+                await db.Database.CloseConnectionAsync();
             }
             catch
             {
@@ -650,17 +653,30 @@ app.Use(async (ctx, next) =>
         }
     }
 
+    var requestDb = ctx.RequestServices.GetRequiredService<AppDbContext>();
     try
     {
-        var db = ctx.RequestServices.GetRequiredService<AppDbContext>();
-        await db.Database.ExecuteSqlRawAsync($"SET search_path TO \"{schema}\", public;");
+        // Importante: fijar schema en la misma conexión que usará toda la request.
+        await requestDb.Database.OpenConnectionAsync();
+        await requestDb.Database.ExecuteSqlRawAsync($"SET search_path TO \"{schema}\", public;");
+        await next();
     }
     catch
     {
         // Si no se puede fijar tenant, mantener flujo para no bloquear login o estáticos.
+        await next();
     }
-
-    await next();
+    finally
+    {
+        try
+        {
+            await requestDb.Database.CloseConnectionAsync();
+        }
+        catch
+        {
+            // Ignorar cierre para no romper el pipeline.
+        }
+    }
 });
 
 app.UseAuthorization();
