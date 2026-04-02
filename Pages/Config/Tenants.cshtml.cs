@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace HN_Nexus.WebPOS.Pages.Config;
 
@@ -34,26 +35,41 @@ public class TenantsModel(AppDbContext db) : PageModel
             return RedirectToPage();
         }
 
-        await db.Database.ExecuteSqlRawAsync($"CREATE SCHEMA IF NOT EXISTS \"{schema}\";");
-
-        var tenantTables = new[]
+        try
         {
-            "AppConfigs", "AuditLogs", "AccountingClosures", "Branches", "CashCuts", "CashShifts", "Categories", "CfdiDocuments", "CfdiVaultFiles",
-            "Customers", "Expenses", "ProductIngredients", "ProductLots", "Products", "ProductStocks", "PromotionRules", "ReplenishmentRules",
-            "SaleDetails", "Sales", "SaleReturns", "SaleReturnLines", "StockTransfers", "SupplierOrders", "Suppliers", "Warehouses", "WarehouseStocks",
-            "PriceLists", "PriceListItems", "CycleCounts", "CycleCountLines", "LotTraces", "AppTelemetryEvents", "UserBranchAccesses"
-        };
+            await db.Database.ExecuteSqlRawAsync($"CREATE SCHEMA IF NOT EXISTS \"{schema}\";");
 
-        foreach (var table in tenantTables)
-        {
-            await db.Database.ExecuteSqlRawAsync($"CREATE TABLE IF NOT EXISTS \"{schema}\".\"{table}\" (LIKE public.\"{table}\" INCLUDING ALL);");
+            var tenantTables = new[]
+            {
+                "AppConfigs", "AuditLogs", "AccountingClosures", "Branches", "CashCuts", "CashShifts", "Categories", "CfdiDocuments", "CfdiVaultFiles",
+                "Customers", "Expenses", "ProductIngredients", "ProductLots", "Products", "ProductStocks", "PromotionRules", "ReplenishmentRules",
+                "SaleDetails", "Sales", "SaleReturns", "SaleReturnLines", "StockTransfers", "SupplierOrders", "Suppliers", "Warehouses", "WarehouseStocks",
+                "PriceLists", "PriceListItems", "CycleCounts", "CycleCountLines", "LotTraces", "AppTelemetryEvents", "UserBranchAccesses"
+            };
+
+            foreach (var table in tenantTables)
+            {
+                await db.Database.ExecuteSqlRawAsync($"CREATE TABLE IF NOT EXISTS \"{schema}\".\"{table}\" (LIKE public.\"{table}\" INCLUDING ALL);");
+            }
+
+            await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Categories\" (\"Name\") SELECT 'General' WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Categories\");");
+            await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Branches\" (\"Code\",\"Name\",\"Address\",\"IsActive\") SELECT 'MATRIZ','Sucursal Matriz','Pendiente por configurar',true WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Branches\");");
+            await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Suppliers\" (\"Name\",\"ContactName\",\"Phone\",\"Email\",\"IsActive\") SELECT 'Proveedor General','','','',true WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Suppliers\");");
+            await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"PriceLists\" (\"Name\",\"IsActive\",\"IsWholesale\") SELECT 'Mostrador',true,false WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"PriceLists\");");
+            await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Warehouses\" (\"BranchId\",\"Code\",\"Name\",\"IsActive\") SELECT 1,'PRINCIPAL','Almacén Principal',true WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Warehouses\");");
         }
-
-        await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Categories\" (\"Name\") SELECT 'General' WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Categories\");");
-        await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Branches\" (\"Code\",\"Name\",\"Address\",\"IsActive\") SELECT 'MATRIZ','Sucursal Matriz','Pendiente por configurar',true WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Branches\");");
-        await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Suppliers\" (\"Name\",\"ContactName\",\"Phone\",\"Email\",\"IsActive\") SELECT 'Proveedor General','','','',true WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Suppliers\");");
-        await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"PriceLists\" (\"Name\",\"IsActive\",\"IsWholesale\") SELECT 'Mostrador',true,false WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"PriceLists\");");
-        await db.Database.ExecuteSqlRawAsync($"INSERT INTO \"{schema}\".\"Warehouses\" (\"BranchId\",\"Code\",\"Name\",\"IsActive\") SELECT 1,'PRINCIPAL','Almacén Principal',true WHERE NOT EXISTS (SELECT 1 FROM \"{schema}\".\"Warehouses\");");
+        catch (PostgresException ex) when (ex.SqlState == "42501")
+        {
+            TempData["Flash"] =
+                "No se pudo crear el tenant por permisos de PostgreSQL (42501). " +
+                "Ejecuta con usuario administrador: GRANT CREATE ON DATABASE hnpos TO hnpos_user;";
+            return RedirectToPage();
+        }
+        catch (PostgresException ex)
+        {
+            TempData["Flash"] = $"Error PostgreSQL al crear tenant: {ex.SqlState} - {ex.MessageText}";
+            return RedirectToPage();
+        }
 
         db.Tenants.Add(new Tenant
         {
