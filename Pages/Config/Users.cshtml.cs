@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
+using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HN_Nexus.WebPOS.Pages.Config;
 
 [Authorize(Policy = "AdminOnly")]
-public class UsersModel(AppDbContext db) : PageModel
+public class UsersModel(AppDbContext db, IAlertEmailService emailService) : PageModel
 {
     [BindProperty]
     public NewUserInput Input { get; set; } = new();
@@ -35,7 +36,18 @@ public class UsersModel(AppDbContext db) : PageModel
             return RedirectToPage();
         }
 
-        var exists = await db.Users.AnyAsync(u => u.Username == Input.Username.Trim());
+        if (!string.IsNullOrWhiteSpace(Input.Email))
+        {
+            Input.Email = Input.Email.Trim();
+            if (!Input.Email.Contains('@'))
+            {
+                TempData["Flash"] = "Correo inválido.";
+                return RedirectToPage();
+            }
+        }
+
+        var usernameClean = Input.Username.Trim();
+        var exists = await db.Users.AnyAsync(u => u.Username == usernameClean);
         if (exists)
         {
             TempData["Flash"] = "Ese usuario ya existe.";
@@ -58,13 +70,14 @@ public class UsersModel(AppDbContext db) : PageModel
         var tenantId = Input.IsSuperUser ? (int?)null : Input.TenantId;
         if (!Input.IsSuperUser && (!tenantId.HasValue || !await db.Tenants.AnyAsync(t => t.Id == tenantId.Value && t.IsActive)))
         {
-            TempData["Flash"] = "Selecciona tenant activo para el usuario.";
+            TempData["Flash"] = "Selecciona un tenant activo para el usuario.";
             return RedirectToPage();
         }
 
         var user = new User
         {
-            Username = Input.Username.Trim(),
+            Username = usernameClean,
+            Email = string.IsNullOrWhiteSpace(Input.Email) ? null : Input.Email.Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(Input.Password.Trim()),
             FullName = Input.FullName.Trim(),
             Role = Input.IsSuperUser ? "SuperUser" : (profile!.IsAdmin ? "Admin" : profile.Name),
@@ -98,18 +111,31 @@ public class UsersModel(AppDbContext db) : PageModel
             await db.SaveChangesAsync();
         }
 
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            var tenantCode = await db.Tenants.Where(t => t.Id == user.TenantId).Select(t => t.Code).FirstOrDefaultAsync() ?? "principal";
+            var body =
+                "Bienvenido a HN Nexus POS.\n\n" +
+                $"Usuario: {user.Username}\n" +
+                $"Contraseña temporal: {Input.Password.Trim()}\n" +
+                $"Tenant: {tenantCode}\n\n" +
+                "Por seguridad cambia tu contraseña al primer ingreso.";
+            _ = await emailService.SendToAsync(user.Email, "Acceso HN Nexus POS", body, false);
+        }
+
         TempData["Flash"] = "Usuario creado.";
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostEditAsync(int id, string fullName, string? password, int? profileId, bool isSuperUser, int? tenantId)
+    public async Task<IActionResult> OnPostEditAsync(int id, string? fullName, string? email, string? password, int? profileId, bool isSuperUser, int? tenantId)
     {
         var isSuperSession = IsSuperSession();
         var currentTenantId = await ResolveCurrentTenantIdAsync();
 
-        var user = await db.Users.FirstOrDefaultAsync(x => x.Id == id);
+        var user = await db.Users.Include(x => x.Tenant).FirstOrDefaultAsync(x => x.Id == id);
         if (user is null)
         {
+            TempData["Flash"] = "Usuario no encontrado.";
             return RedirectToPage();
         }
 
@@ -148,7 +174,26 @@ public class UsersModel(AppDbContext db) : PageModel
             }
         }
 
-        user.FullName = string.IsNullOrWhiteSpace(fullName) ? user.FullName : fullName.Trim();
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            user.FullName = fullName.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var emailClean = email.Trim();
+            if (!emailClean.Contains('@'))
+            {
+                TempData["Flash"] = "Correo inválido.";
+                return RedirectToPage();
+            }
+            user.Email = emailClean;
+        }
+        else
+        {
+            user.Email = null;
+        }
+
         if (!string.IsNullOrWhiteSpace(password))
         {
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password.Trim());
@@ -191,6 +236,16 @@ public class UsersModel(AppDbContext db) : PageModel
         }
 
         await db.SaveChangesAsync();
+
+        if (!string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(user.Email))
+        {
+            _ = await emailService.SendToAsync(
+                user.Email,
+                "Cambio de contraseña HN Nexus POS",
+                $"Tu contraseña fue actualizada.\nUsuario: {user.Username}\nSi no reconoces este cambio, contacta soporte.",
+                false);
+        }
+
         TempData["Flash"] = "Usuario actualizado.";
         return RedirectToPage();
     }
@@ -297,6 +352,7 @@ public class UsersModel(AppDbContext db) : PageModel
     {
         public string Username { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public string? Email { get; set; }
         public string Password { get; set; } = string.Empty;
         public int? ProfileId { get; set; }
         public int? TenantId { get; set; }

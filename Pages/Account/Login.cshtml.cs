@@ -1,6 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using HN_Nexus.WebPOS.Data;
+using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -9,10 +10,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HN_Nexus.WebPOS.Pages.Account;
 
-public class LoginModel(AppDbContext db) : PageModel
+public class LoginModel(AppDbContext db, IAlertEmailService emailService) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
+
+    [BindProperty]
+    public RecoverInput Recovery { get; set; } = new();
 
     public class InputModel
     {
@@ -22,6 +26,13 @@ public class LoginModel(AppDbContext db) : PageModel
         [Required]
         public string Password { get; set; } = string.Empty;
 
+        public string? TenantCode { get; set; }
+    }
+
+    public class RecoverInput
+    {
+        [Required]
+        public string UsernameOrEmail { get; set; } = string.Empty;
         public string? TenantCode { get; set; }
     }
 
@@ -128,6 +139,70 @@ public class LoginModel(AppDbContext db) : PageModel
         return RedirectToPage("/Index");
     }
 
+    public async Task<IActionResult> OnPostRecoverPasswordAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Recovery.UsernameOrEmail))
+        {
+            TempData["Flash"] = "Captura usuario o correo para recuperar contraseña.";
+            return RedirectToPage();
+        }
+
+        var input = Recovery.UsernameOrEmail.Trim().ToLowerInvariant();
+        var user = await db.Users
+            .Include(u => u.Tenant)
+            .Where(u => u.IsActive && (u.Username.ToLower() == input || (u.Email != null && u.Email.ToLower() == input)))
+            .FirstOrDefaultAsync();
+
+        if (user is null)
+        {
+            TempData["Flash"] = "No se encontró un usuario activo con ese dato.";
+            return RedirectToPage();
+        }
+
+        var isSuper = user.IsSuperUser || string.Equals(user.Role, "SuperUser", StringComparison.OrdinalIgnoreCase);
+        if (!isSuper)
+        {
+            var tenantCode = (Recovery.TenantCode ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(tenantCode))
+            {
+                TempData["Flash"] = "Para recuperar contraseña, indica el tenant.";
+                return RedirectToPage();
+            }
+
+            var normalized = NormalizeTenantCode(tenantCode);
+            var code = user.Tenant?.Code?.ToLowerInvariant() ?? string.Empty;
+            if (code != tenantCode && code != normalized)
+            {
+                TempData["Flash"] = "El usuario no pertenece al tenant indicado.";
+                return RedirectToPage();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            TempData["Flash"] = "El usuario no tiene correo configurado. Pide al administrador que lo capture.";
+            return RedirectToPage();
+        }
+
+        var newPassword = GenerateTemporaryPassword();
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        await db.SaveChangesAsync();
+
+        var tenantText = user.Tenant?.Code ?? "principal";
+        var body =
+            "Recuperación de contraseña HN Nexus POS.\n\n" +
+            $"Usuario: {user.Username}\n" +
+            $"Nueva contraseña temporal: {newPassword}\n" +
+            $"Tenant: {tenantText}\n\n" +
+            "Te recomendamos cambiarla inmediatamente después de iniciar sesión.";
+
+        var sent = await emailService.SendToAsync(user.Email, "Recuperación de acceso HN Nexus POS", body, false);
+        TempData["Flash"] = sent
+            ? "Recuperación enviada por correo."
+            : "No fue posible enviar el correo. Revisa SMTP en Configuración General.";
+        return RedirectToPage();
+    }
+
     private static string NormalizeTenantCode(string value)
     {
         var raw = (value ?? string.Empty).Trim().ToLowerInvariant();
@@ -144,5 +219,18 @@ public class LoginModel(AppDbContext db) : PageModel
         }
 
         return outCode;
+    }
+
+    private static string GenerateTemporaryPassword()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$";
+        var bytes = new byte[10];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+        var output = new char[10];
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            output[i] = chars[bytes[i] % chars.Length];
+        }
+        return new string(output);
     }
 }

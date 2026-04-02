@@ -23,6 +23,9 @@ public class FiscalModel(AppDbContext db, IUserContextService userContext) : Pag
     public bool AllBranches { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public bool Historical { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public DateTime From { get; set; } = DateTime.Today.AddDays(-7);
 
     [BindProperty(SupportsGet = true)]
@@ -60,6 +63,13 @@ public class FiscalModel(AppDbContext db, IUserContextService userContext) : Pag
         if (!AllBranches && Branches.Count > 0 && (BranchId <= 0 || !Branches.Any(x => x.Value == BranchId.ToString())))
         {
             BranchId = int.Parse(Branches[0].Value!);
+        }
+
+        if (!Historical)
+        {
+            var nowLocal = DateTime.Now;
+            From = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+            To = nowLocal.Date;
         }
 
         var allowed = Branches.Select(x => int.Parse(x.Value!)).ToList();
@@ -123,4 +133,3 @@ public class FiscalModel(AppDbContext db, IUserContextService userContext) : Pag
         return sb.ToString();
     }
 }
-

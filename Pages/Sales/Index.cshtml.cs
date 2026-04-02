@@ -1,4 +1,4 @@
-Ôªøusing System.Text;
+using System.Text;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -20,6 +20,15 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
     [BindProperty(SupportsGet = true)]
     public DateTime Date { get; set; } = DateTime.Today;
 
+    [BindProperty(SupportsGet = true)]
+    public bool Historical { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime From { get; set; } = DateTime.Today.AddDays(-30);
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime To { get; set; } = DateTime.Today;
+
     public async Task OnGetAsync()
     {
         var allowedBranches = await userContext.GetAccessibleBranchesAsync(User);
@@ -30,11 +39,23 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             BranchId = int.Parse(Branches[0].Value!);
         }
 
+        if (!Historical)
+        {
+            var nowLocal = DateTime.Now;
+            From = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+            To = nowLocal.Date;
+            Date = nowLocal.Date;
+        }
+
+        var fromUtc = DateTime.SpecifyKind(From.Date, DateTimeKind.Utc);
+        var toUtc = DateTime.SpecifyKind(To.Date.AddDays(1), DateTimeKind.Utc);
+
         var query = db.Sales
             .Include(x => x.User)
             .Include(x => x.Customer)
             .Include(x => x.Branch)
             .Include(x => x.Warehouse)
+            .Where(x => x.Date >= fromUtc && x.Date < toUtc)
             .AsQueryable();
 
         if (!User.IsInRole("Admin"))
@@ -50,7 +71,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
 
         Items = await query
             .OrderByDescending(x => x.Date)
-            .Take(200)
+            .Take(400)
             .ToListAsync();
     }
 
@@ -59,11 +80,11 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
         if (branch is null)
         {
-            TempData["Flash"] = "Sucursal no v√°lida.";
+            TempData["Flash"] = "Sucursal no v·lida.";
             return RedirectToPage(new { branchId });
         }
 
-        var start = date.Date;
+        var start = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
         var end = start.AddDays(1);
         var sales = await db.Sales
             .Include(x => x.Customer)
@@ -179,7 +200,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             BranchId = sale.BranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Venta cancelada. Raz√≥n: {sale.CancelReason}"
+            Details = $"Venta cancelada. RazÛn: {sale.CancelReason}"
         });
 
         await db.SaveChangesAsync();
@@ -212,14 +233,14 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
 
         if (sale.CfdiStatus == "Timbrado")
         {
-            TempData["Flash"] = "La venta ya est√° timbrada.";
+            TempData["Flash"] = "La venta ya est· timbrada.";
             return RedirectToPage(new { branchId });
         }
 
         var config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
         if (string.IsNullOrWhiteSpace(config.PacProvider))
         {
-            TempData["Flash"] = "Configura proveedor PAC antes de timbrar (Configuraci√≥n > CFDI/PAC).";
+            TempData["Flash"] = "Configura proveedor PAC antes de timbrar (ConfiguraciÛn > CFDI/PAC).";
             return RedirectToPage(new { branchId });
         }
 
@@ -271,7 +292,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
                 BranchId = sale.BranchId,
                 Username = User.Identity?.Name ?? "sistema",
                 IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-                Details = $"Timbrado CFDI (modo integraci√≥n base) UUID={uuid}, PAC={doc.PacProvider}."
+                Details = $"Timbrado CFDI (modo integraciÛn base) UUID={uuid}, PAC={doc.PacProvider}."
             });
 
             await db.SaveChangesAsync();
@@ -301,7 +322,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
                 Details = $"Error timbrando CFDI. Se manda a cola de contingencia. Error={ex.Message}"
             });
             await db.SaveChangesAsync();
-            TempData["Flash"] = "PAC no disponible. CFDI enviado a cola de contingencia para reintento autom√°tico.";
+            TempData["Flash"] = "PAC no disponible. CFDI enviado a cola de contingencia para reintento autom·tico.";
         }
         return RedirectToPage(new { branchId = sale.BranchId });
     }
@@ -407,8 +428,3 @@ th,td {{ border-bottom: 1px dashed #999; text-align: left; padding: 4px; font-si
 </html>";
     }
 }
-
-
-
-
-

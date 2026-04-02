@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HN_Nexus.WebPOS.Pages.Reports;
 
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "SuperOnly")]
 public class EnterpriseModel(AppDbContext db, ITenantAnalyticsService tenantAnalytics) : PageModel
 {
     [BindProperty(SupportsGet = true)]

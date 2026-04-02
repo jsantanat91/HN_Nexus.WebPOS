@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -24,6 +24,15 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     [BindProperty(SupportsGet = true)]
     public int BranchId { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool Historical { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime From { get; set; } = DateTime.Today.AddDays(-30);
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime To { get; set; } = DateTime.Today;
+
     public List<Sale> RecentSales { get; private set; } = new();
     public List<ProductStock> LowStockList { get; private set; } = new();
     public List<ProductRankingItem> TopProducts { get; private set; } = new();
@@ -45,22 +54,58 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             BranchId = int.Parse(Branches[0].Value!);
         }
 
-        var today = DateTime.UtcNow.Date;
-        SalesToday = await db.Sales.Where(x => x.Date >= today && x.Status == "Completed" && x.BranchId == BranchId).SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
-        ExpensesToday = await db.Expenses.Where(x => x.Date >= today).SumAsync(x => (decimal?)x.Amount) ?? 0m;
-        SalesCountToday = await db.Sales.CountAsync(x => x.Date >= today && x.Status == "Completed" && x.BranchId == BranchId);
+        if (!Historical)
+        {
+            var nowLocal = DateTime.Now;
+            From = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+            To = nowLocal.Date;
+        }
+
+        var periodFromUtc = DateTime.SpecifyKind(From.Date, DateTimeKind.Utc);
+        var periodToUtc = DateTime.SpecifyKind(To.Date.AddDays(1), DateTimeKind.Utc);
+
+        var salesQuery = db.Sales.Where(x => x.Status == "Completed" && x.BranchId == BranchId && x.Date >= periodFromUtc && x.Date < periodToUtc);
+        var expensesQuery = db.Expenses.Where(x => x.Date >= periodFromUtc && x.Date < periodToUtc);
+
+        if (!Historical)
+        {
+            var factRows = await db.FactDailyBranches
+                .Where(x => x.BranchId == BranchId && x.PeriodDate >= From.Date && x.PeriodDate <= To.Date)
+                .ToListAsync();
+
+            if (factRows.Count > 0)
+            {
+                SalesToday = factRows.Sum(x => x.SalesTotal);
+                ExpensesToday = factRows.Sum(x => x.ExpenseTotal);
+                SalesCountToday = (int)factRows.Sum(x => x.SalesCount);
+                MarginToday = factRows.Sum(x => x.SalesTotal - x.CostTotal);
+            }
+            else
+            {
+                SalesToday = await salesQuery.SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
+                ExpensesToday = await expensesQuery.SumAsync(x => (decimal?)x.Amount) ?? 0m;
+                SalesCountToday = await salesQuery.CountAsync();
+                MarginToday = await db.SaleDetails
+                    .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= periodFromUtc && x.Sale.Date < periodToUtc)
+                    .SumAsync(x => (decimal?)(x.Quantity * (x.UnitPrice - (x.Product != null ? x.Product.Cost : 0m)))) ?? 0m;
+            }
+        }
+        else
+        {
+            SalesToday = await salesQuery.SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
+            ExpensesToday = await expensesQuery.SumAsync(x => (decimal?)x.Amount) ?? 0m;
+            SalesCountToday = await salesQuery.CountAsync();
+            MarginToday = await db.SaleDetails
+                .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= periodFromUtc && x.Sale.Date < periodToUtc)
+                .SumAsync(x => (decimal?)(x.Quantity * (x.UnitPrice - (x.Product != null ? x.Product.Cost : 0m)))) ?? 0m;
+        }
+
         AvgTicketToday = SalesCountToday > 0 ? SalesToday / SalesCountToday : 0m;
         LowStockProducts = await db.ProductStocks.CountAsync(x => x.BranchId == BranchId && x.Stock <= x.MinStock);
 
-        MarginToday = await db.SaleDetails
-            .Include(x => x.Sale)
-            .Include(x => x.Product)
-            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= today)
-            .SumAsync(x => (decimal?)(x.Quantity * (x.UnitPrice - (x.Product != null ? x.Product.Cost : 0m)))) ?? 0m;
-
         RecentSales = await db.Sales
             .Include(x => x.Customer)
-            .Where(x => x.BranchId == BranchId)
+            .Where(x => x.BranchId == BranchId && x.Date >= periodFromUtc && x.Date < periodToUtc)
             .OrderByDescending(x => x.Date)
             .Take(6)
             .ToListAsync();
@@ -75,7 +120,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         TopProducts = await db.SaleDetails
             .Include(x => x.Product)
             .Include(x => x.Sale)
-            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed")
+            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= periodFromUtc && x.Sale.Date < periodToUtc)
             .GroupBy(x => new { x.ProductId, Name = x.Product != null ? x.Product.Name : "Producto" })
             .Select(g => new ProductRankingItem
             {
@@ -87,36 +132,36 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             .Take(6)
             .ToListAsync();
 
-        var endDate = DateTime.UtcNow.Date;
-        var startDate = endDate.AddDays(-6);
-
         var salesWindow = await db.Sales
-            .Where(s => s.BranchId == BranchId && s.Status == "Completed" && s.Date >= startDate)
-            .Select(s => new { s.Date, s.TotalAmount })
+            .Where(s => s.BranchId == BranchId && s.Status == "Completed" && s.Date >= periodFromUtc && s.Date < periodToUtc)
+            .Select(s => new { s.Date, s.TotalAmount, s.PaymentMethod })
             .ToListAsync();
 
         var costWindow = await db.Expenses
-            .Where(e => e.Date >= startDate)
+            .Where(e => e.Date >= periodFromUtc && e.Date < periodToUtc)
             .Select(e => new { e.Date, e.Amount })
             .ToListAsync();
 
-        WeekLabels = Enumerable.Range(0, 7)
-            .Select(i => startDate.AddDays(i).ToString("ddd", new CultureInfo("es-MX")))
+        var days = (To.Date - From.Date).Days + 1;
+        if (days < 1) days = 1;
+        if (days > 62) days = 62;
+
+        WeekLabels = Enumerable.Range(0, days)
+            .Select(i => From.Date.AddDays(i).ToString("dd MMM", new CultureInfo("es-MX")))
             .ToList();
 
-        WeekSales = Enumerable.Range(0, 7)
-            .Select(i => salesWindow.Where(s => s.Date.Date == startDate.AddDays(i)).Sum(s => s.TotalAmount))
+        WeekSales = Enumerable.Range(0, days)
+            .Select(i => salesWindow.Where(s => s.Date.Date == From.Date.AddDays(i)).Sum(s => s.TotalAmount))
             .ToList();
 
-        WeekCosts = Enumerable.Range(0, 7)
-            .Select(i => costWindow.Where(e => e.Date.Date == startDate.AddDays(i)).Sum(e => e.Amount))
+        WeekCosts = Enumerable.Range(0, days)
+            .Select(i => costWindow.Where(e => e.Date.Date == From.Date.AddDays(i)).Sum(e => e.Amount))
             .ToList();
 
-        var paymentMix = await db.Sales
-            .Where(s => s.BranchId == BranchId && s.Status == "Completed" && s.Date >= startDate)
+        var paymentMix = salesWindow
             .GroupBy(s => s.PaymentMethod)
             .Select(g => new { Payment = g.Key, Total = g.Sum(x => x.TotalAmount) })
-            .ToListAsync();
+            .ToList();
 
         PaymentLabels = paymentMix
             .Select(x => x.Payment switch
@@ -132,7 +177,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
 
         TopCashiers = await db.Sales
             .Include(x => x.User)
-            .Where(x => x.BranchId == BranchId && x.Status == "Completed" && x.Date >= startDate)
+            .Where(x => x.BranchId == BranchId && x.Status == "Completed" && x.Date >= periodFromUtc && x.Date < periodToUtc)
             .GroupBy(x => new { x.UserId, Name = x.User != null ? x.User.FullName : "N/A" })
             .Select(g => new CashierRankingItem
             {
@@ -147,7 +192,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         TopCategories = await db.SaleDetails
             .Include(x => x.Sale)
             .Include(x => x.Product)!.ThenInclude(p => p!.Category)
-            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= startDate)
+            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= periodFromUtc && x.Sale.Date < periodToUtc)
             .GroupBy(x => new { Name = x.Product != null && x.Product.Category != null ? x.Product.Category.Name : "General" })
             .Select(g => new CategoryRankingItem
             {
@@ -220,4 +265,3 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         public decimal DaysCover { get; set; }
     }
 }
-

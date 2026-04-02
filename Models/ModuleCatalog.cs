@@ -8,7 +8,6 @@ public static class ModuleCatalog
     public const string Customers = "customers";
     public const string Expenses = "expenses";
     public const string CashCuts = "cashcuts";
-    public const string CashShifts = "cashshifts";
     public const string SupplierOrders = "supplierorders";
     public const string Reports = "reports";
     public const string Config = "config";
@@ -23,7 +22,6 @@ public static class ModuleCatalog
         Customers,
         Expenses,
         CashCuts,
-        CashShifts,
         SupplierOrders,
         Reports,
         Config,
@@ -39,7 +37,6 @@ public static class ModuleCatalog
         [Customers] = "Clientes",
         [Expenses] = "Gastos",
         [CashCuts] = "Corte",
-        [CashShifts] = "Turno",
         [SupplierOrders] = "Órdenes de Compra",
         [Reports] = "Reportes",
         [Config] = "Configuración",

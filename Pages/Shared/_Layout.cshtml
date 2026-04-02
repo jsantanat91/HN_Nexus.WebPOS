@@ -17,7 +17,7 @@
 @if (User.Identity?.IsAuthenticated == true)
 {
     var currentPath = (Context?.Request?.Path.Value ?? string.Empty).ToLowerInvariant();
-    var cajaOpen = currentPath.StartsWith("/sales") || currentPath.StartsWith("/cashcuts") || currentPath.StartsWith("/cashshifts");
+    var cajaOpen = currentPath.StartsWith("/sales") || currentPath.StartsWith("/cashcuts");
     var productsOpen = currentPath.StartsWith("/products") || currentPath.StartsWith("/inventory");
     var configOpen = currentPath.StartsWith("/config");
 
@@ -39,7 +39,7 @@
 
             <nav class="nav flex-column nav-menu">
                 @if (has(ModuleCatalog.Dashboard)) { <a class="nav-link" asp-page="/Index">Inicio</a> }
-                @if (has(ModuleCatalog.Sales) || has(ModuleCatalog.CashCuts) || has(ModuleCatalog.CashShifts))
+                @if (has(ModuleCatalog.Sales) || has(ModuleCatalog.CashCuts))
                 {
                     <details class="config-menu" @(cajaOpen ? "open" : null) data-pinned="@cajaOpen">
                         <summary class="nav-link">Caja</summary>
@@ -48,7 +48,6 @@
                             @if (has(ModuleCatalog.Sales)) { <a class="nav-link sub-link" asp-page="/Sales/Index">Historial de Ventas</a> }
                             @if (has(ModuleCatalog.Sales)) { <a class="nav-link sub-link" asp-page="/Sales/Returns">Devoluciones</a> }
                             @if (has(ModuleCatalog.CashCuts)) { <a class="nav-link sub-link" asp-page="/CashCuts/Index">Corte</a> }
-                            @if (has(ModuleCatalog.CashShifts)) { <a class="nav-link sub-link" asp-page="/CashShifts/Index">Turno</a> }
                             @if (User.IsInRole("Admin")) { <a class="nav-link sub-link" asp-page="/CashCuts/AccountingClose">Cierre contable</a> }
                         </div>
                     </details>
@@ -71,7 +70,7 @@
                 @if (has(ModuleCatalog.Expenses)) { <a class="nav-link" asp-page="/Expenses/Index">Gastos</a> }
                 @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Órdenes Compra</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Daily">Reportes</a> }
-                @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Enterprise">Tablero Enterprise</a> }
+                @if (User.IsInRole("SuperUser")) { <a class="nav-link" asp-page="/Reports/Enterprise">Tablero Enterprise</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Fiscal">Corte Fiscal</a> }
                 <a class="nav-link" asp-page="/Help/Index">Centro de Ayuda</a>
 

@@ -1,14 +1,73 @@
-ï»¿@page
+@page
 @model HN_Nexus.WebPOS.Pages.CashCuts.IndexModel
 @{
     ViewData["Title"] = "Corte";
+    var openCount = Model.Shifts.Count(x => x.Status == "Open");
+    var closedCount = Model.Shifts.Count(x => x.Status == "Closed");
+    var diff = Model.Shifts.Where(x => x.Difference.HasValue).Sum(x => x.Difference ?? 0m);
 }
 
 <section class="panel mb-3">
     <div class="panel-header">
         <div>
+            <h5 class="mb-0">Corte y Turnos</h5>
+            <small class="text-muted">Un solo módulo para apertura, cierre y corte diario</small>
+        </div>
+    </div>
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">Histórico</label></div></div>
+            <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
+            <div class="col-md-3"><button class="btn btn-outline-primary w-100">Consultar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <div class="cards-grid compact">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Turnos abiertos</div><div class="kpi-value text-primary">@openCount</div><span class="badge-soft badge-info">Activos</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Turnos cerrados</div><div class="kpi-value text-success">@closedCount</div><span class="badge-soft badge-ok">Histórico</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Diferencia acumulada</div><div class="kpi-value @(diff >= 0 ? "text-success" : "text-danger")">@diff.ToString("C")</div><span class="badge-soft @(diff >= 0 ? "badge-ok" : "badge-danger")">Balance</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-slate"><div class="kpi-title">Total sistema hoy</div><div class="kpi-value text-dark">@Model.SuggestedSystemTotal.ToString("C")</div><span class="badge-soft badge-info">Corte sugerido</span></div>
+        </div>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Apertura / Cierre de Turno</h5></div>
+    <div class="panel-body">
+        @if (Model.OpenShift is null)
+        {
+            <form method="post" asp-page-handler="OpenShift" class="row g-2">
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <div class="col-md-4"><label class="form-label">Fondo inicial</label><input name="openingFloat" type="number" step="0.01" class="form-control" required /></div>
+                <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100">Abrir turno</button></div>
+            </form>
+        }
+        else
+        {
+            <div class="alert app-alert">Turno abierto desde @Model.OpenShift.OpenedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm") en @Model.OpenShift.Branch?.Name.</div>
+            <form method="post" asp-page-handler="CloseShift" class="row g-2" enctype="multipart/form-data">
+                <input type="hidden" name="shiftId" value="@Model.OpenShift.Id" />
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <div class="col-md-3"><label class="form-label">Arqueo final</label><input name="closingDeclared" type="number" step="0.01" class="form-control" required /></div>
+                <div class="col-md-3"><label class="form-label">Firma responsable</label><input name="closingSignature" class="form-control" required /></div>
+                <div class="col-md-3"><label class="form-label">Evidencia</label><input name="closingEvidence" type="file" class="form-control" /></div>
+                <div class="col-md-3"><label class="form-label">Nota</label><input name="closingNotes" class="form-control" /></div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-cancel w-100">Cerrar turno</button></div>
+            </form>
+        }
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header">
+        <div>
             <h5 class="mb-0">Nuevo Corte Diario</h5>
-            <small class="text-muted">Consolidado por mÃ©todo de pago</small>
+            <small class="text-muted">Consolidado por método de pago</small>
         </div>
     </div>
     <div class="panel-body">
@@ -19,15 +78,37 @@
             <div class="col-md-3"><div class="kpi-card glass-card kpi-gradient kpi-slate"><div class="kpi-title">Total Sistema</div><div class="kpi-value text-dark">@Model.SuggestedSystemTotal.ToString("C")</div></div></div>
         </div>
 
-        <form method="get" class="row g-2 mb-3"><div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div><div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100">Filtrar</button></div></form><form method="post" asp-page-handler="Create" class="row g-3"><input type="hidden" asp-for="BranchId" />
-            <div class="col-md-4">
-                <label class="form-label">Total fÃ­sico contado</label>
-                <input class="form-control" type="number" step="0.01" name="totalPhysical" required />
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button class="btn btn-save w-100">Guardar corte</button>
-            </div>
+        <form method="post" asp-page-handler="Create" class="row g-3">
+            <input type="hidden" asp-for="BranchId" />
+            <div class="col-md-4"><label class="form-label">Total físico contado</label><input class="form-control" type="number" step="0.01" name="totalPhysical" required /></div>
+            <div class="col-md-3 d-flex align-items-end"><button class="btn btn-save w-100">Guardar corte</button></div>
         </form>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Historial de Turnos</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var s in Model.Shifts)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@s.Branch?.Name</span>
+                        <span class="badge-soft @(s.Status == "Open" ? "badge-warn" : "badge-ok")">@s.Status</span>
+                    </div>
+                    <div class="product-meta">Usuario: @s.User?.FullName</div>
+                    <div class="product-meta">Apertura: @s.OpenedAt.ToLocalTime().ToString("dd/MM HH:mm")</div>
+                    <div class="product-meta">Cierre: @(s.ClosedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</div>
+                    <div class="d-flex gap-1 flex-wrap mt-2 mb-2">
+                        <span class="badge-soft badge-info">Fondo @s.OpeningFloat.ToString("C")</span>
+                        <span class="badge-soft badge-warn">Sistema @(s.SystemCashTotal?.ToString("C") ?? "-")</span>
+                        <span class="badge-soft badge-info">Declarado @(s.ClosingDeclared?.ToString("C") ?? "-")</span>
+                        <span class="badge-soft @((s.Difference ?? 0) >= 0 ? "badge-ok" : "badge-danger")">Dif @(s.Difference?.ToString("C") ?? "-")</span>
+                    </div>
+                </article>
+            }
+        </div>
     </div>
 </section>
 
@@ -49,12 +130,10 @@
                         <span class="badge-soft badge-info">Tarjeta @item.CardSales.ToString("C")</span>
                         <span class="badge-soft badge-warn">Transfer @item.TransferSales.ToString("C")</span>
                     </div>
-                    <div class="product-meta">Fisico: @item.TotalPhysical.ToString("C")</div>
+                    <div class="product-meta">Físico: @item.TotalPhysical.ToString("C")</div>
                     <div class="product-meta">Usuario: @item.User</div>
                 </article>
             }
         </div>
     </div>
 </section>
-
-

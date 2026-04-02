@@ -1,4 +1,5 @@
-﻿using HN_Nexus.WebPOS.Data;
+using System.Text;
+using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -27,9 +28,45 @@ public class KardexModel(AppDbContext db, IUserContextService userContext) : Pag
 
     public async Task OnGetAsync()
     {
+        await LoadSelectorsAsync();
+        Rows = await BuildRowsAsync();
+    }
+
+    public async Task<IActionResult> OnGetExportAsync()
+    {
+        await LoadSelectorsAsync();
+        var rows = await BuildRowsAsync();
+
+        var sb = new StringBuilder();
+        sb.AppendLine("Fecha,Tipo,Cantidad,Referencia,Origen,Usuario,Precio,Importe,Detalle");
+        foreach (var r in rows)
+        {
+            static string esc(string? s) => "\"" + (s ?? string.Empty).Replace("\"", "\"\"") + "\"";
+            sb.AppendLine(string.Join(",",
+                esc(r.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")),
+                esc(r.Type),
+                r.Quantity.ToString(),
+                esc(r.Reference),
+                esc(r.Source),
+                esc(r.Actor),
+                r.UnitPrice?.ToString("0.00") ?? "0.00",
+                r.LineTotal?.ToString("0.00") ?? "0.00",
+                esc(r.Notes)));
+        }
+
+        var bytes = Encoding.UTF8.GetBytes("\uFEFF" + sb.ToString());
+        var fileName = $"kardex_{BranchId}_{ProductId}_{DateTime.Now:yyyyMMddHHmmss}.csv";
+        return File(bytes, "text/csv; charset=utf-8", fileName);
+    }
+
+    private async Task LoadSelectorsAsync()
+    {
         var branches = await userContext.GetAccessibleBranchesAsync(User);
         Branches = branches.OrderBy(b => b.Name).Select(b => new SelectListItem($"{b.Code} - {b.Name}", b.Id.ToString())).ToList();
-        if (BranchId <= 0 && Branches.Count > 0) BranchId = int.Parse(Branches[0].Value!);
+        if (BranchId <= 0 && Branches.Count > 0)
+        {
+            BranchId = int.Parse(Branches[0].Value!);
+        }
 
         Products = await db.ProductStocks
             .Include(ps => ps.Product)
@@ -38,12 +75,17 @@ public class KardexModel(AppDbContext db, IUserContextService userContext) : Pag
             .Select(ps => new SelectListItem(ps.Product!.Name, ps.ProductId.ToString()))
             .ToListAsync();
 
-        if (ProductId <= 0 && Products.Count > 0) ProductId = int.Parse(Products[0].Value!);
+        if (ProductId <= 0 && Products.Count > 0)
+        {
+            ProductId = int.Parse(Products[0].Value!);
+        }
+    }
 
+    private async Task<List<KardexRow>> BuildRowsAsync()
+    {
         if (BranchId <= 0 || ProductId <= 0)
         {
-            Rows = [];
-            return;
+            return [];
         }
 
         var start = DateTime.SpecifyKind(From.Date, DateTimeKind.Utc);
@@ -59,7 +101,7 @@ public class KardexModel(AppDbContext db, IUserContextService userContext) : Pag
                 Type = "Salida",
                 Quantity = d.Quantity,
                 Reference = $"Venta #{d.SaleId}",
-                Notes = $"{d.Sale.PaymentMethod} | Cliente: {(d.Sale.Customer != null ? d.Sale.Customer.FullName : "Publico General")}",
+                Notes = $"{d.Sale.PaymentMethod} | Cliente: {(d.Sale.Customer != null ? d.Sale.Customer.FullName : "Público General")}",
                 Actor = d.Sale.User != null ? d.Sale.User.FullName : "Caja",
                 UnitPrice = d.UnitPrice,
                 LineTotal = d.Total,
@@ -76,7 +118,7 @@ public class KardexModel(AppDbContext db, IUserContextService userContext) : Pag
                 Type = "Entrada",
                 Quantity = o.Quantity,
                 Reference = $"OC #{o.Id}",
-                Notes = "Recepcion orden de compra",
+                Notes = "Recepción orden de compra",
                 Actor = o.Supplier != null ? o.Supplier.Name : "Proveedor",
                 UnitPrice = o.UnitCost,
                 LineTotal = o.UnitCost * o.Quantity,
@@ -95,7 +137,7 @@ public class KardexModel(AppDbContext db, IUserContextService userContext) : Pag
                 Type = "Salida",
                 Quantity = t.Quantity,
                 Reference = $"TR #{t.Id}",
-                Notes = $"A sucursal {(t.ToBranch != null ? t.ToBranch.Name : t.ToBranchId.ToString())}" + (t.ToWarehouse != null ? $" / Almacen {t.ToWarehouse.Name}" : string.Empty),
+                Notes = $"A sucursal {(t.ToBranch != null ? t.ToBranch.Name : t.ToBranchId.ToString())}" + (t.ToWarehouse != null ? $" / Almacén {t.ToWarehouse.Name}" : string.Empty),
                 Source = "Transferencia",
                 Actor = t.User != null ? t.User.FullName : "Sistema"
             })
@@ -112,13 +154,13 @@ public class KardexModel(AppDbContext db, IUserContextService userContext) : Pag
                 Type = "Entrada",
                 Quantity = t.Quantity,
                 Reference = $"TR #{t.Id}",
-                Notes = $"Desde sucursal {(t.FromBranch != null ? t.FromBranch.Name : t.FromBranchId.ToString())}" + (t.FromWarehouse != null ? $" / Almacen {t.FromWarehouse.Name}" : string.Empty),
+                Notes = $"Desde sucursal {(t.FromBranch != null ? t.FromBranch.Name : t.FromBranchId.ToString())}" + (t.FromWarehouse != null ? $" / Almacén {t.FromWarehouse.Name}" : string.Empty),
                 Source = "Transferencia",
                 Actor = t.User != null ? t.User.FullName : "Sistema"
             })
             .ToListAsync();
 
-        Rows = saleOut
+        return saleOut
             .Concat(purchaseIn)
             .Concat(transferOut)
             .Concat(transferIn)

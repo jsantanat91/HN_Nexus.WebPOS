@@ -10,6 +10,9 @@ public class User
     [Required, MaxLength(50)]
     public string Username { get; set; } = string.Empty;
 
+    [MaxLength(180)]
+    public string? Email { get; set; }
+
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
 

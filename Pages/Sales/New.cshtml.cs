@@ -334,7 +334,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             .FirstOrDefaultAsync();
         if (openShift is null)
         {
-            TempData["Flash"] = "No puedes vender sin abrir turno. Abre turno en Caja > Turno.";
+            TempData["Flash"] = "No puedes vender sin abrir turno. Abre turno en Caja > Corte.";
             return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 

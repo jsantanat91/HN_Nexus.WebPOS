@@ -16,6 +16,13 @@
             <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
             <div class="col-md-2"><button class="btn btn-primary w-100">Consultar</button></div>
         </form>
+        <form method="get" asp-page-handler="Export" class="mt-2 row g-2">
+            <input type="hidden" name="BranchId" value="@Model.BranchId" />
+            <input type="hidden" name="ProductId" value="@Model.ProductId" />
+            <input type="hidden" name="From" value="@Model.From.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="To" value="@Model.To.ToString("yyyy-MM-dd")" />
+            <div class="col-md-3"><button class="btn btn-save w-100">Exportar a Excel (CSV)</button></div>
+        </form>
         <div class="cards-grid compact mt-3">
             <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Movimientos</div><div class="kpi-value text-primary">@Model.Rows.Count</div><span class="badge-soft badge-info">Registros</span></div>
             <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Entradas</div><div class="kpi-value text-success">@entradas</div><span class="badge-soft badge-ok">Unidades</span></div>

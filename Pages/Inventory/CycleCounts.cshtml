@@ -1,15 +1,18 @@
-@page
+﻿@page
 @model HN_Nexus.WebPOS.Pages.Inventory.CycleCountsModel
 @{
-    ViewData["Title"] = "Conteos C�clicos";
-    var dif = Model.ActiveLines.Sum(x => x.Difference);
+    ViewData["Title"] = "Conteos Cíclicos";
+    var diffTotal = Model.ActiveLines.Sum(x => x.Difference);
+    var positives = Model.ActiveLines.Count(x => x.Difference > 0);
+    var negatives = Model.ActiveLines.Count(x => x.Difference < 0);
 }
 
 <section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Conteos cíclicos por almacén</h5></div>
     <div class="panel-body">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
-            <div class="col-md-4"><label class="form-label">Almac�n</label><select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label">Almacén</label><select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-select"></select></div>
             <div class="col-md-2"><button class="btn btn-outline-primary w-100">Actualizar</button></div>
         </form>
 
@@ -17,8 +20,15 @@
             <input type="hidden" name="branchId" value="@Model.BranchId" />
             <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
             <div class="col-md-8"><input name="notes" class="form-control" placeholder="Notas del conteo" /></div>
-            <div class="col-md-4"><button class="btn btn-save w-100">Nuevo conteo c�clico</button></div>
+            <div class="col-md-4"><button class="btn btn-save w-100">Nuevo conteo cíclico</button></div>
         </form>
+
+        <div class="cards-grid compact mt-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Líneas</div><div class="kpi-value text-primary">@Model.ActiveLines.Count</div><span class="badge-soft badge-info">Conteo activo</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Diferencias negativas</div><div class="kpi-value text-danger">@negatives</div><span class="badge-soft badge-danger">Faltantes</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Diferencias positivas</div><div class="kpi-value text-success">@positives</div><span class="badge-soft badge-ok">Sobrantes</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-slate"><div class="kpi-title">Balance total</div><div class="kpi-value @(diffTotal >= 0 ? "text-success" : "text-danger")">@diffTotal</div><span class="badge-soft badge-info">Unidades</span></div>
+        </div>
     </div>
 </section>
 
@@ -55,30 +65,27 @@
             </form>
         }
     </div>
-    <div class="panel-body p-0">
-        <table class="table table-modern mb-0">
-            <thead><tr><th>Producto</th><th>Sistema</th><th>Contado</th><th>Diferencia</th><th></th></tr></thead>
-            <tbody>
+    <div class="panel-body">
+        <div class="cards-grid">
             @foreach (var l in Model.ActiveLines)
             {
-                <tr>
-                    <td>@l.Product?.Name</td>
-                    <td><span class="badge-soft badge-info">@l.SystemQty</span></td>
-                    <td>
-                        <form method="post" asp-page-handler="UpdateLine" class="d-flex gap-2">
-                            <input type="hidden" name="id" value="@l.Id" />
-                            <input type="hidden" name="branchId" value="@Model.BranchId" />
-                            <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
-                            <input type="hidden" name="sessionId" value="@Model.SessionId" />
-                            <input name="countedQty" type="number" class="form-control form-control-sm" value="@l.CountedQty" style="max-width:120px;" />
-                            <button class="btn btn-sm btn-outline-primary">Guardar</button>
-                        </form>
-                    </td>
-                    <td><span class="badge-soft @(l.Difference == 0 ? "badge-ok" : l.Difference > 0 ? "badge-info" : "badge-danger")">@l.Difference</span></td>
-                    <td></td>
-                </tr>
+                <article class="product-card">
+                    <div class="fw-semibold mb-2">@l.Product?.Name</div>
+                    <div class="d-flex gap-1 flex-wrap mb-2">
+                        <span class="badge-soft badge-info">Sistema @l.SystemQty</span>
+                        <span class="badge-soft badge-warn">Contado @l.CountedQty</span>
+                        <span class="badge-soft @(l.Difference == 0 ? "badge-ok" : l.Difference > 0 ? "badge-info" : "badge-danger")">Diferencia @l.Difference</span>
+                    </div>
+                    <form method="post" asp-page-handler="UpdateLine" class="d-flex gap-2">
+                        <input type="hidden" name="id" value="@l.Id" />
+                        <input type="hidden" name="branchId" value="@Model.BranchId" />
+                        <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+                        <input type="hidden" name="sessionId" value="@Model.SessionId" />
+                        <input name="countedQty" type="number" class="form-control form-control-sm" value="@l.CountedQty" style="max-width:120px;" />
+                        <button class="btn btn-sm btn-outline-primary">Guardar</button>
+                    </form>
+                </article>
             }
-            </tbody>
-        </table>
+        </div>
     </div>
 </section>

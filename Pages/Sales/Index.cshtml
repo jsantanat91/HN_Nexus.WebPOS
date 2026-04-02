@@ -1,4 +1,4 @@
-锘緻page
+@page
 @model HN_Nexus.WebPOS.Pages.Sales.IndexModel
 @{
     ViewData["Title"] = "Historial de Ventas";
@@ -44,7 +44,7 @@
                     <th>Folio</th>
                     <th>Fecha</th>
                     <th>Sucursal</th>
-                    <th>Almac茅n</th>
+                    <th>Almac閚</th>
                     <th>Cliente</th>
                     <th>Pago</th>
                     <th>Cajero</th>
@@ -62,7 +62,7 @@
                     <td>@item.Date.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@item.Branch?.Name</td>
                     <td>@(item.Warehouse?.Name ?? "-")</td>
-                    <td>@(item.Customer?.FullName ?? "P煤blico General")</td>
+                    <td>@(item.Customer?.FullName ?? "P鷅lico General")</td>
                     <td>@item.PaymentMethod</td>
                     <td>@item.User?.FullName</td>
                     <td>
@@ -118,7 +118,7 @@
 <script>
 document.querySelectorAll('.cancel-sale-form').forEach(function(form){
   form.addEventListener('submit', function(e){
-    var reason = prompt('Motivo de cancelaci贸n/devoluci贸n:');
+    var reason = prompt('Motivo de cancelaci髇/devoluci髇:');
     if(reason === null){
       e.preventDefault();
       return;
@@ -129,7 +129,7 @@ document.querySelectorAll('.cancel-sale-form').forEach(function(form){
 
 document.querySelectorAll('.cancel-cfdi-form').forEach(function(form){
   form.addEventListener('submit', function(e){
-    var reason = prompt('Motivo de cancelaci贸n CFDI (SAT):');
+    var reason = prompt('Motivo de cancelaci髇 CFDI (SAT):');
     if(reason === null){
       e.preventDefault();
       return;
@@ -144,7 +144,7 @@ document.getElementById('btnExportDaily')?.addEventListener('click', function(){
 
   var normalized = (option || '').trim().toLowerCase();
   if(normalized !== 'pdf' && normalized !== 'ticket'){
-    alert('Opci贸n inv谩lida. Usa PDF o TICKET.');
+    alert('Opci髇 inv醠ida. Usa PDF o TICKET.');
     return;
   }
 
@@ -153,4 +153,5 @@ document.getElementById('btnExportDaily')?.addEventListener('click', function(){
 });
 </script>
 }
+
 

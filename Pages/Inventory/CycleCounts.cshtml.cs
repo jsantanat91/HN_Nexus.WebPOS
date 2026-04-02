@@ -118,7 +118,7 @@ public class CycleCountsModel(AppDbContext db, IUserContextService userContext) 
                 ProductLotId = null,
                 Quantity = line.Difference,
                 MovementType = "Adjust",
-                Reference = $"Conteo ciclico #{session.Id}",
+                Reference = $"Conteo cíclico #{session.Id}",
                 CreatedAt = DateTime.UtcNow
             });
         }

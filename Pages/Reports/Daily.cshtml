@@ -1,4 +1,4 @@
-ï»¿@page
+@page
 @model HN_Nexus.WebPOS.Pages.Reports.DailyModel
 @{
     ViewData["Title"] = "Reporte Diario";
@@ -7,10 +7,10 @@
 }
 
 <section class="panel mb-3">
-    <div class="panel-header"><h5 class="mb-0">Reporte diario general o por sucursal</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Reporte de ventas (mes actual por defecto)</h5></div>
     <div class="panel-body">
         <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Sucursal</label>
                 @if (Model.AllBranches)
                 {
@@ -21,42 +21,30 @@
                     <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
                 }
             </div>
-            <div class="col-md-3"><label class="form-label">Fecha</label><input asp-for="Date" type="date" class="form-control" /></div>
-            <div class="col-md-3 d-flex align-items-end">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" asp-for="AllBranches" />
-                    <label class="form-check-label" asp-for="AllBranches">General (todas mis sucursales)</label>
-                </div>
-            </div>
-            <div class="col-md-2"><button class="btn btn-primary w-100">Ver</button></div>
+            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">Histórico</label></div></div>
+            <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
+            <div class="col-md-1"><label class="form-label">PDF</label><input asp-for="Date" type="date" class="form-control" /></div>
+            <div class="col-md-2 d-flex align-items-end"><div class="form-check form-switch"><input class="form-check-input" asp-for="AllBranches" /><label class="form-check-label" asp-for="AllBranches">General</label></div></div>
+            <div class="col-md-12"><button class="btn btn-primary">Ver</button></div>
         </form>
 
         <form method="post" asp-page-handler="Pdf" class="mt-3 d-flex gap-2">
             <input type="hidden" name="branchId" value="@Model.BranchId" />
             <input type="hidden" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" />
             <input type="hidden" name="allBranches" value="@Model.AllBranches" />
-            <button class="btn btn-outline-primary">Descargar PDF</button>
+            <button class="btn btn-outline-primary">Descargar PDF diario</button>
             <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Imprimir resumen</button>
-            <a class="btn btn-save" asp-page="/Reports/Fiscal">Corte fiscal / pÃ³liza</a>
+            <a class="btn btn-save" asp-page="/Reports/Fiscal">Corte fiscal / póliza</a>
         </form>
     </div>
 </section>
 
-@if (Model.Branches.Count == 0)
-{
-    <section class="panel">
-        <div class="panel-body">
-            <p class="mb-0">No tienes sucursales asignadas para consultar reportes.</p>
-        </div>
-    </section>
-    return;
-}
-
 <section class="panel" id="dailySummaryTicket">
-    <div class="panel-header"><h5 class="mb-0">Resumen imprimible</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Resumen del periodo</h5></div>
     <div class="panel-body">
         <div class="ticket-preview mb-3">
-            <div class="ticket-row"><span>Fecha</span><strong>@Model.Date.ToString("dd/MM/yyyy")</strong></div>
+            <div class="ticket-row"><span>Periodo</span><strong>@Model.From.ToString("dd/MM/yyyy") - @Model.To.ToString("dd/MM/yyyy")</strong></div>
             <div class="ticket-row"><span>Alcance</span><strong>@(Model.AllBranches ? "General" : "Sucursal")</strong></div>
             <div class="ticket-row"><span>Sucursal</span><strong>@(Model.AllBranches ? "Todas las permitidas" : Model.Branches.FirstOrDefault(b => b.Value == Model.BranchId.ToString())?.Text)</strong></div>
             <div class="ticket-row"><span>Ventas</span><strong>@Model.Sales.Count</strong></div>
@@ -64,15 +52,15 @@
         </div>
 
         <table class="table table-modern mb-0">
-            <thead><tr><th>Hora</th><th>Folio</th><th>Sucursal</th><th>Cliente</th><th>Pago</th><th>Total</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Folio</th><th>Sucursal</th><th>Cliente</th><th>Pago</th><th>Total</th></tr></thead>
             <tbody>
             @foreach (var s in Model.Sales)
             {
                 <tr>
-                    <td>@s.Date.ToLocalTime().ToString("HH:mm")</td>
+                    <td>@s.Date.ToLocalTime().ToString("dd/MM HH:mm")</td>
                     <td>#@s.Id</td>
                     <td>@s.Branch?.Name</td>
-                    <td>@(s.Customer?.FullName ?? "PÃºblico General")</td>
+                    <td>@(s.Customer?.FullName ?? "Público General")</td>
                     <td>@s.PaymentMethod</td>
                     <td>@money(s.TotalAmount)</td>
                 </tr>

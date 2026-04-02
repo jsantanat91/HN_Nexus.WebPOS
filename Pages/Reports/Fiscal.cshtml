@@ -1,33 +1,21 @@
 @page
 @model HN_Nexus.WebPOS.Pages.Reports.FiscalModel
 @{
-    ViewData["Title"] = "Corte Fiscal y PÃ³liza";
+    ViewData["Title"] = "Corte Fiscal y Póliza";
 }
 
 <section class="panel mb-3">
     <div class="panel-header"><h5 class="mb-0">Corte fiscal contable</h5></div>
     <div class="panel-body">
         <form method="get" class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Desde</label>
-                <input asp-for="From" type="date" class="form-control" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Hasta</label>
-                <input asp-for="To" type="date" class="form-control" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Sucursal</label>
-                <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
-            </div>
-            <div class="col-md-2">
-                <div class="form-check mt-4">
-                    <input class="form-check-input" asp-for="AllBranches" />
-                    <label class="form-check-label" asp-for="AllBranches">General</label>
-                </div>
-            </div>
+            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">Histórico</label></div></div>
+            <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
+            <div class="col-md-3"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-1"><div class="form-check mt-4"><input class="form-check-input" asp-for="AllBranches" /><label class="form-check-label" asp-for="AllBranches">General</label></div></div>
             <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
         </form>
+
         <form method="post" asp-page-handler="Export" class="d-flex gap-2 mt-3">
             <input type="hidden" name="branchId" value="@Model.BranchId" />
             <input type="hidden" name="allBranches" value="@Model.AllBranches" />
@@ -51,7 +39,7 @@
 </section>
 
 <section class="panel">
-    <div class="panel-header"><h5 class="mb-0">Resumen de ventas incluidas en pÃ³liza</h5></div>
+    <div class="panel-header"><h5 class="mb-0">Resumen de ventas incluidas en póliza</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
             <thead><tr><th>Fecha</th><th>Folio</th><th>Sucursal</th><th>Pago</th><th>Subtotal</th><th>IVA</th><th>Total</th></tr></thead>

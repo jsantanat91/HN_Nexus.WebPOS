@@ -42,6 +42,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LotTrace> LotTraces => Set<LotTrace>();
     public DbSet<SaleReturn> SaleReturns => Set<SaleReturn>();
     public DbSet<SaleReturnLine> SaleReturnLines => Set<SaleReturnLine>();
+    public DbSet<FactDailyBranch> FactDailyBranches => Set<FactDailyBranch>();
+    public DbSet<FactMonthlyBranch> FactMonthlyBranches => Set<FactMonthlyBranch>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -121,6 +123,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<SaleReturnLine>()
             .HasIndex(x => new { x.SaleReturnId, x.SaleDetailId });
 
+        modelBuilder.Entity<FactDailyBranch>()
+            .HasIndex(x => new { x.PeriodDate, x.BranchId })
+            .IsUnique();
+
+        modelBuilder.Entity<FactMonthlyBranch>()
+            .HasIndex(x => new { x.PeriodMonth, x.BranchId })
+            .IsUnique();
+
         modelBuilder.Entity<Category>().HasData(
             new Category { Id = 1, Name = "General" },
             new Category { Id = 2, Name = "Textil" },
@@ -145,11 +155,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 IsActive = true,
                 ModulePermissions = string.Join(',', new[]
                 {
-                    ModuleCatalog.Dashboard,
-                    ModuleCatalog.Sales,
-                    ModuleCatalog.Customers,
-                    ModuleCatalog.CashCuts,
-                    ModuleCatalog.CashShifts
+                ModuleCatalog.Dashboard,
+                ModuleCatalog.Sales,
+                ModuleCatalog.Customers,
+                ModuleCatalog.CashCuts
                 })
             }
         );

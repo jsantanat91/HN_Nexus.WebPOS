@@ -1,4 +1,4 @@
-﻿using HN_Nexus.WebPOS.Data;
+using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +21,16 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
     public bool AllBranches { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public bool Historical { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public DateTime Date { get; set; } = DateTime.Today;
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime From { get; set; } = DateTime.Today.AddDays(-30);
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime To { get; set; } = DateTime.Today;
 
     public decimal Total => Sales.Where(x => x.Status == "Completed").Sum(x => x.TotalAmount);
 
@@ -43,7 +52,7 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
 
         var symbol = string.IsNullOrWhiteSpace(Config.CurrencySymbol) ? "$" : Config.CurrencySymbol;
 
-        var bytes = pdfService.BuildDailySalesPdf(Date, branchName, symbol, Sales);
+        var bytes = pdfService.BuildDailySalesPdf(Date, branchName, symbol, Sales.Where(x=>x.Date.Date==Date.Date).ToList());
         var filename = AllBranches
             ? $"reporte-ventas-{Date:yyyyMMdd}-general.pdf"
             : $"reporte-ventas-{Date:yyyyMMdd}-suc-{BranchId}.pdf";
@@ -70,9 +79,17 @@ public class DailyModel(AppDbContext db, IUserContextService userContext, IRepor
             BranchId = int.Parse(Branches[0].Value!);
         }
 
+        if (!Historical)
+        {
+            var nowLocal = DateTime.Now;
+            From = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+            To = nowLocal.Date;
+            Date = nowLocal.Date;
+        }
+
         var allowedIds = Branches.Select(x => int.Parse(x.Value!)).ToList();
-        var start = DateTime.SpecifyKind(Date.Date, DateTimeKind.Utc);
-        var end = start.AddDays(1);
+        var start = DateTime.SpecifyKind(From.Date, DateTimeKind.Utc);
+        var end = DateTime.SpecifyKind(To.Date.AddDays(1), DateTimeKind.Utc);
 
         var query = db.Sales
             .Include(x => x.Customer)
