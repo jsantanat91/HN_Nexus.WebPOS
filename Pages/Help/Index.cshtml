@@ -1,10 +1,11 @@
-@page
+﻿@page
 @model HN_Nexus.WebPOS.Pages.Help.IndexModel
 @{
     ViewData["Title"] = "Centro de Ayuda";
     var supportMail = "soporte@hubnet-solutions.net";
     var subject = Uri.EscapeDataString("Soporte HN Nexus POS");
-    var body = Uri.EscapeDataString("Hola soporte,%0D%0A%0D%0AComparto detalle de mi incidencia:%0D%0A- Tenant:%0D%0A- Sucursal:%0D%0A- Usuario:%0D%0A- Folio (si aplica):%0D%0A- Fecha/hora:%0D%0A- Descripción:%0D%0A");
+    var bodyText = "Hola soporte,\r\n\r\nComparto detalle de mi incidencia:\r\n- Tenant:\r\n- Sucursal:\r\n- Usuario:\r\n- Folio (si aplica):\r\n- Fecha/hora:\r\n- Descripción:\r\n";
+    var body = Uri.EscapeDataString(bodyText);
 }
 
 <section class="panel mb-3">

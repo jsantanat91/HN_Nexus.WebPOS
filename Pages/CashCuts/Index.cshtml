@@ -1,4 +1,4 @@
-@page
+ï»¿@page
 @model HN_Nexus.WebPOS.Pages.CashCuts.IndexModel
 @{
     ViewData["Title"] = "Corte";
@@ -11,13 +11,13 @@
     <div class="panel-header">
         <div>
             <h5 class="mb-0">Corte y Turnos</h5>
-            <small class="text-muted">Un solo módulo para apertura, cierre y corte diario</small>
+            <small class="text-muted">Un solo mÃ³dulo para apertura, cierre y corte diario</small>
         </div>
     </div>
     <div class="panel-body">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-3"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
-            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">Histórico</label></div></div>
+            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">HistÃ³rico</label></div></div>
             <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>
             <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
             <div class="col-md-3"><button class="btn btn-outline-primary w-100">Consultar</button></div>
@@ -29,7 +29,7 @@
     <div class="panel-body">
         <div class="cards-grid compact">
             <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Turnos abiertos</div><div class="kpi-value text-primary">@openCount</div><span class="badge-soft badge-info">Activos</span></div>
-            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Turnos cerrados</div><div class="kpi-value text-success">@closedCount</div><span class="badge-soft badge-ok">Histórico</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Turnos cerrados</div><div class="kpi-value text-success">@closedCount</div><span class="badge-soft badge-ok">HistÃ³rico</span></div>
             <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Diferencia acumulada</div><div class="kpi-value @(diff >= 0 ? "text-success" : "text-danger")">@diff.ToString("C")</div><span class="badge-soft @(diff >= 0 ? "badge-ok" : "badge-danger")">Balance</span></div>
             <div class="kpi-card glass-card kpi-gradient kpi-slate"><div class="kpi-title">Total sistema hoy</div><div class="kpi-value text-dark">@Model.SuggestedSystemTotal.ToString("C")</div><span class="badge-soft badge-info">Corte sugerido</span></div>
         </div>
@@ -67,7 +67,7 @@
     <div class="panel-header">
         <div>
             <h5 class="mb-0">Nuevo Corte Diario</h5>
-            <small class="text-muted">Consolidado por método de pago</small>
+            <small class="text-muted">Consolidado por mÃ©todo de pago</small>
         </div>
     </div>
     <div class="panel-body">
@@ -80,7 +80,7 @@
 
         <form method="post" asp-page-handler="Create" class="row g-3">
             <input type="hidden" asp-for="BranchId" />
-            <div class="col-md-4"><label class="form-label">Total físico contado</label><input class="form-control" type="number" step="0.01" name="totalPhysical" required /></div>
+            <div class="col-md-4"><label class="form-label">Total fÃ­sico contado</label><input class="form-control" type="number" step="0.01" name="totalPhysical" required /></div>
             <div class="col-md-3 d-flex align-items-end"><button class="btn btn-save w-100">Guardar corte</button></div>
         </form>
     </div>
@@ -130,10 +130,11 @@
                         <span class="badge-soft badge-info">Tarjeta @item.CardSales.ToString("C")</span>
                         <span class="badge-soft badge-warn">Transfer @item.TransferSales.ToString("C")</span>
                     </div>
-                    <div class="product-meta">Físico: @item.TotalPhysical.ToString("C")</div>
+                    <div class="product-meta">FÃ­sico: @item.TotalPhysical.ToString("C")</div>
                     <div class="product-meta">Usuario: @item.User</div>
                 </article>
             }
         </div>
     </div>
 </section>
+

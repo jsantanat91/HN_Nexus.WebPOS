@@ -1,4 +1,4 @@
-@page
+ï»¿@page
 @model HN_Nexus.WebPOS.Pages.Reports.DailyModel
 @{
     ViewData["Title"] = "Reporte Diario";
@@ -21,7 +21,7 @@
                     <select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select>
                 }
             </div>
-            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">Histórico</label></div></div>
+            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">HistÃ³rico</label></div></div>
             <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>
             <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>
             <div class="col-md-1"><label class="form-label">PDF</label><input asp-for="Date" type="date" class="form-control" /></div>
@@ -35,7 +35,7 @@
             <input type="hidden" name="allBranches" value="@Model.AllBranches" />
             <button class="btn btn-outline-primary">Descargar PDF diario</button>
             <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Imprimir resumen</button>
-            <a class="btn btn-save" asp-page="/Reports/Fiscal">Corte fiscal / póliza</a>
+            <a class="btn btn-save" asp-page="/Reports/Fiscal">Corte fiscal / pÃ³liza</a>
         </form>
     </div>
 </section>
@@ -60,7 +60,7 @@
                     <td>@s.Date.ToLocalTime().ToString("dd/MM HH:mm")</td>
                     <td>#@s.Id</td>
                     <td>@s.Branch?.Name</td>
-                    <td>@(s.Customer?.FullName ?? "Público General")</td>
+                    <td>@(s.Customer?.FullName ?? "PÃºblico General")</td>
                     <td>@s.PaymentMethod</td>
                     <td>@money(s.TotalAmount)</td>
                 </tr>
@@ -69,3 +69,4 @@
         </table>
     </div>
 </section>
+

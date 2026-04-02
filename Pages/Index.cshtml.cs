@@ -69,8 +69,11 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
 
         if (!Historical)
         {
+            var periodFromDate = DateOnly.FromDateTime(From.Date);
+            var periodToDate = DateOnly.FromDateTime(To.Date);
+
             var factRows = await db.FactDailyBranches
-                .Where(x => x.BranchId == BranchId && x.PeriodDate >= From.Date && x.PeriodDate <= To.Date)
+                .Where(x => x.BranchId == BranchId && x.PeriodDate >= periodFromDate && x.PeriodDate <= periodToDate)
                 .ToListAsync();
 
             if (factRows.Count > 0)

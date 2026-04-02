@@ -3,7 +3,7 @@ namespace HN_Nexus.WebPOS.Models;
 public class FactDailyBranch
 {
     public long Id { get; set; }
-    public DateTime PeriodDate { get; set; }
+    public DateOnly PeriodDate { get; set; }
     public int BranchId { get; set; }
     public decimal SalesCount { get; set; }
     public decimal SalesSubtotal { get; set; }

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -212,18 +212,21 @@ public class UsersModel(AppDbContext db, IAlertEmailService emailService) : Page
         }
         else
         {
-            var selectedBranches = await db.Branches
+            var activeBranchIds = await db.Branches
                 .Where(b => b.IsActive)
                 .Select(b => b.Id)
-                .Where(branchId => Request.Form[$"ebr_{branchId}"].Count > 0)
                 .ToListAsync();
+
+            var selectedBranches = activeBranchIds
+                .Where(branchId => Request.Form[$"ebr_{branchId}"].Count > 0)
+                .ToList();
 
             if (selectedBranches.Count == 0)
             {
-                var first = await db.Branches.Where(b => b.IsActive).OrderBy(b => b.Id).FirstOrDefaultAsync();
-                if (first is not null)
+                var first = activeBranchIds.OrderBy(idBranch => idBranch).FirstOrDefault();
+                if (first > 0)
                 {
-                    selectedBranches.Add(first.Id);
+                    selectedBranches.Add(first);
                 }
             }
 

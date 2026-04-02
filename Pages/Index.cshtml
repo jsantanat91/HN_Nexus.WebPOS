@@ -1,4 +1,4 @@
-@page
+ï»¿@page
 @using System.Text.Json
 @model IndexModel
 @{
@@ -9,7 +9,7 @@
     <div class="panel-body">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
-            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">Histórico</label></div></div>`r`n            <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>`r`n            <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>`r`n            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Actualizar</button></div>
+            <div class="col-md-2"><div class="form-check form-switch mt-4"><input class="form-check-input" asp-for="Historical" /><label class="form-check-label" asp-for="Historical">HistÃ³rico</label></div></div>`r`n            <div class="col-md-2"><label class="form-label">Desde</label><input asp-for="From" type="date" class="form-control" /></div>`r`n            <div class="col-md-2"><label class="form-label">Hasta</label><input asp-for="To" type="date" class="form-control" /></div>`r`n            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Actualizar</button></div>
         </form>
     </div>
 </section>
@@ -34,13 +34,13 @@
             <div class="kpi-title">Utilidad Neta Periodo</div>
             <div class="kpi-value @(Model.NetToday >= 0 ? "text-success" : "text-danger")">@Model.NetToday.ToString("C")</div>
             <span class="badge-soft @(Model.NetToday >= 0 ? "badge-ok" : "badge-danger")">
-                @(Model.NetToday >= 0 ? "Rentable" : "Atención a costos")
+                @(Model.NetToday >= 0 ? "Rentable" : "AtenciÃ³n a costos")
             </span>
         </div>
     </div>
     <div class="col-xl-3 col-md-6">
         <div class="kpi-card glass-card kpi-gradient kpi-red">
-            <div class="kpi-title">Stock Crítico</div>
+            <div class="kpi-title">Stock CrÃ­tico</div>
             <div class="kpi-value text-danger">@Model.LowStockProducts</div>
             <span class="badge-soft badge-danger">Productos con bajo inventario</span>
         </div>
@@ -79,8 +79,8 @@
         <section class="panel">
             <div class="panel-header">
                 <div>
-                    <h5 class="mb-0">Métodos de Pago</h5>
-                    <small class="text-muted">Distribución semanal</small>
+                    <h5 class="mb-0">MÃ©todos de Pago</h5>
+                    <small class="text-muted">DistribuciÃ³n semanal</small>
                 </div>
             </div>
             <div class="panel-body">
@@ -98,7 +98,7 @@
             <div class="panel-header">
                 <div>
                     <h5 class="mb-0">Ventas Recientes</h5>
-                    <small class="text-muted">Últimas operaciones registradas</small>
+                    <small class="text-muted">Ãšltimas operaciones registradas</small>
                 </div>
                 <a class="btn btn-sm btn-primary" asp-page="/Sales/New" asp-route-branchId="@Model.BranchId">+ Nueva venta</a>
             </div>
@@ -110,7 +110,7 @@
                     <tbody>
                     @if (Model.RecentSales.Count == 0)
                     {
-                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aún.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted py-4">Sin ventas registradas aÃºn.</td></tr>
                     }
                     else
                     {
@@ -118,7 +118,7 @@
                         {
                             <tr>
                                 <td><span class="badge-soft badge-info">#@sale.Id</span></td>
-                                <td>@(sale.Customer?.FullName ?? "Público General")</td>
+                                <td>@(sale.Customer?.FullName ?? "PÃºblico General")</td>
                                 <td>@sale.Date.ToLocalTime().ToString("dd/MM HH:mm")</td>
                                 <td class="fw-bold">@sale.TotalAmount.ToString("C")</td>
                             </tr>
@@ -135,13 +135,13 @@
             <div class="panel-header">
                 <div>
                     <h5 class="mb-0">Top Productos</h5>
-                    <small class="text-muted">Mayor rotación</small>
+                    <small class="text-muted">Mayor rotaciÃ³n</small>
                 </div>
             </div>
             <div class="panel-body">
                 @if (Model.TopProducts.Count == 0)
                 {
-                    <p class="text-muted mb-0">Aún no hay datos para ranking.</p>
+                    <p class="text-muted mb-0">AÃºn no hay datos para ranking.</p>
                 }
                 else
                 {
@@ -165,7 +165,7 @@
             </div>
             <div class="panel-body p-0">
                 <table class="table table-modern mb-0">
-                    <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th></tr></thead>
+                    <thead><tr><th>Producto</th><th>CategorÃ­a</th><th>Stock</th></tr></thead>
                     <tbody>
                     @if (Model.LowStockList.Count == 0)
                     {
@@ -193,12 +193,12 @@
 
         <section class="panel mt-3">
             <div class="panel-header">
-                <h5 class="mb-0">Riesgo de Quiebre (Pronóstico simple)</h5>
+                <h5 class="mb-0">Riesgo de Quiebre (PronÃ³stico simple)</h5>
             </div>
             <div class="panel-body">
                 @if (Model.ForecastRisks.Count == 0)
                 {
-                    <p class="text-muted mb-0">Sin datos para pronóstico.</p>
+                    <p class="text-muted mb-0">Sin datos para pronÃ³stico.</p>
                 }
                 else
                 {
@@ -207,9 +207,9 @@
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div>
                                 <strong>@r.ProductName</strong>
-                                <div class="text-muted small">Consumo prom: @r.DailyAvg.ToString("N2") und/día</div>
+                                <div class="text-muted small">Consumo prom: @r.DailyAvg.ToString("N2") und/dÃ­a</div>
                             </div>
-                            <span class="badge-soft @(r.DaysCover < 7 ? "badge-danger" : r.DaysCover < 15 ? "badge-warn" : "badge-ok")">@r.DaysCover.ToString("N1") días cobertura</span>
+                            <span class="badge-soft @(r.DaysCover < 7 ? "badge-danger" : r.DaysCover < 15 ? "badge-warn" : "badge-ok")">@r.DaysCover.ToString("N1") dÃ­as cobertura</span>
                         </div>
                     }
                 }
@@ -242,7 +242,7 @@
     </div>
     <div class="col-xl-6">
         <section class="panel">
-            <div class="panel-header"><h5 class="mb-0">Top Categorías (Periodo)</h5></div>
+            <div class="panel-header"><h5 class="mb-0">Top CategorÃ­as (Periodo)</h5></div>
             <div class="panel-body">
                 @if (Model.TopCategories.Count == 0)
                 {
@@ -324,5 +324,6 @@
 })();
 </script>
 }
+
 
 
