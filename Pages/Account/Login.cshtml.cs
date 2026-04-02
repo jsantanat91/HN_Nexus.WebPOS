@@ -52,7 +52,16 @@ public class LoginModel(AppDbContext db) : PageModel
             string? resolvedCode = null;
             if (!string.IsNullOrWhiteSpace(tenantCode))
             {
-                resolvedCode = tenantCode;
+                var normalized = NormalizeTenantCode(tenantCode);
+                resolvedCode = await db.Tenants
+                    .Where(t => t.IsActive && (t.Code.ToLower() == tenantCode || t.Code.ToLower() == normalized))
+                    .Select(t => t.Code.ToLower())
+                    .FirstOrDefaultAsync();
+
+                if (string.IsNullOrWhiteSpace(resolvedCode))
+                {
+                    resolvedCode = normalized;
+                }
             }
             else
             {
@@ -117,5 +126,23 @@ public class LoginModel(AppDbContext db) : PageModel
         }
 
         return RedirectToPage("/Index");
+    }
+
+    private static string NormalizeTenantCode(string value)
+    {
+        var raw = (value ?? string.Empty).Trim().ToLowerInvariant();
+        var chars = raw.Where(ch => char.IsLetterOrDigit(ch) || ch == '_').ToArray();
+        var outCode = new string(chars);
+        if (string.IsNullOrWhiteSpace(outCode))
+        {
+            return "cliente";
+        }
+
+        if (char.IsDigit(outCode[0]))
+        {
+            outCode = "t" + outCode;
+        }
+
+        return outCode;
     }
 }
