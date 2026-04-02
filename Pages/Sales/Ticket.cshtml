@@ -1,7 +1,7 @@
 @page "{id:int}"
 @model HN_Nexus.WebPOS.Pages.Sales.TicketModel
 @{
-    if (Model.Embed)
+    if (Model.Embed || Model.Popup)
     {
         Layout = null;
     }
@@ -37,7 +37,7 @@
                         <div class="ticket-row"><span>Pago</span><strong>@Model.Sale.PaymentMethod</strong></div>
                         @if (!string.IsNullOrWhiteSpace(Model.Sale.AuthorizationCode))
                         {
-                            <div class="ticket-row"><span>Autorización</span><strong>@Model.Sale.AuthorizationCode</strong></div>
+                            <div class="ticket-row"><span>Referencia</span><strong>@Model.Sale.AuthorizationCode</strong></div>
                         }
                         <div class="ticket-row"><span>IVA en precio</span><strong>@(Model.Sale.PricesIncludeTax ? "Sí" : "No")</strong></div>
 
@@ -71,6 +71,11 @@
                             <button type="button" class="btn btn-primary" id="btnPrintAndClose" data-sale-id="@Model.Sale.Id" data-customer-email="@Model.Sale.Customer?.Email">Imprimir ticket</button>
                             <button type="button" class="btn btn-outline-primary" id="btnBackAndClose">Volver a ventas</button>
                         }
+                        else if (Model.Popup)
+                        {
+                            <button type="button" class="btn btn-primary" id="btnPrintPopup" data-sale-id="@Model.Sale.Id" data-customer-email="@Model.Sale.Customer?.Email">Imprimir ticket</button>
+                            <button type="button" class="btn btn-outline-primary" id="btnClosePopup">Volver a ventas</button>
+                        }
                         else
                         {
                             <button type="button" class="btn btn-primary" id="btnPrintTicketStandalone" data-sale-id="@Model.Sale.Id" data-customer-email="@Model.Sale.Customer?.Email">Imprimir ticket</button>
@@ -84,8 +89,6 @@
 }
 
 @section Scripts {
-@if (Model.Embed)
-{
 <script>
 (() => {
   const sendDigital = async (btn) => {
@@ -102,9 +105,7 @@
 
     const res = await fetch(`?handler=SendDigital&id=${saleId || ''}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: body.toString()
     });
 
@@ -123,19 +124,36 @@
     return true;
   };
 
-  const closeModal = () => window.parent?.postMessage({ type: 'closeTicketModal' }, '*');
-  document.getElementById('btnBackAndClose')?.addEventListener('click', closeModal);
-  document.getElementById('btnPrintAndClose')?.addEventListener('click', async (e) => {
-    const ok = await askPrintMode(e.currentTarget);
-    if (ok) setTimeout(closeModal, 400);
-  });
+  const isEmbed = '@(Model.Embed ? "1" : "0")' === '1';
+  const isPopup = '@(Model.Popup ? "1" : "0")' === '1';
+  const autoPrint = '@(Model.AutoPrint ? "1" : "0")' === '1';
 
-  document.getElementById('btnPrintTicketStandalone')?.addEventListener('click', async (e) => {
-    await askPrintMode(e.currentTarget);
-  });
+  if (isEmbed) {
+    const closeModal = () => window.parent?.postMessage({ type: 'closeTicketModal' }, '*');
+    document.getElementById('btnBackAndClose')?.addEventListener('click', closeModal);
+    document.getElementById('btnPrintAndClose')?.addEventListener('click', async (e) => {
+      const ok = await askPrintMode(e.currentTarget);
+      if (ok) setTimeout(closeModal, 400);
+    });
+  }
+
+  if (isPopup) {
+    document.getElementById('btnClosePopup')?.addEventListener('click', () => window.close());
+    document.getElementById('btnPrintPopup')?.addEventListener('click', async (e) => {
+      await askPrintMode(e.currentTarget);
+    });
+    if (autoPrint) {
+      setTimeout(() => window.print(), 300);
+    }
+  }
+
+  if (!isEmbed && !isPopup) {
+    document.getElementById('btnPrintTicketStandalone')?.addEventListener('click', async (e) => {
+      await askPrintMode(e.currentTarget);
+    });
+  }
 })();
 </script>
-}
 <style>
 @@media print {
   body { background: #fff !important; margin: 0; }

@@ -223,57 +223,86 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             return RedirectToPage(new { branchId });
         }
 
-        var uuid = Guid.NewGuid().ToString().ToUpperInvariant();
-        var xmlName = $"cfdi-{sale.Id}-{DateTime.UtcNow:yyyyMMddHHmmss}.xml";
-        var xml = BuildMockCfdiXml(sale, uuid, config.CompanyName, config.TaxId);
-        var xmlBytes = Encoding.UTF8.GetBytes(xml);
-        var xmlVault = await vault.SaveAsync("xml", xmlName, xmlBytes);
-
-        var doc = await db.CfdiDocuments.FirstOrDefaultAsync(x => x.SaleId == sale.Id);
-        if (doc is null)
+        try
         {
-            doc = new CfdiDocument
+            var uuid = Guid.NewGuid().ToString().ToUpperInvariant();
+            var xmlName = $"cfdi-{sale.Id}-{DateTime.UtcNow:yyyyMMddHHmmss}.xml";
+            var xml = BuildMockCfdiXml(sale, uuid, config.CompanyName, config.TaxId);
+            var xmlBytes = Encoding.UTF8.GetBytes(xml);
+            var xmlVault = await vault.SaveAsync("xml", xmlName, xmlBytes);
+
+            var doc = await db.CfdiDocuments.FirstOrDefaultAsync(x => x.SaleId == sale.Id);
+            if (doc is null)
+            {
+                doc = new CfdiDocument
+                {
+                    SaleId = sale.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.CfdiDocuments.Add(doc);
+            }
+
+            doc.PacProvider = config.PacProvider ?? "Pendiente";
+            doc.Status = "Stamped";
+            doc.Uuid = uuid;
+            doc.XmlPath = xmlVault.storagePath;
+            doc.PdfPath = null;
+            doc.ErrorMessage = null;
+            doc.StampedAt = DateTime.UtcNow;
+            sale.CfdiStatus = "Timbrado";
+            sale.CfdiUuid = uuid;
+            db.CfdiVaultFiles.Add(new CfdiVaultFile
             {
                 SaleId = sale.Id,
+                DocumentType = "XML",
+                OriginalFileName = xmlName,
+                StoragePath = xmlVault.storagePath,
+                Sha256 = xmlVault.sha256,
+                SizeBytes = xmlVault.sizeBytes,
                 CreatedAt = DateTime.UtcNow
-            };
-            db.CfdiDocuments.Add(doc);
+            });
+
+            db.AuditLogs.Add(new AuditLog
+            {
+                CreatedAt = DateTime.UtcNow,
+                Action = "CFDI_STAMP",
+                Entity = "Sale",
+                EntityId = sale.Id,
+                BranchId = sale.BranchId,
+                Username = User.Identity?.Name ?? "sistema",
+                IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+                Details = $"Timbrado CFDI (modo integración base) UUID={uuid}, PAC={doc.PacProvider}."
+            });
+
+            await db.SaveChangesAsync();
+            TempData["Flash"] = $"CFDI timbrado (base) UUID {uuid}.";
         }
-
-        doc.PacProvider = config.PacProvider ?? "Pendiente";
-        doc.Status = "Stamped";
-        doc.Uuid = uuid;
-        doc.XmlPath = xmlVault.storagePath;
-        doc.PdfPath = null;
-        doc.ErrorMessage = null;
-        doc.StampedAt = DateTime.UtcNow;
-        sale.CfdiStatus = "Timbrado";
-        sale.CfdiUuid = uuid;
-        db.CfdiVaultFiles.Add(new CfdiVaultFile
+        catch (Exception ex)
         {
-            SaleId = sale.Id,
-            DocumentType = "XML",
-            OriginalFileName = xmlName,
-            StoragePath = xmlVault.storagePath,
-            Sha256 = xmlVault.sha256,
-            SizeBytes = xmlVault.sizeBytes,
-            CreatedAt = DateTime.UtcNow
-        });
-
-        db.AuditLogs.Add(new AuditLog
-        {
-            CreatedAt = DateTime.UtcNow,
-            Action = "CFDI_STAMP",
-            Entity = "Sale",
-            EntityId = sale.Id,
-            BranchId = sale.BranchId,
-            Username = User.Identity?.Name ?? "sistema",
-            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Timbrado CFDI (modo integración base) UUID={uuid}, PAC={doc.PacProvider}."
-        });
-
-        await db.SaveChangesAsync();
-        TempData["Flash"] = $"CFDI timbrado (base) UUID {uuid}.";
+            sale.CfdiStatus = "EnCola";
+            db.CfdiStampQueues.Add(new CfdiStampQueue
+            {
+                SaleId = sale.Id,
+                Status = "Pending",
+                Attempts = 0,
+                CreatedAt = DateTime.UtcNow,
+                NextAttemptAt = DateTime.UtcNow.AddMinutes(2),
+                LastError = ex.Message
+            });
+            db.AuditLogs.Add(new AuditLog
+            {
+                CreatedAt = DateTime.UtcNow,
+                Action = "CFDI_QUEUE",
+                Entity = "Sale",
+                EntityId = sale.Id,
+                BranchId = sale.BranchId,
+                Username = User.Identity?.Name ?? "sistema",
+                IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+                Details = $"Error timbrando CFDI. Se manda a cola de contingencia. Error={ex.Message}"
+            });
+            await db.SaveChangesAsync();
+            TempData["Flash"] = "PAC no disponible. CFDI enviado a cola de contingencia para reintento automático.";
+        }
         return RedirectToPage(new { branchId = sale.BranchId });
     }
 

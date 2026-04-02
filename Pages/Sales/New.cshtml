@@ -32,6 +32,83 @@
                     <button class="btn btn-quick-product" type="button" data-bs-toggle="modal" data-bs-target="#quickProductModal">Producto rápido</button>
                     <button class="btn btn-quick-customer" type="button" data-bs-toggle="modal" data-bs-target="#quickCustomerModal">Cliente rápido</button>
                 </div>
+                <hr />
+                <div class="d-flex justify-content-between align-items-center">
+                    <span id="offlineStatus" class="badge-soft badge-ok">En línea</span>
+                    <span id="offlineQueueBadge" class="badge-soft badge-info">0 pendientes</span>
+                </div>
+                <div class="d-grid mt-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnSyncOfflineQueue">Sincronizar ventas offline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Finalizar venta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Cliente</label>
+                        <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select" id="checkoutCustomerId">
+                            <option value="">Público general</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-quick-customer w-100" type="button" data-bs-toggle="modal" data-bs-target="#quickCustomerModal">Cliente rápido</button>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo de pago</label>
+                        <select asp-for="PaymentMethod" class="form-select" id="checkoutPaymentMethod">
+                            <option value="Cash">Efectivo</option>
+                            <option value="Card">Tarjeta</option>
+                            <option value="Transfer">Transferencia</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Monto recibido</label>
+                        <input asp-for="AmountReceived" id="checkoutAmountReceived" type="number" step="0.01" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Descuento global (%)</label>
+                        <input asp-for="GlobalDiscountPercent" id="checkoutGlobalDiscountPercent" type="number" min="0" max="100" step="0.01" class="form-control" value="0" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Referencia / autorización</label>
+                        <input asp-for="AuthorizationCode" id="checkoutAuthorizationCode" class="form-control" placeholder="Tarjeta: autorización / Transferencia: referencia" />
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" asp-for="IsInvoice" id="checkoutIsInvoice" />
+                            <label class="form-check-label" asp-for="IsInvoice">Requiere factura</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" asp-for="PricesIncludeTax" id="checkoutPricesIncludeTax" />
+                            <label class="form-check-label" asp-for="PricesIncludeTax">Precios con IVA</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="ticket-preview mb-0">
+                            <div class="ticket-row ticket-total"><span>Total</span><span id="checkoutTotal">$0.00</span></div>
+                            <div class="ticket-row"><span>Cambio</span><strong id="checkoutChange">$0.00</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-save" type="submit" id="btnSubmitSale">Confirmar y generar ticket</button>
             </div>
         </div>
     </div>
@@ -103,7 +180,7 @@
     </div>
 </div>
 
-<form method="post" class="pos-grid" id="posForm" data-tax="@Model.Config.TaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-currency="@Model.Config.CurrencySymbol">
+<form method="post" class="pos-grid" id="posForm" data-tax="@Model.Config.TaxRate.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-currency="@Model.Config.CurrencySymbol" data-offline-endpoint="?handler=OfflineSync">
     <input type="hidden" asp-for="BranchId" />
     <input type="hidden" asp-for="WarehouseId" />
 
@@ -122,44 +199,9 @@
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
             <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                    <label class="form-label">Cliente</label>
-                    <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select">
-                        <option value="">Público general</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Método de pago</label>
-                    <select asp-for="PaymentMethod" class="form-select" id="paymentMethod">
-                        <option value="Cash">Efectivo</option>
-                        <option value="Card">Tarjeta</option>
-                        <option value="Transfer">Transferencia</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Monto recibido</label>
-                    <input asp-for="AmountReceived" id="amountReceived" type="number" step="0.01" class="form-control" />
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">Descuento global (%)</label>
-                    <input asp-for="GlobalDiscountPercent" id="globalDiscountPercent" type="number" min="0" max="100" step="0.01" class="form-control" value="0" />
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" asp-for="IsInvoice" />
-                        <label class="form-check-label" asp-for="IsInvoice">Requiere factura CFDI</label>
-                    </div>
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" asp-for="PricesIncludeTax" id="pricesIncludeTax" />
-                        <label class="form-check-label" asp-for="PricesIncludeTax">Precios ya incluyen IVA</label>
-                    </div>
-                </div>
-                <div class="col-md-4" id="authCodeWrap" style="display:none;">
-                    <label class="form-label">No. autorización tarjeta</label>
-                    <input asp-for="AuthorizationCode" id="authorizationCode" class="form-control" placeholder="Número de autorización" />
+                <div class="col-md-12 d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <small class="text-muted">Carga productos al carrito y luego usa <strong>Terminar venta (F4)</strong> para cobrar.</small>
+                    <button class="btn btn-outline-danger" type="button" id="btnClearCart">Limpiar carrito</button>
                 </div>
             </div>
 
@@ -225,7 +267,7 @@
             </div>
 
             <div class="d-grid gap-2">
-                <button class="btn btn-primary btn-lg" type="submit" id="btnCharge">Terminar venta (F4)</button>
+                <button class="btn btn-primary btn-lg" type="button" id="btnCharge" data-bs-toggle="modal" data-bs-target="#checkoutModal">Terminar venta (F4)</button>
                 <a class="btn btn-outline-primary" asp-page="/Sales/Index" asp-route-branchId="@Model.BranchId">Ver historial</a>
             </div>
             <small class="text-muted d-block mt-2">Impresión: al terminar podrás usar ticket HTML con Ctrl+P para impresora térmica.</small>
@@ -235,19 +277,19 @@
 
 @if (Model.TicketSaleId.HasValue)
 {
-<div class="modal fade" id="saleTicketModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Ticket venta #@Model.TicketSaleId</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0" style="height:80vh;">
-                <iframe src="/Sales/Ticket/@Model.TicketSaleId?embed=1" style="width:100%; height:100%; border:0;"></iframe>
-            </div>
-        </div>
-    </div>
-</div>
+<script>
+(() => {
+  const saleId = @Model.TicketSaleId.Value;
+  const popup = window.open(`/Sales/Ticket/${saleId}?popup=true&autoprint=true`, `ticket_${saleId}`, "width=460,height=820,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes");
+  if (!popup) {
+    alert("No se pudo abrir la ventana del ticket. Habilita popups para este sitio.");
+  }
+  if (window.history && window.history.replaceState) {
+    const cleanUrl = `/Sales/New?branchId=@Model.BranchId&warehouseId=@Model.WarehouseId`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+})();
+</script>
 }
 
 @section Scripts {
@@ -257,9 +299,16 @@
     window.paintCategoryPills();
   }
 
-  const payment = document.getElementById('paymentMethod');
-  const wrap = document.getElementById('authCodeWrap');
-  const auth = document.getElementById('authorizationCode');
+  const payment = document.getElementById('checkoutPaymentMethod');
+  const auth = document.getElementById('checkoutAuthorizationCode');
+  const amountReceived = document.getElementById('checkoutAmountReceived');
+  const globalDiscountPercent = document.getElementById('checkoutGlobalDiscountPercent');
+  const pricesIncludeTax = document.getElementById('checkoutPricesIncludeTax');
+  const checkoutTotal = document.getElementById('checkoutTotal');
+  const checkoutChange = document.getElementById('checkoutChange');
+  const btnClearCart = document.getElementById('btnClearCart');
+  const posForm = document.getElementById('posForm');
+  const checkoutModal = document.getElementById('checkoutModal');
   const quickRfc = document.getElementById('quickRfcInput');
   const quickCp = document.getElementById('quickCpInput');
   const satMsg = document.getElementById('quickSatValidation');
@@ -267,10 +316,43 @@
   const quickInvoiceFields = document.getElementById('quickInvoiceFields');
 
   function syncAuth() {
-    const isCard = (payment?.value || '') === 'Card';
-    if (wrap) wrap.style.display = isCard ? 'block' : 'none';
-    if (auth) auth.required = isCard;
+    const method = payment?.value || 'Cash';
+    if (auth) {
+      auth.required = (method === 'Card' || method === 'Transfer');
+      auth.placeholder = method === 'Card'
+        ? 'Número de autorización de tarjeta'
+        : method === 'Transfer'
+          ? 'Referencia de transferencia'
+          : 'Tarjeta: autorización / Transferencia: referencia';
+    }
+    if (amountReceived) {
+      amountReceived.disabled = method !== 'Cash';
+      if (method !== 'Cash') {
+        amountReceived.value = '0';
+      }
+    }
+    syncCheckoutTotals();
   }
+
+  function syncCheckoutTotals() {
+    const total = parseFloat(posForm?.dataset.currentTotal || '0') || 0;
+    const change = parseFloat(posForm?.dataset.currentChange || '0') || 0;
+    const money = (v) => {
+      const symbol = posForm?.dataset.currency || '$';
+      return `${symbol}${Number(v || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+    if (checkoutTotal) checkoutTotal.textContent = money(total);
+    if (checkoutChange) checkoutChange.textContent = money(change);
+  }
+
+  checkoutModal?.addEventListener('shown.bs.modal', () => {
+    syncCheckoutTotals();
+    syncAuth();
+  });
+
+  amountReceived?.addEventListener('input', syncCheckoutTotals);
+  globalDiscountPercent?.addEventListener('input', syncCheckoutTotals);
+  pricesIncludeTax?.addEventListener('change', syncCheckoutTotals);
 
   payment?.addEventListener('change', syncAuth);
   syncAuth();
@@ -309,17 +391,20 @@
   syncQuickInvoice();
   satQuickValidate();
 
-  const modalEl = document.getElementById('saleTicketModal');
-  if (modalEl) {
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
-
-    window.addEventListener('message', (event) => {
-      if (event?.data?.type === 'closeTicketModal') {
-        modal.hide();
-      }
+  btnClearCart?.addEventListener('click', () => {
+    document.querySelectorAll('.qty-input').forEach((el) => el.value = '0');
+    document.querySelectorAll('.line-discount-input').forEach((el) => el.value = '0');
+    if (globalDiscountPercent) globalDiscountPercent.value = '0';
+    if (amountReceived) amountReceived.value = '0';
+    const search = document.getElementById('productSearch');
+    if (search) search.value = '';
+    document.querySelectorAll('.product-card[data-product-id]').forEach((card) => {
+      card.style.display = 'block';
     });
-  }
+    if (typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new Event('pos-refresh'));
+    }
+  });
 })();
 </script>
 }

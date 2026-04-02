@@ -34,6 +34,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PriceListItem> PriceListItems => Set<PriceListItem>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<AppTelemetryEvent> AppTelemetryEvents => Set<AppTelemetryEvent>();
+    public DbSet<CfdiStampQueue> CfdiStampQueues => Set<CfdiStampQueue>();
     public DbSet<CfdiVaultFile> CfdiVaultFiles => Set<CfdiVaultFile>();
     public DbSet<ReplenishmentRule> ReplenishmentRules => Set<ReplenishmentRule>();
     public DbSet<CycleCount> CycleCounts => Set<CycleCount>();
@@ -99,6 +100,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<AppTelemetryEvent>()
             .HasIndex(x => x.CreatedAt);
+
+        modelBuilder.Entity<CfdiStampQueue>()
+            .HasIndex(x => new { x.Status, x.NextAttemptAt });
 
         modelBuilder.Entity<CfdiVaultFile>()
             .HasIndex(x => new { x.SaleId, x.DocumentType, x.CreatedAt });

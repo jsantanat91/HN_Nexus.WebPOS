@@ -5,7 +5,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HN Nexus POS</title>
+    <title>@ViewData["Title"] - HN Nexus</title>
+    <link rel="manifest" href="~/manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,7 +34,6 @@
                 <div class="brand-logo">POS</div>
                 <div>
                     <div class="brand-title">HN Nexus</div>
-                    <small class="brand-subtitle">Punto de Venta</small>
                 </div>
             </div>
 
@@ -71,6 +71,7 @@
                 @if (has(ModuleCatalog.Expenses)) { <a class="nav-link" asp-page="/Expenses/Index">Gastos</a> }
                 @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Órdenes Compra</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Daily">Reportes</a> }
+                @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Enterprise">Tablero Enterprise</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Fiscal">Corte Fiscal</a> }
                 <a class="nav-link" asp-page="/Help/Index">Centro de Ayuda</a>
 
@@ -89,8 +90,10 @@
                             <a class="nav-link sub-link" asp-page="/Config/Pricing">Precios</a>
                             <a class="nav-link sub-link" asp-page="/Config/Promotions">Promociones</a>
                             <a class="nav-link sub-link" asp-page="/Config/Cfdi">CFDI / PAC</a>
+                            <a class="nav-link sub-link" asp-page="/Config/CfdiQueue">Cola CFDI</a>
                             <a class="nav-link sub-link" asp-page="/Config/CfdiVault">Resguardo CFDI</a>
                             <a class="nav-link sub-link" asp-page="/Config/Monitoring">Monitoreo</a>
+                            <a class="nav-link sub-link" asp-page="/Config/Health">Salud Sistema</a>
                             @if (User.IsInRole("SuperUser")) { <a class="nav-link sub-link" asp-page="/Config/Tenants">Tenants</a> }
                             <a class="nav-link sub-link" asp-page="/Config/Audit">Bitácora</a>
                         </div>
@@ -136,6 +139,13 @@ else
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  });
+}
+</script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

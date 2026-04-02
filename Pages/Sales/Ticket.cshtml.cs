@@ -16,6 +16,12 @@ public class TicketModel(AppDbContext db, IAlertEmailService emailService) : Pag
     [BindProperty(SupportsGet = true)]
     public bool Embed { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool Popup { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public bool AutoPrint { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         Sale = await db.Sales

@@ -1,0 +1,36 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.HealthModel
+@{
+    ViewData["Title"] = "Salud Sistema";
+}
+
+<section class="row g-3 mb-3">
+    <div class="col-md-2"><article class="metric-card @(Model.DbOk ? "metric-success" : "metric-danger")"><span>DB</span><strong>@(Model.DbOk ? "OK" : "FAIL")</strong></article></div>
+    <div class="col-md-2"><article class="metric-card metric-primary"><span>Eventos 24h</span><strong>@Model.Events24h</strong></article></div>
+    <div class="col-md-2"><article class="metric-card metric-danger"><span>Errores 24h</span><strong>@Model.Errors24h</strong></article></div>
+    <div class="col-md-2"><article class="metric-card metric-info"><span>Latencia</span><strong>@Model.AvgLatencyMs.ToString("N0") ms</strong></article></div>
+    <div class="col-md-2"><article class="metric-card metric-warning"><span>DB ms</span><strong>@Model.AvgDbMs.ToString("N0") ms</strong></article></div>
+    <div class="col-md-2"><article class="metric-card metric-dark"><span>DB cmds</span><strong>@Model.AvgDbCommands.ToString("N1")</strong></article></div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Últimos errores</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Fecha</th><th>Ruta</th><th>Status</th><th>Tenant</th><th>Trace</th><th>Error</th></tr></thead>
+            <tbody>
+            @foreach (var e in Model.LastErrors)
+            {
+                <tr>
+                    <td>@e.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</td>
+                    <td>@e.Method @e.Path</td>
+                    <td>@e.StatusCode</td>
+                    <td>@e.TenantSchema</td>
+                    <td class="small">@e.TraceId</td>
+                    <td class="small text-muted">@e.Error</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

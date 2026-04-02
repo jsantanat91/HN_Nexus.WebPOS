@@ -11,4 +11,8 @@ public class AppTelemetryEvent
     public string IpAddress { get; set; } = string.Empty;
     public string? Username { get; set; }
     public string? Error { get; set; }
+    public string TraceId { get; set; } = string.Empty;
+    public string TenantSchema { get; set; } = "public";
+    public int DbCommandCount { get; set; }
+    public long DbDurationMs { get; set; }
 }

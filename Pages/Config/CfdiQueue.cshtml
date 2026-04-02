@@ -1,0 +1,52 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.CfdiQueueModel
+@{
+    ViewData["Title"] = "Cola CFDI";
+}
+
+<section class="row g-3 mb-3">
+    <div class="col-md-4"><article class="metric-card metric-primary"><span>En cola</span><strong>@Model.Pending</strong></article></div>
+    <div class="col-md-4"><article class="metric-card metric-danger"><span>Error</span><strong>@Model.Error</strong></article></div>
+    <div class="col-md-4"><article class="metric-card metric-success"><span>Completados</span><strong>@Model.Done</strong></article></div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Contingencia fiscal y reintentos PAC</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Venta</th>
+                    <th>Estatus</th>
+                    <th>Intentos</th>
+                    <th>Próximo</th>
+                    <th>Error</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var j in Model.Jobs)
+            {
+                <tr>
+                    <td>#@j.Id</td>
+                    <td>#@j.SaleId</td>
+                    <td><span class="badge-soft @(j.Status == "Done" ? "badge-ok" : j.Status == "Error" ? "badge-danger" : "badge-info")">@j.Status</span></td>
+                    <td>@j.Attempts</td>
+                    <td>@(j.NextAttemptAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "-")</td>
+                    <td class="small text-muted">@j.LastError</td>
+                    <td>
+                        @if (j.Status != "Done")
+                        {
+                            <form method="post" asp-page-handler="Retry">
+                                <input type="hidden" name="id" value="@j.Id" />
+                                <button class="btn btn-sm btn-outline-primary">Reintentar</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

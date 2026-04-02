@@ -72,13 +72,18 @@
     return `${currencySymbol}${num.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
-  const paymentMethod = document.getElementById("paymentMethod");
-  const amountReceived = document.getElementById("amountReceived");
-  const globalDiscountPercent = document.getElementById("globalDiscountPercent");
-  const pricesIncludeTax = document.getElementById("pricesIncludeTax");
+  const paymentMethod = document.getElementById("paymentMethod") || document.getElementById("checkoutPaymentMethod");
+  const amountReceived = document.getElementById("amountReceived") || document.getElementById("checkoutAmountReceived");
+  const globalDiscountPercent = document.getElementById("globalDiscountPercent") || document.getElementById("checkoutGlobalDiscountPercent");
+  const pricesIncludeTax = document.getElementById("pricesIncludeTax") || document.getElementById("checkoutPricesIncludeTax");
   const searchInput = document.getElementById("productSearch");
   const barcodeInput = document.getElementById("barcodeInput");
   const cartRows = document.getElementById("cartRows");
+  const offlineStatus = document.getElementById("offlineStatus");
+  const offlineQueueBadge = document.getElementById("offlineQueueBadge");
+  const btnSyncOfflineQueue = document.getElementById("btnSyncOfflineQueue");
+  const antiForgery = document.querySelector('input[name="__RequestVerificationToken"]');
+  const offlineQueueKey = "hnpos_offline_sales_v2";
 
   const taxRate = parseFloat(posForm.getAttribute("data-tax") || "16") / 100;
 
@@ -186,6 +191,9 @@
     document.getElementById("posTotal").textContent = toMoney(total);
     document.getElementById("posReceived").textContent = toMoney(received);
     document.getElementById("posChange").textContent = toMoney(change);
+    posForm.dataset.currentTotal = String(total);
+    posForm.dataset.currentChange = String(change);
+    posForm.dataset.currency = currencySymbol;
 
     renderCart(selectedRows);
   }
@@ -336,10 +344,131 @@
     });
   }
 
+  function getOfflineQueue() {
+    try {
+      return JSON.parse(localStorage.getItem(offlineQueueKey) || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function setOfflineQueue(items) {
+    localStorage.setItem(offlineQueueKey, JSON.stringify(items || []));
+    paintOfflineQueueState();
+  }
+
+  function paintOfflineQueueState() {
+    const queue = getOfflineQueue();
+    if (offlineQueueBadge) {
+      offlineQueueBadge.textContent = `${queue.length} pendientes`;
+    }
+    if (offlineStatus) {
+      const online = navigator.onLine;
+      offlineStatus.textContent = online ? "En línea" : "Offline";
+      offlineStatus.className = `badge-soft ${online ? "badge-ok" : "badge-danger"}`;
+    }
+  }
+
+  function collectOfflinePayload() {
+    const items = getCards()
+      .map((card) => ({
+        productId: parseInt(card.getAttribute("data-product-id") || "0", 10),
+        qty: parseInt(getQtyInput(card)?.value || "0", 10),
+        discountPercent: parseFloat(getLineDiscountInput(card)?.value || "0") || 0
+      }))
+      .filter((x) => x.productId > 0 && x.qty > 0);
+
+    return {
+      branchId: parseInt((document.querySelector('input[name="BranchId"]')?.value || "0"), 10),
+      warehouseId: parseInt((document.querySelector('input[name="WarehouseId"]')?.value || "0"), 10),
+      customerId: (() => {
+        const raw = document.getElementById("checkoutCustomerId")?.value || "";
+        return raw ? parseInt(raw, 10) : null;
+      })(),
+      isInvoice: document.getElementById("checkoutIsInvoice")?.checked === true,
+      pricesIncludeTax: document.getElementById("checkoutPricesIncludeTax")?.checked === true,
+      paymentMethod: document.getElementById("checkoutPaymentMethod")?.value || "Cash",
+      authorizationCode: (document.getElementById("checkoutAuthorizationCode")?.value || "").trim(),
+      amountReceived: parseFloat(document.getElementById("checkoutAmountReceived")?.value || "0") || 0,
+      globalDiscountPercent: parseFloat(document.getElementById("checkoutGlobalDiscountPercent")?.value || "0") || 0,
+      items
+    };
+  }
+
+  function clearCart() {
+    document.querySelectorAll(".qty-input").forEach((x) => { x.value = "0"; });
+    document.querySelectorAll(".line-discount-input").forEach((x) => { x.value = "0"; });
+    if (globalDiscountPercent) globalDiscountPercent.value = "0";
+    if (amountReceived) amountReceived.value = "0";
+    if (searchInput) searchInput.value = "";
+    getCards().forEach((card) => { card.style.display = "block"; });
+    refreshPosSummary();
+    barcodeInput?.focus();
+  }
+
+  async function syncOfflineQueue() {
+    const endpoint = posForm.getAttribute("data-offline-endpoint") || "?handler=OfflineSync";
+    const token = antiForgery?.value || "";
+    const queue = getOfflineQueue();
+    if (queue.length === 0) {
+      alert("No hay ventas pendientes por sincronizar.");
+      return;
+    }
+    if (!navigator.onLine) {
+      alert("Sigues sin conexión. No se puede sincronizar.");
+      return;
+    }
+
+    const remaining = [];
+    let synced = 0;
+    for (const payload of queue) {
+      try {
+        const body = new URLSearchParams();
+        body.set("payload", JSON.stringify(payload));
+        body.set("__RequestVerificationToken", token);
+
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: body.toString()
+        });
+        const json = await res.json();
+        if (json?.ok) {
+          synced += 1;
+        } else {
+          remaining.push(payload);
+        }
+      } catch {
+        remaining.push(payload);
+      }
+    }
+    setOfflineQueue(remaining);
+    alert(`Sincronizadas: ${synced}. Pendientes: ${remaining.length}.`);
+  }
+
   normalizePaymentFields();
   attachQtyButtons();
   attachInputs();
   attachSearchAndHotkeys();
+  window.addEventListener("pos-refresh", refreshPosSummary);
+  window.addEventListener("online", paintOfflineQueueState);
+  window.addEventListener("offline", paintOfflineQueueState);
+  btnSyncOfflineQueue?.addEventListener("click", syncOfflineQueue);
+  posForm.addEventListener("submit", (e) => {
+    if (navigator.onLine) return;
+    e.preventDefault();
+    const payload = collectOfflinePayload();
+    if (!payload.items || payload.items.length === 0) {
+      alert("No hay productos en carrito para guardar offline.");
+      return;
+    }
+    const queue = getOfflineQueue();
+    queue.push(payload);
+    setOfflineQueue(queue);
+    clearCart();
+    alert("Venta guardada offline. Se sincronizará cuando regrese Internet.");
+  });
+  paintOfflineQueueState();
   refreshPosSummary();
 })();
 

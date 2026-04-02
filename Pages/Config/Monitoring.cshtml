@@ -17,6 +17,7 @@
         <div class="cards-grid compact mt-3">
             <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Eventos</div><div class="kpi-value text-primary">@Model.TotalEvents</div><span class="badge-soft badge-info">Telemetría</span></div>
             <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Latencia promedio</div><div class="kpi-value text-success">@Model.AvgMs.ToString("N0") ms</div><span class="badge-soft badge-ok">Rendimiento</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-cyan"><div class="kpi-title">DB promedio</div><div class="kpi-value text-info">@Model.AvgDbMs.ToString("N0") ms</div><span class="badge-soft badge-info">@Model.AvgDbCommands.ToString("N1") cmds</span></div>
             <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Lentas</div><div class="kpi-value text-warning">@Model.SlowEvents</div><span class="badge-soft badge-warn">>=1200ms</span></div>
             <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Errores</div><div class="kpi-value text-danger">@Model.ErrorEvents</div><span class="badge-soft badge-danger">HTTP 5xx</span></div>
         </div>
@@ -27,11 +28,11 @@
     <div class="panel-header"><h5 class="mb-0">Endpoints con mayor latencia (P95)</h5></div>
     <div class="panel-body p-0">
         <table class="table table-modern mb-0">
-            <thead><tr><th>Ruta</th><th>Calls</th><th>Avg</th><th>P95</th><th>Errores</th></tr></thead>
+            <thead><tr><th>Ruta</th><th>Calls</th><th>Avg</th><th>P95</th><th>DB ms</th><th>DB cmds</th><th>Errores</th></tr></thead>
             <tbody>
             @if (Model.SlowEndpoints.Count == 0)
             {
-                <tr><td colspan="5" class="text-center text-muted py-3">Sin datos para la ventana seleccionada.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-3">Sin datos para la ventana seleccionada.</td></tr>
             }
             else
             {
@@ -42,6 +43,8 @@
                         <td><span class="badge-soft badge-info">@e.Calls</span></td>
                         <td>@e.AvgMs.ToString("N0") ms</td>
                         <td><span class="badge-soft @(e.P95Ms >= 2000 ? "badge-danger" : "badge-warn")">@e.P95Ms ms</span></td>
+                        <td>@e.AvgDbMs.ToString("N0") ms</td>
+                        <td>@e.AvgDbCommands.ToString("N1")</td>
                         <td><span class="badge-soft @(e.Errors > 0 ? "badge-danger" : "badge-ok")">@e.Errors</span></td>
                     </tr>
                 }
@@ -64,6 +67,7 @@
                     </div>
                     <div class="fw-semibold mb-1">@e.Method @e.Path</div>
                     <div class="product-meta mb-1">IP: @e.IpAddress</div>
+                    <div class="product-meta mb-1">Tenant: @e.TenantSchema | Trace: @e.TraceId</div>
                     <div class="product-meta">@(!string.IsNullOrWhiteSpace(e.Error) ? e.Error : "Error HTTP")</div>
                 </article>
             }

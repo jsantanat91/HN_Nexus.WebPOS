@@ -16,6 +16,8 @@ public class MonitoringModel(AppDbContext db, IAlertEmailService email) : PageMo
     public long TotalEvents { get; private set; }
     public long ErrorEvents { get; private set; }
     public double AvgMs { get; private set; }
+    public double AvgDbMs { get; private set; }
+    public double AvgDbCommands { get; private set; }
     public long SlowEvents { get; private set; }
 
     [BindProperty(SupportsGet = true)]
@@ -31,6 +33,8 @@ public class MonitoringModel(AppDbContext db, IAlertEmailService email) : PageMo
         ErrorEvents = await q.LongCountAsync(x => x.StatusCode >= 500 || x.Error != null);
         SlowEvents = await q.LongCountAsync(x => x.DurationMs >= 1200);
         AvgMs = await q.AnyAsync() ? await q.AverageAsync(x => (double)x.DurationMs) : 0;
+        AvgDbMs = await q.AnyAsync() ? await q.AverageAsync(x => (double)x.DbDurationMs) : 0;
+        AvgDbCommands = await q.AnyAsync() ? await q.AverageAsync(x => x.DbCommandCount) : 0;
 
         SlowEndpoints = await q
             .GroupBy(x => x.Path)
@@ -40,7 +44,9 @@ public class MonitoringModel(AppDbContext db, IAlertEmailService email) : PageMo
                 Calls = g.Count(),
                 AvgMs = g.Average(x => (double)x.DurationMs),
                 P95Ms = g.OrderBy(x => x.DurationMs).Skip((int)(g.Count() * 0.95)).Select(x => x.DurationMs).FirstOrDefault(),
-                Errors = g.Count(x => x.StatusCode >= 500 || x.Error != null)
+                Errors = g.Count(x => x.StatusCode >= 500 || x.Error != null),
+                AvgDbMs = g.Average(x => (double)x.DbDurationMs),
+                AvgDbCommands = g.Average(x => (double)x.DbCommandCount)
             })
             .OrderByDescending(x => x.P95Ms)
             .ThenByDescending(x => x.Calls)
@@ -73,5 +79,7 @@ public class MonitoringModel(AppDbContext db, IAlertEmailService email) : PageMo
         public double AvgMs { get; set; }
         public long P95Ms { get; set; }
         public int Errors { get; set; }
+        public double AvgDbMs { get; set; }
+        public double AvgDbCommands { get; set; }
     }
 }

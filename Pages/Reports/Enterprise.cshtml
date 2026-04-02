@@ -1,0 +1,93 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Reports.EnterpriseModel
+@{
+    ViewData["Title"] = "Tablero Enterprise";
+}
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Ventana de análisis (días)</label>
+                <input asp-for="Days" class="form-control" type="number" min="1" max="120" />
+            </div>
+            <div class="col-md-2"><button class="btn btn-primary w-100">Actualizar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Comparativo multi-tenant</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Tenant</th><th>Ventas</th><th>Tickets</th><th>Ticket promedio</th></tr></thead>
+            <tbody>
+            @foreach (var t in Model.TenantMetrics)
+            {
+                <tr>
+                    <td><span class="badge-soft badge-info">@t.TenantCode</span> @t.TenantName</td>
+                    <td class="fw-bold">@t.TotalSales.ToString("C")</td>
+                    <td>@t.SalesCount</td>
+                    <td>@t.AvgTicket.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="row g-3">
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <div class="panel-header"><h5 class="mb-0">Ranking sucursales</h5></div>
+            <div class="panel-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead><tr><th>Sucursal</th><th>Tickets</th><th>Total</th></tr></thead>
+                    <tbody>
+                    @foreach (var b in Model.BranchRanking)
+                    {
+                        <tr><td>@b.Branch</td><td>@b.Tickets</td><td class="fw-semibold">@b.Total.ToString("C")</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="panel h-100">
+            <div class="panel-header"><h5 class="mb-0">Ranking cajeros</h5></div>
+            <div class="panel-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead><tr><th>Cajero</th><th>Tickets</th><th>Total</th><th>Promedio</th></tr></thead>
+                    <tbody>
+                    @foreach (var c in Model.CashierRanking)
+                    {
+                        <tr><td>@c.Cashier</td><td>@c.Tickets</td><td class="fw-semibold">@c.Total.ToString("C")</td><td>@c.AvgTicket.ToString("C")</td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="panel">
+            <div class="panel-header"><h5 class="mb-0">Margen por categoría</h5></div>
+            <div class="panel-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead><tr><th>Categoría</th><th>Venta</th><th>Costo</th><th>Margen</th></tr></thead>
+                    <tbody>
+                    @foreach (var m in Model.CategoryMargins)
+                    {
+                        <tr>
+                            <td><span class="badge-soft category-pill" data-category="@m.Category">@m.Category</span></td>
+                            <td>@m.Sales.ToString("C")</td>
+                            <td>@m.Cost.ToString("C")</td>
+                            <td class="fw-semibold @(m.Margin >= 0 ? "text-success" : "text-danger")">@m.Margin.ToString("C")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

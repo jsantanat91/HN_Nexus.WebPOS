@@ -2,6 +2,7 @@
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -327,6 +328,33 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             return RedirectToPage("/Account/Login");
         }
 
+        var openShift = await db.CashShifts
+            .Where(x => x.UserId == userId.Value && x.BranchId == BranchId && x.Status == "Open")
+            .OrderByDescending(x => x.OpenedAt)
+            .FirstOrDefaultAsync();
+        if (openShift is null)
+        {
+            TempData["Flash"] = "No puedes vender sin abrir turno. Abre turno en Caja > Turno.";
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
+        }
+
+        var nowMx = GetNowMx();
+        var openedMx = ConvertUtcToMx(openShift.OpenedAt);
+        if (openedMx.Date != nowMx.Date)
+        {
+            TempData["Flash"] = "El turno abierto es de otro día. Cierra turno y abre uno nuevo para continuar vendiendo.";
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
+        }
+
+        var hasStaleOpenShiftInBranch = await db.CashShifts
+            .Where(x => x.BranchId == BranchId && x.Status == "Open")
+            .ToListAsync();
+        if (hasStaleOpenShiftInBranch.Any(x => ConvertUtcToMx(x.OpenedAt).Date != nowMx.Date))
+        {
+            TempData["Flash"] = "Hay turnos abiertos de días anteriores en esta sucursal. Debes cerrar turno(s) pendiente(s) antes de vender.";
+            return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
+        }
+
         var taxRate = Math.Clamp(Config.TaxRate, 0m, 100m) / 100m;
         var nowLocal = DateTime.Now;
         var activePromotions = await db.PromotionRules
@@ -504,6 +532,12 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             return Page();
         }
 
+        if (normalizedPayment.Equals("Transfer", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(AuthorizationCode))
+        {
+            ModelState.AddModelError(string.Empty, "Captura la referencia de transferencia.");
+            return Page();
+        }
+
         var sale = new Sale
         {
             Date = DateTime.UtcNow,
@@ -599,6 +633,176 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         TempData["Flash"] = $"Venta #{sale.Id} registrada correctamente.";
         return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId, ticketSaleId = sale.Id });
+    }
+
+    public async Task<IActionResult> OnPostOfflineSyncAsync(string payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            return new JsonResult(new { ok = false, message = "Payload vacío." });
+        }
+
+        OfflineSalePayload? data;
+        try
+        {
+            data = JsonSerializer.Deserialize<OfflineSalePayload>(payload, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch
+        {
+            return new JsonResult(new { ok = false, message = "Payload inválido." });
+        }
+
+        if (data is null || data.Items.Count == 0)
+        {
+            return new JsonResult(new { ok = false, message = "Sin productos para sincronizar." });
+        }
+
+        var userId = userContext.GetUserId(User);
+        if (userId is null)
+        {
+            return new JsonResult(new { ok = false, message = "Sesión inválida." });
+        }
+
+        var branchId = data.BranchId;
+        var warehouseId = data.WarehouseId;
+        if (branchId <= 0 || warehouseId <= 0)
+        {
+            return new JsonResult(new { ok = false, message = "Sucursal/almacén inválidos." });
+        }
+
+        var nowMx = GetNowMx();
+        var openShift = await db.CashShifts
+            .Where(x => x.UserId == userId.Value && x.BranchId == branchId && x.Status == "Open")
+            .OrderByDescending(x => x.OpenedAt)
+            .FirstOrDefaultAsync();
+        if (openShift is null || ConvertUtcToMx(openShift.OpenedAt).Date != nowMx.Date)
+        {
+            return new JsonResult(new { ok = false, message = "No hay turno abierto vigente para sincronizar." });
+        }
+
+        var stockRows = await db.WarehouseStocks
+            .Include(ps => ps.Product)
+            .Where(ps => ps.WarehouseId == warehouseId)
+            .ToListAsync();
+
+        var selected = new List<(WarehouseStock Stock, int Qty, decimal DiscountPercent)>();
+        foreach (var i in data.Items.Where(x => x.Qty > 0))
+        {
+            var row = stockRows.FirstOrDefault(x => x.ProductId == i.ProductId);
+            if (row is null)
+            {
+                return new JsonResult(new { ok = false, message = $"Producto {i.ProductId} no encontrado en almacén." });
+            }
+
+            if (row.Stock < i.Qty)
+            {
+                return new JsonResult(new { ok = false, message = $"Stock insuficiente para {row.Product?.Name}." });
+            }
+
+            selected.Add((row, i.Qty, Math.Clamp(i.DiscountPercent, 0m, 100m)));
+        }
+
+        if (selected.Count == 0)
+        {
+            return new JsonResult(new { ok = false, message = "No hay productos válidos para sincronizar." });
+        }
+
+        var taxRate = (await db.AppConfigs.FirstOrDefaultAsync())?.TaxRate ?? 16m;
+        var tax = Math.Clamp(taxRate, 0m, 100m) / 100m;
+        var gross = selected.Sum(x => (x.Stock.Product?.Price ?? 0m) * x.Qty);
+        var lineDisc = selected.Sum(x => ((x.Stock.Product?.Price ?? 0m) * x.Qty) * (x.DiscountPercent / 100m));
+        var globalDisc = (gross - lineDisc) * (Math.Clamp(data.GlobalDiscountPercent, 0m, 100m) / 100m);
+        var discounted = gross - lineDisc - globalDisc;
+
+        decimal subtotal;
+        decimal iva;
+        decimal total;
+        if (data.PricesIncludeTax)
+        {
+            total = discounted;
+            subtotal = tax <= 0 ? discounted : discounted / (1 + tax);
+            iva = total - subtotal;
+        }
+        else
+        {
+            subtotal = discounted;
+            iva = subtotal * tax;
+            total = subtotal + iva;
+        }
+
+        var method = string.IsNullOrWhiteSpace(data.PaymentMethod) ? "Cash" : data.PaymentMethod.Trim();
+        if (method.Equals("Cash", StringComparison.OrdinalIgnoreCase) && data.AmountReceived < total)
+        {
+            return new JsonResult(new { ok = false, message = "Monto recibido insuficiente." });
+        }
+        if ((method.Equals("Card", StringComparison.OrdinalIgnoreCase) || method.Equals("Transfer", StringComparison.OrdinalIgnoreCase))
+            && string.IsNullOrWhiteSpace(data.AuthorizationCode))
+        {
+            return new JsonResult(new { ok = false, message = "Falta referencia/autorización." });
+        }
+
+        var sale = new Sale
+        {
+            Date = DateTime.UtcNow,
+            BranchId = branchId,
+            WarehouseId = warehouseId,
+            UserId = userId.Value,
+            CustomerId = data.CustomerId,
+            IsInvoice = data.IsInvoice,
+            Status = "Completed",
+            PaymentMethod = method,
+            AuthorizationCode = string.IsNullOrWhiteSpace(data.AuthorizationCode) ? null : data.AuthorizationCode.Trim(),
+            PricesIncludeTax = data.PricesIncludeTax,
+            AmountReceived = data.AmountReceived,
+            ChangeAmount = method.Equals("Cash", StringComparison.OrdinalIgnoreCase) ? data.AmountReceived - total : 0m,
+            SubtotalAmount = subtotal,
+            TaxAmount = iva,
+            DiscountAmount = lineDisc + globalDisc,
+            TotalAmount = total,
+            CfdiStatus = data.IsInvoice ? "Pendiente" : "NoAplica"
+        };
+
+        foreach (var row in selected)
+        {
+            var unitPrice = row.Stock.Product?.Price ?? 0m;
+            sale.Details.Add(new SaleDetail
+            {
+                ProductId = row.Stock.ProductId,
+                Quantity = row.Qty,
+                UnitPrice = unitPrice,
+                DiscountPercent = row.DiscountPercent,
+                DiscountAmount = unitPrice * row.Qty * (row.DiscountPercent / 100m)
+            });
+
+            row.Stock.Stock -= row.Qty;
+            var branchStock = await db.ProductStocks.FirstOrDefaultAsync(x => x.BranchId == branchId && x.ProductId == row.Stock.ProductId);
+            if (branchStock is not null)
+            {
+                branchStock.Stock = Math.Max(0, branchStock.Stock - row.Qty);
+            }
+            if (row.Stock.Product is not null)
+            {
+                row.Stock.Product.Stock = Math.Max(0, row.Stock.Product.Stock - row.Qty);
+            }
+        }
+
+        db.Sales.Add(sale);
+        db.AuditLogs.Add(new AuditLog
+        {
+            CreatedAt = DateTime.UtcNow,
+            Action = "OFFLINE_SYNC",
+            Entity = "Sale",
+            BranchId = branchId,
+            Username = User.Identity?.Name ?? "sistema",
+            IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
+            Details = $"Venta offline sincronizada. Total={total:N2}, items={selected.Count}."
+        });
+        await db.SaveChangesAsync();
+
+        return new JsonResult(new { ok = true, saleId = sale.Id, message = $"Venta #{sale.Id} sincronizada." });
     }
 
     private void ClearValidationNoiseForSale()
@@ -725,6 +929,40 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         return (pending <= 0, allocations);
     }
 
+    private static TimeZoneInfo ResolveMxZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City");
+        }
+        catch
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time (Mexico)");
+            }
+            catch
+            {
+                return TimeZoneInfo.Local;
+            }
+        }
+    }
+
+    private static DateTime GetNowMx()
+    {
+        var mxZone = ResolveMxZone();
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, mxZone);
+    }
+
+    private static DateTime ConvertUtcToMx(DateTime value)
+    {
+        var utc = value.Kind == DateTimeKind.Utc
+            ? value
+            : DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        var mxZone = ResolveMxZone();
+        return TimeZoneInfo.ConvertTimeFromUtc(utc, mxZone);
+    }
+
     private class LotAllocation
     {
         public int ProductLotId { get; set; }
@@ -750,6 +988,27 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         public decimal PromotionValue { get; set; }
         public int PromotionMinQty { get; set; }
         public int Stock { get; set; }
+    }
+
+    public class OfflineSalePayload
+    {
+        public int BranchId { get; set; }
+        public int WarehouseId { get; set; }
+        public int? CustomerId { get; set; }
+        public bool IsInvoice { get; set; }
+        public bool PricesIncludeTax { get; set; }
+        public string PaymentMethod { get; set; } = "Cash";
+        public string? AuthorizationCode { get; set; }
+        public decimal AmountReceived { get; set; }
+        public decimal GlobalDiscountPercent { get; set; }
+        public List<OfflineSaleItem> Items { get; set; } = [];
+    }
+
+    public class OfflineSaleItem
+    {
+        public int ProductId { get; set; }
+        public int Qty { get; set; }
+        public decimal DiscountPercent { get; set; }
     }
 }
 
