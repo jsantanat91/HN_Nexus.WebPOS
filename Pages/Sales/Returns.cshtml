@@ -1,0 +1,113 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Sales.ReturnsModel
+@{
+    ViewData["Title"] = "Devoluciones";
+    var requested = Model.Requests.Count(x => x.Status == "Requested");
+    var approved = Model.Requests.Count(x => x.Status == "Approved");
+    var applied = Model.Requests.Count(x => x.Status == "Applied");
+}
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-5"><label class="form-label">Venta</label><select asp-for="SaleId" class="form-select">@foreach(var s in Model.Sales){<option value="@s.Id">#@s.Id - @s.Date.ToLocalTime().ToString("dd/MM HH:mm") - @s.TotalAmount.ToString("C")</option>}</select></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Consultar</button></div>
+        </form>
+
+        <div class="cards-grid compact mt-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Solicitadas</div><div class="kpi-value text-warning">@requested</div><span class="badge-soft badge-warn">Pendiente aprobación</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Aprobadas</div><div class="kpi-value text-primary">@approved</div><span class="badge-soft badge-info">Pendiente aplicación</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Aplicadas</div><div class="kpi-value text-success">@applied</div><span class="badge-soft badge-ok">Cerradas</span></div>
+        </div>
+    </div>
+</section>
+
+@if (Model.SelectedSale is not null)
+{
+    <section class="panel mb-3">
+        <div class="panel-header"><h5 class="mb-0">Solicitar devolución parcial - Venta #@Model.SelectedSale.Id</h5></div>
+        <div class="panel-body">
+            <div class="cards-grid">
+                @foreach (var d in Model.SelectedSale.Details)
+                {
+                    var reserved = Model.ReservedByDetail.TryGetValue(d.Id, out var x) ? x : 0;
+                    var available = d.Quantity - reserved;
+                    <article class="product-card">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge-soft badge-info">@d.Product?.Name</span>
+                            <span class="badge-soft @(available > 0 ? "badge-warn" : "badge-ok")">Disp: @available</span>
+                        </div>
+                        <div class="product-meta mb-2">Vendida: @d.Quantity | Reservada/Devuelta: @reserved | Precio: @d.UnitPrice.ToString("C")</div>
+                        @if (available > 0)
+                        {
+                            <form method="post" asp-page-handler="Request" class="row g-2">
+                                <input type="hidden" name="saleId" value="@Model.SelectedSale.Id" />
+                                <input type="hidden" name="saleDetailId" value="@d.Id" />
+                                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                                <div class="col-4"><input name="quantity" type="number" min="1" max="@available" value="1" class="form-control" /></div>
+                                <div class="col-8"><input name="reason" class="form-control" placeholder="Motivo" required /></div>
+                                <div class="col-12"><input name="requesterSignature" class="form-control" placeholder="Firma digital solicitante" required /></div>
+                                <div class="col-12"><button class="btn btn-save w-100">Crear solicitud</button></div>
+                            </form>
+                        }
+                    </article>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Workflow de devoluciones</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var r in Model.Requests)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">Solicitud #@r.Id</span>
+                        <span class="badge-soft @(r.Status == "Applied" ? "badge-ok" : r.Status == "Approved" ? "badge-info" : "badge-warn")">@r.Status</span>
+                    </div>
+                    <div class="product-meta">Monto: @r.TotalReturned.ToString("C")</div>
+                    <div class="product-meta">Solicita: @r.CreatedByUser?.FullName</div>
+                    <div class="product-meta">Firma solicitante: @r.RequestedSignature</div>
+                    <div class="product-meta mb-2">Motivo: @r.Reason</div>
+
+                    @if (r.Status == "Requested")
+                    {
+                        <form method="post" asp-page-handler="Approve" class="row g-2">
+                            <input type="hidden" name="returnId" value="@r.Id" />
+                            <input type="hidden" name="branchId" value="@Model.BranchId" />
+                            <input type="hidden" name="saleId" value="@Model.SaleId" />
+                            <div class="col-6"><input name="supervisorUser" class="form-control" placeholder="Usuario admin" required /></div>
+                            <div class="col-6"><input name="supervisorPassword" type="password" class="form-control" placeholder="Password admin" required /></div>
+                            <div class="col-12"><input name="supervisorSignature" class="form-control" placeholder="Firma digital supervisor" required /></div>
+                            <div class="col-12"><button class="btn btn-primary w-100">Aprobar</button></div>
+                        </form>
+                    }
+                    else if (r.Status == "Approved")
+                    {
+                        <div class="d-flex gap-1 flex-wrap mb-2">
+                            <span class="badge-soft badge-info">Supervisor: @r.AuthorizedByUser?.FullName</span>
+                            <span class="badge-soft badge-warn">FirmaHash: @((r.SupervisorSignatureHash ?? "-")[..Math.Min(12, (r.SupervisorSignatureHash ?? "-").Length)])</span>
+                        </div>
+                        <form method="post" asp-page-handler="Apply">
+                            <input type="hidden" name="returnId" value="@r.Id" />
+                            <input type="hidden" name="branchId" value="@Model.BranchId" />
+                            <input type="hidden" name="saleId" value="@Model.SaleId" />
+                            <button class="btn btn-save w-100">Aplicar a inventario</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="d-flex gap-1 flex-wrap">
+                            <span class="badge-soft badge-ok">Aplicada @r.AppliedAt?.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                            <span class="badge-soft badge-info">Hash: @((r.SupervisorSignatureHash ?? "-")[..Math.Min(12, (r.SupervisorSignatureHash ?? "-").Length)])</span>
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    </div>
+</section>

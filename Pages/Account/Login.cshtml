@@ -23,6 +23,12 @@
                     <input asp-for="Input.Password" type="password" class="form-control" autocomplete="current-password" />
                 </div>
 
+                <div class="mb-3">
+                    <label asp-for="Input.TenantCode" class="form-label">Tenant (cliente)</label>
+                    <input asp-for="Input.TenantCode" class="form-control" placeholder="ej. principal / acme" />
+                    <small class="text-muted">Si eres SuperUser puedes dejarlo vacío.</small>
+                </div>
+
                 <button type="submit" class="btn btn-primary w-100 py-2">Entrar</button>
             </form>
 

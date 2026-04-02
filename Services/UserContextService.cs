@@ -21,7 +21,7 @@ public class UserContextService(AppDbContext db) : IUserContextService
 
     public async Task<List<Branch>> GetAccessibleBranchesAsync(ClaimsPrincipal user)
     {
-        if (user.IsInRole("Admin"))
+        if (user.IsInRole("Admin") || user.IsInRole("SuperUser"))
         {
             return await db.Branches.Where(b => b.IsActive).OrderBy(b => b.Name).ToListAsync();
         }

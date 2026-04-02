@@ -1,0 +1,84 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Inventory.CycleCountsModel
+@{
+    ViewData["Title"] = "Conteos Cíclicos";
+    var dif = Model.ActiveLines.Sum(x => x.Difference);
+}
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label">Almacén</label><select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-select"></select></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Actualizar</button></div>
+        </form>
+
+        <form method="post" asp-page-handler="Start" class="row g-2 mt-3">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+            <div class="col-md-8"><input name="notes" class="form-control" placeholder="Notas del conteo" /></div>
+            <div class="col-md-4"><button class="btn btn-save w-100">Nuevo conteo cíclico</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Sesiones</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var s in Model.Sessions)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">Conteo #@s.Id</span>
+                        <span class="badge-soft @(s.Status == "Open" ? "badge-warn" : "badge-ok")">@s.Status</span>
+                    </div>
+                    <div class="product-meta">@s.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</div>
+                    <div class="product-meta mb-2">@s.CreatedByUser?.FullName</div>
+                    <a class="btn btn-sm btn-outline-primary" asp-page="/Inventory/CycleCounts" asp-route-branchId="@Model.BranchId" asp-route-warehouseId="@Model.WarehouseId" asp-route-sessionId="@s.Id">Abrir</a>
+                </article>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Detalle de conteo #@Model.SessionId</h5>
+        @if (Model.ActiveLines.Count > 0)
+        {
+            <form method="post" asp-page-handler="Authorize" class="m-0">
+                <input type="hidden" name="sessionId" value="@Model.SessionId" />
+                <input type="hidden" name="branchId" value="@Model.BranchId" />
+                <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+                <button class="btn btn-save">Autorizar y aplicar</button>
+            </form>
+        }
+    </div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Producto</th><th>Sistema</th><th>Contado</th><th>Diferencia</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var l in Model.ActiveLines)
+            {
+                <tr>
+                    <td>@l.Product?.Name</td>
+                    <td><span class="badge-soft badge-info">@l.SystemQty</span></td>
+                    <td>
+                        <form method="post" asp-page-handler="UpdateLine" class="d-flex gap-2">
+                            <input type="hidden" name="id" value="@l.Id" />
+                            <input type="hidden" name="branchId" value="@Model.BranchId" />
+                            <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+                            <input type="hidden" name="sessionId" value="@Model.SessionId" />
+                            <input name="countedQty" type="number" class="form-control form-control-sm" value="@l.CountedQty" style="max-width:120px;" />
+                            <button class="btn btn-sm btn-outline-primary">Guardar</button>
+                        </form>
+                    </td>
+                    <td><span class="badge-soft @(l.Difference == 0 ? "badge-ok" : l.Difference > 0 ? "badge-info" : "badge-danger")">@l.Difference</span></td>
+                    <td></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

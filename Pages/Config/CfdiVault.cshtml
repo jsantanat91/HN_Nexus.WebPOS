@@ -1,0 +1,36 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Config.CfdiVaultModel
+@{
+    ViewData["Title"] = "Resguardo CFDI";
+}
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3"><label class="form-label">Folio venta</label><input asp-for="SaleId" class="form-control" placeholder="Todos" /></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Filtrar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Documentos resguardados (XML/PDF/Acuse)</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var d in Model.Items)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">Venta #@d.SaleId</span>
+                        <span class="badge-soft @(d.DocumentType == "ACUSE" ? "badge-warn" : d.DocumentType == "PDF" ? "badge-ok" : "badge-info")">@d.DocumentType</span>
+                    </div>
+                    <div class="fw-semibold mb-1">@d.OriginalFileName</div>
+                    <div class="product-meta">Hash SHA256: @d.Sha256[..Math.Min(20, d.Sha256.Length)]...</div>
+                    <div class="product-meta">Tamaño: @d.SizeBytes.ToString("N0") bytes</div>
+                    <div class="product-meta mb-2">Fecha: @d.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                    <a class="btn btn-sm btn-outline-primary" asp-page-handler="Download" asp-route-id="@d.Id">Descargar</a>
+                </article>
+            }
+        </div>
+    </div>
+</section>

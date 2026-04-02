@@ -13,6 +13,7 @@ public class LotsModel(AppDbContext db, IUserContextService userContext) : PageM
     public List<SelectListItem> Branches { get; private set; } = new();
     public List<SelectListItem> Products { get; private set; } = new();
     public List<ProductLot> Items { get; private set; } = new();
+    public List<LotTrace> Traces { get; private set; } = new();
 
     [BindProperty(SupportsGet = true)]
     public int BranchId { get; set; }
@@ -160,6 +161,13 @@ public class LotsModel(AppDbContext db, IUserContextService userContext) : PageM
             .ThenByDescending(x => x.CreatedAt)
             .Take(300)
             .ToListAsync();
+
+        Traces = await db.LotTraces
+            .Include(x => x.Product)
+            .Include(x => x.Sale)
+            .Where(x => x.BranchId == BranchId && (ProductId <= 0 || x.ProductId == ProductId))
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(120)
+            .ToListAsync();
     }
 }
-

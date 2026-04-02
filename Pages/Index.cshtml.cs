@@ -15,6 +15,8 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     public decimal ExpensesToday { get; private set; }
     public int LowStockProducts { get; private set; }
     public int SalesCountToday { get; private set; }
+    public decimal AvgTicketToday { get; private set; }
+    public decimal MarginToday { get; private set; }
     public decimal NetToday => SalesToday - ExpensesToday;
 
     public List<SelectListItem> Branches { get; private set; } = new();
@@ -30,6 +32,9 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
     public List<decimal> WeekCosts { get; private set; } = new();
     public List<string> PaymentLabels { get; private set; } = new();
     public List<decimal> PaymentTotals { get; private set; } = new();
+    public List<CashierRankingItem> TopCashiers { get; private set; } = new();
+    public List<CategoryRankingItem> TopCategories { get; private set; } = new();
+    public List<ForecastRiskItem> ForecastRisks { get; private set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -44,7 +49,14 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         SalesToday = await db.Sales.Where(x => x.Date >= today && x.Status == "Completed" && x.BranchId == BranchId).SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
         ExpensesToday = await db.Expenses.Where(x => x.Date >= today).SumAsync(x => (decimal?)x.Amount) ?? 0m;
         SalesCountToday = await db.Sales.CountAsync(x => x.Date >= today && x.Status == "Completed" && x.BranchId == BranchId);
+        AvgTicketToday = SalesCountToday > 0 ? SalesToday / SalesCountToday : 0m;
         LowStockProducts = await db.ProductStocks.CountAsync(x => x.BranchId == BranchId && x.Stock <= x.MinStock);
+
+        MarginToday = await db.SaleDetails
+            .Include(x => x.Sale)
+            .Include(x => x.Product)
+            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= today)
+            .SumAsync(x => (decimal?)(x.Quantity * (x.UnitPrice - (x.Product != null ? x.Product.Cost : 0m)))) ?? 0m;
 
         RecentSales = await db.Sales
             .Include(x => x.Customer)
@@ -117,6 +129,66 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
             .ToList();
 
         PaymentTotals = paymentMix.Select(x => x.Total).ToList();
+
+        TopCashiers = await db.Sales
+            .Include(x => x.User)
+            .Where(x => x.BranchId == BranchId && x.Status == "Completed" && x.Date >= startDate)
+            .GroupBy(x => new { x.UserId, Name = x.User != null ? x.User.FullName : "N/A" })
+            .Select(g => new CashierRankingItem
+            {
+                Cashier = g.Key.Name,
+                Tickets = g.Count(),
+                Amount = g.Sum(x => x.TotalAmount)
+            })
+            .OrderByDescending(x => x.Amount)
+            .Take(6)
+            .ToListAsync();
+
+        TopCategories = await db.SaleDetails
+            .Include(x => x.Sale)
+            .Include(x => x.Product)!.ThenInclude(p => p!.Category)
+            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= startDate)
+            .GroupBy(x => new { Name = x.Product != null && x.Product.Category != null ? x.Product.Category.Name : "General" })
+            .Select(g => new CategoryRankingItem
+            {
+                Category = g.Key.Name,
+                Units = g.Sum(x => x.Quantity),
+                Amount = g.Sum(x => x.Quantity * x.UnitPrice)
+            })
+            .OrderByDescending(x => x.Amount)
+            .Take(6)
+            .ToListAsync();
+
+        var forecastStart = DateTime.UtcNow.Date.AddDays(-30);
+        var sales30 = await db.SaleDetails
+            .Include(x => x.Sale)
+            .Where(x => x.Sale != null && x.Sale.BranchId == BranchId && x.Sale.Status == "Completed" && x.Sale.Date >= forecastStart)
+            .GroupBy(x => x.ProductId)
+            .Select(g => new { ProductId = g.Key, Units = g.Sum(x => x.Quantity) })
+            .ToListAsync();
+
+        var stockRows = await db.ProductStocks
+            .Include(x => x.Product)
+            .Where(x => x.BranchId == BranchId)
+            .ToListAsync();
+
+        ForecastRisks = stockRows
+            .Select(s =>
+            {
+                var sold30 = sales30.FirstOrDefault(x => x.ProductId == s.ProductId)?.Units ?? 0;
+                var dailyAvg = sold30 / 30m;
+                var daysCover = dailyAvg > 0 ? s.Stock / dailyAvg : 999m;
+                return new ForecastRiskItem
+                {
+                    ProductName = s.Product?.Name ?? "Producto",
+                    CurrentStock = s.Stock,
+                    DailyAvg = dailyAvg,
+                    DaysCover = daysCover
+                };
+            })
+            .OrderBy(x => x.DaysCover)
+            .Take(8)
+            .ToList();
     }
 
     public class ProductRankingItem
@@ -124,6 +196,28 @@ public class IndexModel(AppDbContext db, IUserContextService userContext) : Page
         public string ProductName { get; set; } = string.Empty;
         public int Units { get; set; }
         public decimal Amount { get; set; }
+    }
+
+    public class CashierRankingItem
+    {
+        public string Cashier { get; set; } = string.Empty;
+        public int Tickets { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    public class CategoryRankingItem
+    {
+        public string Category { get; set; } = string.Empty;
+        public int Units { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    public class ForecastRiskItem
+    {
+        public string ProductName { get; set; } = string.Empty;
+        public int CurrentStock { get; set; }
+        public decimal DailyAvg { get; set; }
+        public decimal DaysCover { get; set; }
     }
 }
 

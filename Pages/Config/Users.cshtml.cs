@@ -17,12 +17,10 @@ public class UsersModel(AppDbContext db) : PageModel
     public List<User> Users { get; private set; } = new();
     public List<Branch> Branches { get; private set; } = new();
     public List<SelectListItem> Profiles { get; private set; } = new();
+    public List<SelectListItem> Tenants { get; private set; } = new();
     public Dictionary<int, HashSet<int>> UserBranchMap { get; private set; } = new();
 
-    public async Task OnGetAsync()
-    {
-        await LoadAsync();
-    }
+    public async Task OnGetAsync() => await LoadAsync();
 
     public async Task<IActionResult> OnPostCreateAsync()
     {
@@ -42,9 +40,16 @@ public class UsersModel(AppDbContext db) : PageModel
         }
 
         var profile = await db.PermissionProfiles.FirstOrDefaultAsync(p => p.Id == Input.ProfileId && p.IsActive);
-        if (profile is null)
+        if (!Input.IsSuperUser && profile is null)
         {
             TempData["Flash"] = "Selecciona un perfil válido.";
+            return RedirectToPage();
+        }
+
+        var tenantId = Input.IsSuperUser ? (int?)null : Input.TenantId;
+        if (!Input.IsSuperUser && (!tenantId.HasValue || !await db.Tenants.AnyAsync(t => t.Id == tenantId.Value && t.IsActive)))
+        {
+            TempData["Flash"] = "Selecciona tenant activo para el usuario.";
             return RedirectToPage();
         }
 
@@ -53,36 +58,42 @@ public class UsersModel(AppDbContext db) : PageModel
             Username = Input.Username.Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(Input.Password.Trim()),
             FullName = Input.FullName.Trim(),
-            Role = profile.IsAdmin ? "Admin" : profile.Name,
-            PermissionProfileId = profile.Id,
+            Role = Input.IsSuperUser ? "SuperUser" : (profile!.IsAdmin ? "Admin" : profile.Name),
+            PermissionProfileId = Input.IsSuperUser ? null : profile!.Id,
+            TenantId = tenantId,
+            IsSuperUser = Input.IsSuperUser,
             IsActive = true,
-            ModulePermissions = profile.ModulePermissions
+            ModulePermissions = Input.IsSuperUser ? string.Join(',', ModuleCatalog.All) : profile!.ModulePermissions
         };
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var selectedBranches = Branches
-            .Where(b => Request.Form[$"bra_{b.Id}"].Count > 0)
-            .Select(b => b.Id)
-            .ToList();
-
-        if (selectedBranches.Count == 0 && Branches.Count > 0)
+        if (!Input.IsSuperUser)
         {
-            selectedBranches.Add(Branches[0].Id);
+            var selectedBranches = Branches
+                .Where(b => Request.Form[$"bra_{b.Id}"].Count > 0)
+                .Select(b => b.Id)
+                .ToList();
+
+            if (selectedBranches.Count == 0 && Branches.Count > 0)
+            {
+                selectedBranches.Add(Branches[0].Id);
+            }
+
+            foreach (var branchId in selectedBranches)
+            {
+                db.UserBranchAccesses.Add(new UserBranchAccess { UserId = user.Id, BranchId = branchId });
+            }
+
+            await db.SaveChangesAsync();
         }
 
-        foreach (var branchId in selectedBranches)
-        {
-            db.UserBranchAccesses.Add(new UserBranchAccess { UserId = user.Id, BranchId = branchId });
-        }
-
-        await db.SaveChangesAsync();
-        TempData["Flash"] = "Usuario creado con perfil y sucursales asignadas.";
+        TempData["Flash"] = "Usuario creado.";
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostEditAsync(int id, string fullName, string? password, int profileId)
+    public async Task<IActionResult> OnPostEditAsync(int id, string fullName, string? password, int? profileId, bool isSuperUser, int? tenantId)
     {
         var user = await db.Users.FirstOrDefaultAsync(x => x.Id == id);
         if (user is null)
@@ -90,11 +101,27 @@ public class UsersModel(AppDbContext db) : PageModel
             return RedirectToPage();
         }
 
-        var profile = await db.PermissionProfiles.FirstOrDefaultAsync(p => p.Id == profileId && p.IsActive);
-        if (profile is null)
+        PermissionProfile? profile = null;
+        if (!isSuperUser)
         {
-            TempData["Flash"] = "Perfil inválido.";
-            return RedirectToPage();
+            if (!profileId.HasValue)
+            {
+                TempData["Flash"] = "Perfil inválido.";
+                return RedirectToPage();
+            }
+
+            profile = await db.PermissionProfiles.FirstOrDefaultAsync(p => p.Id == profileId.Value && p.IsActive);
+            if (profile is null)
+            {
+                TempData["Flash"] = "Perfil inválido.";
+                return RedirectToPage();
+            }
+
+            if (!tenantId.HasValue || !await db.Tenants.AnyAsync(t => t.Id == tenantId.Value && t.IsActive))
+            {
+                TempData["Flash"] = "Tenant inválido.";
+                return RedirectToPage();
+            }
         }
 
         user.FullName = string.IsNullOrWhiteSpace(fullName) ? user.FullName : fullName.Trim();
@@ -103,32 +130,40 @@ public class UsersModel(AppDbContext db) : PageModel
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password.Trim());
         }
 
-        user.PermissionProfileId = profile.Id;
-        user.Role = profile.IsAdmin ? "Admin" : profile.Name;
-        user.ModulePermissions = profile.ModulePermissions;
-
-        var selectedBranches = await db.Branches
-            .Where(b => b.IsActive)
-            .Select(b => b.Id)
-            .Where(branchId => Request.Form[$"ebr_{branchId}"].Count > 0)
-            .ToListAsync();
-
-        if (selectedBranches.Count == 0)
-        {
-            var first = await db.Branches.Where(b => b.IsActive).OrderBy(b => b.Id).FirstOrDefaultAsync();
-            if (first is not null)
-            {
-                selectedBranches.Add(first.Id);
-            }
-        }
+        user.IsSuperUser = isSuperUser;
+        user.Role = isSuperUser ? "SuperUser" : (profile!.IsAdmin ? "Admin" : profile.Name);
+        user.PermissionProfileId = isSuperUser ? null : profile!.Id;
+        user.ModulePermissions = isSuperUser ? string.Join(',', ModuleCatalog.All) : profile!.ModulePermissions;
+        user.TenantId = isSuperUser ? null : tenantId;
 
         var current = await db.UserBranchAccesses.Where(x => x.UserId == user.Id).ToListAsync();
-        db.UserBranchAccesses.RemoveRange(current.Where(c => !selectedBranches.Contains(c.BranchId)));
-
-        var currentSet = current.Select(c => c.BranchId).ToHashSet();
-        foreach (var branchId in selectedBranches.Where(b => !currentSet.Contains(b)))
+        if (isSuperUser)
         {
-            db.UserBranchAccesses.Add(new UserBranchAccess { UserId = user.Id, BranchId = branchId });
+            db.UserBranchAccesses.RemoveRange(current);
+        }
+        else
+        {
+            var selectedBranches = await db.Branches
+                .Where(b => b.IsActive)
+                .Select(b => b.Id)
+                .Where(branchId => Request.Form[$"ebr_{branchId}"].Count > 0)
+                .ToListAsync();
+
+            if (selectedBranches.Count == 0)
+            {
+                var first = await db.Branches.Where(b => b.IsActive).OrderBy(b => b.Id).FirstOrDefaultAsync();
+                if (first is not null)
+                {
+                    selectedBranches.Add(first.Id);
+                }
+            }
+
+            db.UserBranchAccesses.RemoveRange(current.Where(c => !selectedBranches.Contains(c.BranchId)));
+            var currentSet = current.Select(c => c.BranchId).ToHashSet();
+            foreach (var branchId in selectedBranches.Where(b => !currentSet.Contains(b)))
+            {
+                db.UserBranchAccesses.Add(new UserBranchAccess { UserId = user.Id, BranchId = branchId });
+            }
         }
 
         await db.SaveChangesAsync();
@@ -158,12 +193,16 @@ public class UsersModel(AppDbContext db) : PageModel
 
     private async Task LoadAsync()
     {
-        Users = await db.Users.Include(u => u.PermissionProfile).OrderBy(x => x.FullName).ToListAsync();
+        Users = await db.Users.Include(u => u.PermissionProfile).Include(u => u.Tenant).OrderBy(x => x.FullName).ToListAsync();
         Branches = await db.Branches.Where(b => b.IsActive).OrderBy(x => x.Name).ToListAsync();
         Profiles = await db.PermissionProfiles
             .Where(p => p.IsActive)
             .OrderBy(p => p.Name)
             .Select(p => new SelectListItem(p.Name, p.Id.ToString()))
+            .ToListAsync();
+
+        Tenants = await db.Tenants.Where(t => t.IsActive).OrderBy(t => t.Name)
+            .Select(t => new SelectListItem($"{t.Code} - {t.Name}", t.Id.ToString()))
             .ToListAsync();
 
         var accesses = await db.UserBranchAccesses.ToListAsync();
@@ -177,6 +216,8 @@ public class UsersModel(AppDbContext db) : PageModel
         public string Username { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public int ProfileId { get; set; }
+        public int? ProfileId { get; set; }
+        public int? TenantId { get; set; }
+        public bool IsSuperUser { get; set; }
     }
 }

@@ -1,0 +1,62 @@
+@page
+@model HN_Nexus.WebPOS.Pages.Inventory.ReplenishmentModel
+@{
+    ViewData["Title"] = "Reabasto";
+    var critical = Model.Suggestions.Count(x => x.NeedsReplenishment);
+}
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4"><label class="form-label">Sucursal</label><select asp-for="BranchId" asp-items="Model.Branches" class="form-select"></select></div>
+            <div class="col-md-4"><label class="form-label">Almacén</label><select asp-for="WarehouseId" asp-items="Model.Warehouses" class="form-select"></select></div>
+            <div class="col-md-2"><button class="btn btn-outline-primary w-100">Cargar</button></div>
+        </form>
+
+        <div class="cards-grid compact mt-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Críticos</div><div class="kpi-value text-danger">@critical</div><span class="badge-soft badge-danger">Reabasto urgente</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Productos evaluados</div><div class="kpi-value text-primary">@Model.Suggestions.Count</div><span class="badge-soft badge-info">SKU</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Reglas activas</div><div class="kpi-value text-success">@Model.Rules.Count(x => x.AutoEnabled)</div><span class="badge-soft badge-ok">Automáticas</span></div>
+        </div>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Nueva/editar regla de reabasto</h5></div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="SaveRule" class="row g-2">
+            <input type="hidden" name="branchId" value="@Model.BranchId" />
+            <input type="hidden" name="warehouseId" value="@Model.WarehouseId" />
+            <div class="col-md-4"><select name="productId" asp-items="Model.Products" class="form-select"></select></div>
+            <div class="col-md-2"><input name="minLevel" type="number" class="form-control" placeholder="Min" required /></div>
+            <div class="col-md-2"><input name="maxLevel" type="number" class="form-control" placeholder="Max" required /></div>
+            <div class="col-md-2"><input name="suggestedOrderQty" type="number" class="form-control" placeholder="Sugerido" /></div>
+            <div class="col-md-1 d-flex align-items-center"><div class="form-check"><input type="checkbox" class="form-check-input" name="autoEnabled" value="true" checked /><label class="form-check-label">Auto</label></div></div>
+            <div class="col-md-1"><button class="btn btn-save w-100">Guardar</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Sugerencias de reabasto</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var s in Model.Suggestions)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft @(s.NeedsReplenishment ? "badge-danger" : "badge-ok")">@(s.NeedsReplenishment ? "Reabasto" : "Ok")</span>
+                        <span class="badge-soft @(s.AutoEnabled ? "badge-info" : "badge-warn")">@(s.AutoEnabled ? "Auto" : "Manual")</span>
+                    </div>
+                    <div class="fw-semibold">@s.ProductName</div>
+                    <div class="d-flex gap-1 flex-wrap mt-2">
+                        <span class="badge-soft badge-info">Stock @s.CurrentStock</span>
+                        <span class="badge-soft badge-warn">Min @s.MinLevel</span>
+                        <span class="badge-soft badge-ok">Max @s.MaxLevel</span>
+                        <span class="badge-soft @(s.SuggestedQty > 0 ? "badge-danger" : "badge-info")">Sugerido @s.SuggestedQty</span>
+                    </div>
+                </article>
+            }
+        </div>
+    </div>
+</section>

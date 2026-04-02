@@ -285,10 +285,36 @@
     }
 
     document.addEventListener("keydown", (e) => {
+      if (e.altKey && (e.key === "p" || e.key === "P")) {
+        e.preventDefault();
+        document.querySelector('[data-bs-target="#quickProductModal"]')?.click();
+      }
+
+      if (e.altKey && (e.key === "c" || e.key === "C")) {
+        e.preventDefault();
+        document.querySelector('[data-bs-target="#quickCustomerModal"]')?.click();
+      }
+
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("btnCharge")?.click();
+      }
+
+      if (e.key === "Escape") {
+        barcodeInput?.focus();
+        barcodeInput?.select();
+      }
+
       if (e.key === "F2") {
         e.preventDefault();
         searchInput?.focus();
         searchInput?.select();
+      }
+
+      if (e.key === "F8") {
+        e.preventDefault();
+        barcodeInput?.focus();
+        barcodeInput?.select();
       }
 
       if (e.key === "F4") {

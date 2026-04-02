@@ -19,7 +19,7 @@ public class ModuleAccessService(AppDbContext db) : IModuleAccessService
             return false;
         }
 
-        if (user.IsInRole("Admin"))
+        if (user.IsInRole("Admin") || user.IsInRole("SuperUser"))
         {
             return true;
         }

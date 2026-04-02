@@ -32,6 +32,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WarehouseStock> WarehouseStocks => Set<WarehouseStock>();
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<PriceListItem> PriceListItems => Set<PriceListItem>();
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<AppTelemetryEvent> AppTelemetryEvents => Set<AppTelemetryEvent>();
+    public DbSet<CfdiVaultFile> CfdiVaultFiles => Set<CfdiVaultFile>();
+    public DbSet<ReplenishmentRule> ReplenishmentRules => Set<ReplenishmentRule>();
+    public DbSet<CycleCount> CycleCounts => Set<CycleCount>();
+    public DbSet<CycleCountLine> CycleCountLines => Set<CycleCountLine>();
+    public DbSet<LotTrace> LotTraces => Set<LotTrace>();
+    public DbSet<SaleReturn> SaleReturns => Set<SaleReturn>();
+    public DbSet<SaleReturnLine> SaleReturnLines => Set<SaleReturnLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +88,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<PriceListItem>()
             .HasIndex(x => new { x.PriceListId, x.ProductId, x.MinQty })
             .IsUnique();
+
+        modelBuilder.Entity<Tenant>()
+            .HasIndex(x => x.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<Tenant>()
+            .HasIndex(x => x.SchemaName)
+            .IsUnique();
+
+        modelBuilder.Entity<AppTelemetryEvent>()
+            .HasIndex(x => x.CreatedAt);
+
+        modelBuilder.Entity<CfdiVaultFile>()
+            .HasIndex(x => new { x.SaleId, x.DocumentType, x.CreatedAt });
+
+        modelBuilder.Entity<ReplenishmentRule>()
+            .HasIndex(x => new { x.BranchId, x.WarehouseId, x.ProductId })
+            .IsUnique();
+
+        modelBuilder.Entity<CycleCountLine>()
+            .HasIndex(x => new { x.CycleCountId, x.ProductId })
+            .IsUnique();
+
+        modelBuilder.Entity<LotTrace>()
+            .HasIndex(x => new { x.SaleId, x.ProductId, x.CreatedAt });
+
+        modelBuilder.Entity<SaleReturnLine>()
+            .HasIndex(x => new { x.SaleReturnId, x.SaleDetailId });
 
         modelBuilder.Entity<Category>().HasData(
             new Category { Id = 1, Name = "General" },

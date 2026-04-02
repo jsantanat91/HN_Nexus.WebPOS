@@ -46,6 +46,7 @@
                         <div class="config-submenu">
                             @if (has(ModuleCatalog.Sales)) { <a class="nav-link sub-link" asp-page="/Sales/New">Venta</a> }
                             @if (has(ModuleCatalog.Sales)) { <a class="nav-link sub-link" asp-page="/Sales/Index">Historial de Ventas</a> }
+                            @if (has(ModuleCatalog.Sales)) { <a class="nav-link sub-link" asp-page="/Sales/Returns">Devoluciones</a> }
                             @if (has(ModuleCatalog.CashCuts)) { <a class="nav-link sub-link" asp-page="/CashCuts/Index">Corte</a> }
                             @if (has(ModuleCatalog.CashShifts)) { <a class="nav-link sub-link" asp-page="/CashShifts/Index">Turno</a> }
                             @if (User.IsInRole("Admin")) { <a class="nav-link sub-link" asp-page="/CashCuts/AccountingClose">Cierre contable</a> }
@@ -61,6 +62,8 @@
                             <a class="nav-link sub-link" asp-page="/Inventory/Kardex">Kardex</a>
                             <a class="nav-link sub-link" asp-page="/Inventory/Transfers">Transferencias</a>
                             <a class="nav-link sub-link" asp-page="/Inventory/Lots">Lotes y Caducidades</a>
+                            <a class="nav-link sub-link" asp-page="/Inventory/Replenishment">Reabasto</a>
+                            <a class="nav-link sub-link" asp-page="/Inventory/CycleCounts">Conteos Cíclicos</a>
                         </div>
                     </details>
                 }
@@ -69,6 +72,7 @@
                 @if (has(ModuleCatalog.SupplierOrders)) { <a class="nav-link" asp-page="/SupplierOrders/Index">Órdenes Compra</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Daily">Reportes</a> }
                 @if (has(ModuleCatalog.Reports)) { <a class="nav-link" asp-page="/Reports/Fiscal">Corte Fiscal</a> }
+                <a class="nav-link" asp-page="/Help/Index">Centro de Ayuda</a>
 
                 @if (User.IsInRole("Admin"))
                 {
@@ -85,6 +89,9 @@
                             <a class="nav-link sub-link" asp-page="/Config/Pricing">Precios</a>
                             <a class="nav-link sub-link" asp-page="/Config/Promotions">Promociones</a>
                             <a class="nav-link sub-link" asp-page="/Config/Cfdi">CFDI / PAC</a>
+                            <a class="nav-link sub-link" asp-page="/Config/CfdiVault">Resguardo CFDI</a>
+                            <a class="nav-link sub-link" asp-page="/Config/Monitoring">Monitoreo</a>
+                            @if (User.IsInRole("SuperUser")) { <a class="nav-link sub-link" asp-page="/Config/Tenants">Tenants</a> }
                             <a class="nav-link sub-link" asp-page="/Config/Audit">Bitácora</a>
                         </div>
                     </details>

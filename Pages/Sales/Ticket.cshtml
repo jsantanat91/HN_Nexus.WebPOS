@@ -65,14 +65,15 @@
                     </div>
 
                     <div class="d-grid gap-2 mt-3 d-print-none">
+                        @Html.AntiForgeryToken()
                         @if (Model.Embed)
                         {
-                            <button type="button" class="btn btn-primary" id="btnPrintAndClose">Imprimir ticket</button>
+                            <button type="button" class="btn btn-primary" id="btnPrintAndClose" data-sale-id="@Model.Sale.Id" data-customer-email="@Model.Sale.Customer?.Email">Imprimir ticket</button>
                             <button type="button" class="btn btn-outline-primary" id="btnBackAndClose">Volver a ventas</button>
                         }
                         else
                         {
-                            <button class="btn btn-primary" onclick="window.print()">Imprimir ticket</button>
+                            <button type="button" class="btn btn-primary" id="btnPrintTicketStandalone" data-sale-id="@Model.Sale.Id" data-customer-email="@Model.Sale.Customer?.Email">Imprimir ticket</button>
                             <a class="btn btn-outline-primary" asp-page="/Sales/Index">Volver a ventas</a>
                         }
                     </div>
@@ -87,11 +88,50 @@
 {
 <script>
 (() => {
+  const sendDigital = async (btn) => {
+    const saleId = btn?.getAttribute('data-sale-id');
+    const suggestedEmail = btn?.getAttribute('data-customer-email') || '';
+    const email = (prompt('Correo para ticket digital:', suggestedEmail) || '').trim();
+    if (!email) return false;
+
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    const body = new URLSearchParams();
+    body.set('id', saleId || '');
+    body.set('email', email);
+    body.set('__RequestVerificationToken', token);
+
+    const res = await fetch(`?handler=SendDigital&id=${saleId || ''}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      },
+      body: body.toString()
+    });
+
+    const data = await res.json();
+    alert(data?.message || (data?.ok ? 'Enviado.' : 'No se pudo enviar.'));
+    return !!data?.ok;
+  };
+
+  const askPrintMode = async (btn) => {
+    const opt = (prompt('Tipo de ticket: FISICO o DIGITAL', 'FISICO') || '').trim().toUpperCase();
+    if (!opt) return false;
+    if (opt === 'DIGITAL') {
+      return await sendDigital(btn);
+    }
+    window.print();
+    return true;
+  };
+
   const closeModal = () => window.parent?.postMessage({ type: 'closeTicketModal' }, '*');
   document.getElementById('btnBackAndClose')?.addEventListener('click', closeModal);
-  document.getElementById('btnPrintAndClose')?.addEventListener('click', () => {
-    window.print();
-    setTimeout(closeModal, 400);
+  document.getElementById('btnPrintAndClose')?.addEventListener('click', async (e) => {
+    const ok = await askPrintMode(e.currentTarget);
+    if (ok) setTimeout(closeModal, 400);
+  });
+
+  document.getElementById('btnPrintTicketStandalone')?.addEventListener('click', async (e) => {
+    await askPrintMode(e.currentTarget);
   });
 })();
 </script>
@@ -105,4 +145,3 @@
 }
 </style>
 }
-

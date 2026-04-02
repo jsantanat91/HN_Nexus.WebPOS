@@ -1,0 +1,44 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Config.TenantsModel
+@{
+    ViewData["Title"] = "Tenants";
+}
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Crear tenant (schema hn_xx)</h5></div>
+    <div class="panel-body">
+        <form method="post" asp-page-handler="Create" class="row g-2">
+            <div class="col-md-4"><input name="name" class="form-control" placeholder="Nombre cliente" required /></div>
+            <div class="col-md-3"><input name="code" class="form-control" placeholder="codigo (xx)" required /></div>
+            <div class="col-md-3"><input name="host" class="form-control" placeholder="host opcional: xx.tudominio.com" /></div>
+            <div class="col-md-2"><button class="btn btn-save w-100">Crear</button></div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Tenants registrados</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var t in Model.Items)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-info">@t.Code</span>
+                        <span class="badge-soft @(t.IsActive ? "badge-ok" : "badge-danger")">@(t.IsActive ? "Activo" : "Inactivo")</span>
+                    </div>
+                    <div class="fw-semibold">@t.Name</div>
+                    <div class="product-meta">Schema: @t.SchemaName</div>
+                    <div class="product-meta mb-2">Host: @(string.IsNullOrWhiteSpace(t.Host) ? "-" : t.Host)</div>
+                    @if (t.SchemaName != "public")
+                    {
+                        <form method="post" asp-page-handler="Toggle">
+                            <input type="hidden" name="id" value="@t.Id" />
+                            <button class="btn btn-sm btn-outline-primary">Cambiar estatus</button>
+                        </form>
+                    }
+                </article>
+            }
+        </div>
+    </div>
+</section>

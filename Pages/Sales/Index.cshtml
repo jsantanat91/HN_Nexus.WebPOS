@@ -17,6 +17,7 @@
             </div>
             <div class="col-md-2"><button class="btn btn-primary w-100">Filtrar</button></div>
             <div class="col-md-3"><a class="btn btn-outline-primary w-100" asp-page="/Sales/New" asp-route-branchId="@Model.BranchId">Nueva venta</a></div>
+            <div class="col-md-3"><a class="btn btn-outline-warning w-100" asp-page="/Sales/Returns" asp-route-branchId="@Model.BranchId">Devoluciones</a></div>
         </form>
 
         <form method="post" asp-page-handler="Export" id="exportDailyForm" class="d-flex gap-2 mt-3">

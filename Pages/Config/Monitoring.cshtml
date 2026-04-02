@@ -1,0 +1,73 @@
+﻿@page
+@model HN_Nexus.WebPOS.Pages.Config.MonitoringModel
+@{
+    ViewData["Title"] = "Monitoreo Técnico";
+}
+
+<section class="panel mb-3">
+    <div class="panel-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3"><label class="form-label">Ventana (horas)</label><input asp-for="Hours" type="number" min="1" max="168" class="form-control" /></div>
+            <div class="col-md-2"><button class="btn btn-primary w-100">Actualizar</button></div>
+        </form>
+        <form method="post" asp-page-handler="SendTestEmail" class="mt-2">
+            <button class="btn btn-outline-primary">Enviar correo de prueba</button>
+        </form>
+
+        <div class="cards-grid compact mt-3">
+            <div class="kpi-card glass-card kpi-gradient kpi-blue"><div class="kpi-title">Eventos</div><div class="kpi-value text-primary">@Model.TotalEvents</div><span class="badge-soft badge-info">Telemetría</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-green"><div class="kpi-title">Latencia promedio</div><div class="kpi-value text-success">@Model.AvgMs.ToString("N0") ms</div><span class="badge-soft badge-ok">Rendimiento</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-amber"><div class="kpi-title">Lentas</div><div class="kpi-value text-warning">@Model.SlowEvents</div><span class="badge-soft badge-warn">>=1200ms</span></div>
+            <div class="kpi-card glass-card kpi-gradient kpi-red"><div class="kpi-title">Errores</div><div class="kpi-value text-danger">@Model.ErrorEvents</div><span class="badge-soft badge-danger">HTTP 5xx</span></div>
+        </div>
+    </div>
+</section>
+
+<section class="panel mb-3">
+    <div class="panel-header"><h5 class="mb-0">Endpoints con mayor latencia (P95)</h5></div>
+    <div class="panel-body p-0">
+        <table class="table table-modern mb-0">
+            <thead><tr><th>Ruta</th><th>Calls</th><th>Avg</th><th>P95</th><th>Errores</th></tr></thead>
+            <tbody>
+            @if (Model.SlowEndpoints.Count == 0)
+            {
+                <tr><td colspan="5" class="text-center text-muted py-3">Sin datos para la ventana seleccionada.</td></tr>
+            }
+            else
+            {
+                @foreach (var e in Model.SlowEndpoints)
+                {
+                    <tr>
+                        <td>@e.Path</td>
+                        <td><span class="badge-soft badge-info">@e.Calls</span></td>
+                        <td>@e.AvgMs.ToString("N0") ms</td>
+                        <td><span class="badge-soft @(e.P95Ms >= 2000 ? "badge-danger" : "badge-warn")">@e.P95Ms ms</span></td>
+                        <td><span class="badge-soft @(e.Errors > 0 ? "badge-danger" : "badge-ok")">@e.Errors</span></td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h5 class="mb-0">Errores recientes</h5></div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var e in Model.RecentErrors)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft badge-danger">@e.StatusCode</span>
+                        <span class="badge-soft badge-info">@e.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm:ss")</span>
+                    </div>
+                    <div class="fw-semibold mb-1">@e.Method @e.Path</div>
+                    <div class="product-meta mb-1">IP: @e.IpAddress</div>
+                    <div class="product-meta">@(!string.IsNullOrWhiteSpace(e.Error) ? e.Error : "Error HTTP")</div>
+                </article>
+            }
+        </div>
+    </div>
+</section>
+

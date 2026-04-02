@@ -35,6 +35,32 @@
     </div>
 </section>
 
+<section class="panel mt-3">
+    <div class="panel-header">
+        <h5 class="mb-0">Trazabilidad de movimientos</h5>
+    </div>
+    <div class="panel-body">
+        <div class="cards-grid">
+            @foreach (var t in Model.Traces)
+            {
+                <article class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge-soft @(t.MovementType == "Sale" ? "badge-danger" : t.MovementType == "Return" ? "badge-ok" : "badge-warn")">@t.MovementType</span>
+                        <span class="badge-soft badge-info">@t.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                    </div>
+                    <div class="fw-semibold mb-1">@t.Product?.Name</div>
+                    <div class="product-meta">Referencia: @t.Reference</div>
+                    <div class="d-flex gap-1 flex-wrap mt-2">
+                        <span class="badge-soft badge-info">Venta: @(t.SaleId?.ToString() ?? "-")</span>
+                        <span class="badge-soft badge-warn">Lote: @(t.ProductLotId?.ToString() ?? "-")</span>
+                        <span class="badge-soft @(t.Quantity < 0 ? "badge-danger" : "badge-ok")">Qty: @t.Quantity</span>
+                    </div>
+                </article>
+            }
+        </div>
+    </div>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <h5 class="mb-0">Lotes registrados</h5>

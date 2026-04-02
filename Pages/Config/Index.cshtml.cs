@@ -47,6 +47,13 @@ public class IndexModel(AppDbContext db) : PageModel
             current.CashAccount = Item.CashAccount;
             current.CardAccount = Item.CardAccount;
             current.TransferAccount = Item.TransferAccount;
+            current.SmtpHost = Item.SmtpHost;
+            current.SmtpPort = Item.SmtpPort;
+            current.SmtpUseSsl = Item.SmtpUseSsl;
+            current.SmtpUser = Item.SmtpUser;
+            current.SmtpPassword = Item.SmtpPassword;
+            current.AlertFromEmail = Item.AlertFromEmail;
+            current.AlertToEmails = Item.AlertToEmails;
         }
 
         await db.SaveChangesAsync();

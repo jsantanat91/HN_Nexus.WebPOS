@@ -45,6 +45,20 @@
             <span class="badge-soft badge-danger">Productos con bajo inventario</span>
         </div>
     </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card glass-card kpi-gradient kpi-cyan">
+            <div class="kpi-title">Ticket promedio</div>
+            <div class="kpi-value text-info">@Model.AvgTicketToday.ToString("C")</div>
+            <span class="badge-soft badge-info">Venta por ticket</span>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card glass-card kpi-gradient kpi-slate">
+            <div class="kpi-title">Margen bruto hoy</div>
+            <div class="kpi-value @(Model.MarginToday >= 0 ? "text-success" : "text-danger")">@Model.MarginToday.ToString("C")</div>
+            <span class="badge-soft @(Model.MarginToday >= 0 ? "badge-ok" : "badge-danger")">Rentabilidad</span>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3 mb-3">
@@ -174,6 +188,76 @@
                     }
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <section class="panel mt-3">
+            <div class="panel-header">
+                <h5 class="mb-0">Riesgo de Quiebre (Pronóstico simple)</h5>
+            </div>
+            <div class="panel-body">
+                @if (Model.ForecastRisks.Count == 0)
+                {
+                    <p class="text-muted mb-0">Sin datos para pronóstico.</p>
+                }
+                else
+                {
+                    @foreach (var r in Model.ForecastRisks)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>@r.ProductName</strong>
+                                <div class="text-muted small">Consumo prom: @r.DailyAvg.ToString("N2") und/día</div>
+                            </div>
+                            <span class="badge-soft @(r.DaysCover < 7 ? "badge-danger" : r.DaysCover < 15 ? "badge-warn" : "badge-ok")">@r.DaysCover.ToString("N1") días cobertura</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-xl-6">
+        <section class="panel">
+            <div class="panel-header"><h5 class="mb-0">Top Cajeros (7 días)</h5></div>
+            <div class="panel-body">
+                @if (Model.TopCashiers.Count == 0)
+                {
+                    <p class="text-muted mb-0">Sin movimientos en el periodo.</p>
+                }
+                else
+                {
+                    @foreach (var c in Model.TopCashiers)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div><strong>@c.Cashier</strong> <span class="text-muted small">(@c.Tickets tickets)</span></div>
+                            <span class="badge-soft badge-info">@c.Amount.ToString("C")</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+    </div>
+    <div class="col-xl-6">
+        <section class="panel">
+            <div class="panel-header"><h5 class="mb-0">Top Categorías (7 días)</h5></div>
+            <div class="panel-body">
+                @if (Model.TopCategories.Count == 0)
+                {
+                    <p class="text-muted mb-0">Sin movimientos en el periodo.</p>
+                }
+                else
+                {
+                    @foreach (var c in Model.TopCategories)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div><strong>@c.Category</strong> <span class="text-muted small">(@c.Units und)</span></div>
+                            <span class="badge-soft badge-ok">@c.Amount.ToString("C")</span>
+                        </div>
+                    }
+                }
             </div>
         </section>
     </div>

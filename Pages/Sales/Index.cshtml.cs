@@ -1,4 +1,4 @@
-using System.Text;
+ï»¿using System.Text;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HN_Nexus.WebPOS.Pages.Sales;
 
-public class IndexModel(AppDbContext db, IUserContextService userContext, IReportPdfService pdfService, IWebHostEnvironment env) : PageModel
+public class IndexModel(AppDbContext db, IUserContextService userContext, IReportPdfService pdfService, ICfdiVaultService vault) : PageModel
 {
     public List<Sale> Items { get; private set; } = new();
     public List<SelectListItem> Branches { get; private set; } = new();
@@ -59,7 +59,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == branchId);
         if (branch is null)
         {
-            TempData["Flash"] = "Sucursal no válida.";
+            TempData["Flash"] = "Sucursal no vÃ¡lida.";
             return RedirectToPage(new { branchId });
         }
 
@@ -179,7 +179,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             BranchId = sale.BranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Venta cancelada. Razón: {sale.CancelReason}"
+            Details = $"Venta cancelada. RazÃ³n: {sale.CancelReason}"
         });
 
         await db.SaveChangesAsync();
@@ -212,24 +212,22 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
 
         if (sale.CfdiStatus == "Timbrado")
         {
-            TempData["Flash"] = "La venta ya está timbrada.";
+            TempData["Flash"] = "La venta ya estÃ¡ timbrada.";
             return RedirectToPage(new { branchId });
         }
 
         var config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
         if (string.IsNullOrWhiteSpace(config.PacProvider))
         {
-            TempData["Flash"] = "Configura proveedor PAC antes de timbrar (Configuración > CFDI/PAC).";
+            TempData["Flash"] = "Configura proveedor PAC antes de timbrar (ConfiguraciÃ³n > CFDI/PAC).";
             return RedirectToPage(new { branchId });
         }
 
         var uuid = Guid.NewGuid().ToString().ToUpperInvariant();
-        var cfdiRoot = Path.Combine(env.WebRootPath, "cfdi");
-        Directory.CreateDirectory(cfdiRoot);
         var xmlName = $"cfdi-{sale.Id}-{DateTime.UtcNow:yyyyMMddHHmmss}.xml";
-        var xmlPath = Path.Combine(cfdiRoot, xmlName);
         var xml = BuildMockCfdiXml(sale, uuid, config.CompanyName, config.TaxId);
-        await System.IO.File.WriteAllTextAsync(xmlPath, xml);
+        var xmlBytes = Encoding.UTF8.GetBytes(xml);
+        var xmlVault = await vault.SaveAsync("xml", xmlName, xmlBytes);
 
         var doc = await db.CfdiDocuments.FirstOrDefaultAsync(x => x.SaleId == sale.Id);
         if (doc is null)
@@ -245,12 +243,22 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         doc.PacProvider = config.PacProvider ?? "Pendiente";
         doc.Status = "Stamped";
         doc.Uuid = uuid;
-        doc.XmlPath = $"/cfdi/{xmlName}";
+        doc.XmlPath = xmlVault.storagePath;
         doc.PdfPath = null;
         doc.ErrorMessage = null;
         doc.StampedAt = DateTime.UtcNow;
         sale.CfdiStatus = "Timbrado";
         sale.CfdiUuid = uuid;
+        db.CfdiVaultFiles.Add(new CfdiVaultFile
+        {
+            SaleId = sale.Id,
+            DocumentType = "XML",
+            OriginalFileName = xmlName,
+            StoragePath = xmlVault.storagePath,
+            Sha256 = xmlVault.sha256,
+            SizeBytes = xmlVault.sizeBytes,
+            CreatedAt = DateTime.UtcNow
+        });
 
         db.AuditLogs.Add(new AuditLog
         {
@@ -261,7 +269,7 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
             BranchId = sale.BranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Timbrado CFDI (modo integración base) UUID={uuid}, PAC={doc.PacProvider}."
+            Details = $"Timbrado CFDI (modo integraciÃ³n base) UUID={uuid}, PAC={doc.PacProvider}."
         });
 
         await db.SaveChangesAsync();
@@ -288,6 +296,20 @@ public class IndexModel(AppDbContext db, IUserContextService userContext, IRepor
         doc.CancelledAt = DateTime.UtcNow;
         doc.ErrorMessage = string.IsNullOrWhiteSpace(reason) ? "Cancelado desde sistema" : reason.Trim();
         sale.CfdiStatus = "Cancelado";
+        var acuseName = $"acuse-cancelacion-{sale.Id}-{DateTime.UtcNow:yyyyMMddHHmmss}.txt";
+        var acuseText = $"CFDI {doc.Uuid} cancelado en {DateTime.UtcNow:O}. Motivo: {doc.ErrorMessage}";
+        var acuseBytes = Encoding.UTF8.GetBytes(acuseText);
+        var acuseVault = await vault.SaveAsync("acuse", acuseName, acuseBytes);
+        db.CfdiVaultFiles.Add(new CfdiVaultFile
+        {
+            SaleId = sale.Id,
+            DocumentType = "ACUSE",
+            OriginalFileName = acuseName,
+            StoragePath = acuseVault.storagePath,
+            Sha256 = acuseVault.sha256,
+            SizeBytes = acuseVault.sizeBytes,
+            CreatedAt = DateTime.UtcNow
+        });
 
         db.AuditLogs.Add(new AuditLog
         {
@@ -356,6 +378,8 @@ th,td {{ border-bottom: 1px dashed #999; text-align: left; padding: 4px; font-si
 </html>";
     }
 }
+
+
 
 
 

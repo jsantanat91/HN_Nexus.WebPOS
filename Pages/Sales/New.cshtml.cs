@@ -1,4 +1,4 @@
-using System.Globalization;
+ï»¿using System.Globalization;
 using HN_Nexus.WebPOS.Data;
 using HN_Nexus.WebPOS.Models;
 using HN_Nexus.WebPOS.Services;
@@ -104,13 +104,13 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         await LoadAsync();
         if (BranchId <= 0)
         {
-            TempData["Flash"] = "Selecciona sucursal para crear producto rápido.";
+            TempData["Flash"] = "Selecciona sucursal para crear producto rÃ¡pido.";
             return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
         if (string.IsNullOrWhiteSpace(QuickProductName) || QuickProductPrice <= 0)
         {
-            TempData["Flash"] = "Completa nombre y precio del producto rápido.";
+            TempData["Flash"] = "Completa nombre y precio del producto rÃ¡pido.";
             return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
         }
 
@@ -174,11 +174,11 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Producto rápido '{product.Name}' desde Caja."
+            Details = $"Producto rÃ¡pido '{product.Name}' desde Caja."
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Producto rápido agregado.";
+        TempData["Flash"] = "Producto rÃ¡pido agregado.";
         return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
     }
 
@@ -201,16 +201,16 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         if (QuickCustomerRequiresInvoice)
         {
             rfc = (string.IsNullOrWhiteSpace(QuickCustomerRfc) ? string.Empty : QuickCustomerRfc.Trim().ToUpperInvariant());
-            if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ñ]{3,4}\d{6}[A-Z0-9]{3}$"))
+            if (!System.Text.RegularExpressions.Regex.IsMatch(rfc, @"^[A-Z&Ã‘]{3,4}\d{6}[A-Z0-9]{3}$"))
             {
-                TempData["Flash"] = "RFC inválido para cliente rápido con factura.";
+                TempData["Flash"] = "RFC invÃ¡lido para cliente rÃ¡pido con factura.";
                 return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
             }
 
             cp = (QuickCustomerPostalCode ?? string.Empty).Trim();
             if (!System.Text.RegularExpressions.Regex.IsMatch(cp, @"^\d{5}$"))
             {
-                TempData["Flash"] = "Código postal inválido (debe ser de 5 dígitos) para factura.";
+                TempData["Flash"] = "CÃ³digo postal invÃ¡lido (debe ser de 5 dÃ­gitos) para factura.";
                 return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
             }
 
@@ -244,11 +244,11 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Cliente rápido '{QuickCustomerName.Trim()}' desde Caja."
+            Details = $"Cliente rÃ¡pido '{QuickCustomerName.Trim()}' desde Caja."
         });
 
         await db.SaveChangesAsync();
-        TempData["Flash"] = "Cliente rápido agregado.";
+        TempData["Flash"] = "Cliente rÃ¡pido agregado.";
         return RedirectToPage(new { branchId = BranchId, warehouseId = WarehouseId });
     }
 
@@ -499,7 +499,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         if (normalizedPayment.Equals("Card", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(AuthorizationCode))
         {
-            ModelState.AddModelError(string.Empty, "Captura el número de autorización del ticket de tarjeta.");
+            ModelState.AddModelError(string.Empty, "Captura el nÃºmero de autorizaciÃ³n del ticket de tarjeta.");
             return Page();
         }
 
@@ -524,6 +524,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             CfdiStatus = IsInvoice ? "Pendiente" : "NoAplica"
         };
 
+        var lotTraces = new List<LotAllocationTrace>();
         foreach (var line in selected)
         {
             var unitPrice = ResolveUnitPrice(line.Stock.ProductId, line.Qty, line.Stock.Product?.Price ?? 0m);
@@ -551,12 +552,19 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
                 branchStock.Stock = Math.Max(0, branchStock.Stock - line.Qty);
             }
 
-            var lotOk = await ConsumeLotsAsync(BranchId, line.Stock.ProductId, line.Qty);
-            if (!lotOk)
+            var lotResult = await ConsumeLotsAsync(BranchId, line.Stock.ProductId, line.Qty);
+            if (!lotResult.ok)
             {
                 ModelState.AddModelError(string.Empty, $"Lotes insuficientes para el producto {line.Stock.Product?.Name}. Ajusta lotes/caducidades.");
                 return Page();
             }
+
+            lotTraces.AddRange(lotResult.allocations.Select(a => new LotAllocationTrace
+            {
+                ProductId = line.Stock.ProductId,
+                ProductLotId = a.ProductLotId,
+                Quantity = a.Quantity
+            }));
         }
 
         db.Sales.Add(sale);
@@ -568,8 +576,24 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             BranchId = BranchId,
             Username = User.Identity?.Name ?? "sistema",
             IpAddress = HN_Nexus.WebPOS.Services.ClientIpResolver.Get(HttpContext),
-            Details = $"Venta registrada. Total={total:N2}, método={normalizedPayment}, items={selected.Count}."
+            Details = $"Venta registrada. Total={total:N2}, mÃ©todo={normalizedPayment}, items={selected.Count}."
         });
+
+        foreach (var t in lotTraces)
+        {
+            db.LotTraces.Add(new LotTrace
+            {
+                SaleId = sale.Id,
+                ProductId = t.ProductId,
+                ProductLotId = t.ProductLotId,
+                BranchId = BranchId,
+                Quantity = -t.Quantity,
+                MovementType = "Sale",
+                Reference = $"Venta #{sale.Id}",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         await db.SaveChangesAsync();
 
         TempData["Flash"] = $"Venta #{sale.Id} registrada correctamente.";
@@ -641,7 +665,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         Config = await db.AppConfigs.FirstOrDefaultAsync() ?? new AppConfig();
     }
 
-    private async Task<bool> ConsumeLotsAsync(int branchId, int productId, int quantity)
+    private async Task<(bool ok, List<LotAllocation> allocations)> ConsumeLotsAsync(int branchId, int productId, int quantity)
     {
         var lots = await db.ProductLots
             .Where(x => x.BranchId == branchId && x.ProductId == productId && x.Quantity > 0)
@@ -651,16 +675,17 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
 
         if (lots.Count == 0)
         {
-            return true;
+            return (true, []);
         }
 
         var available = lots.Sum(x => x.Quantity);
         if (available < quantity)
         {
-            return false;
+            return (false, []);
         }
 
         var pending = quantity;
+        var allocations = new List<LotAllocation>();
         foreach (var lot in lots)
         {
             if (pending <= 0)
@@ -672,9 +697,23 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
             lot.Quantity -= take;
             lot.UpdatedAt = DateTime.UtcNow;
             pending -= take;
+            allocations.Add(new LotAllocation { ProductLotId = lot.Id, Quantity = take });
         }
 
-        return pending <= 0;
+        return (pending <= 0, allocations);
+    }
+
+    private class LotAllocation
+    {
+        public int ProductLotId { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    private class LotAllocationTrace
+    {
+        public int ProductId { get; set; }
+        public int ProductLotId { get; set; }
+        public int Quantity { get; set; }
     }
 
     public class ProductPosItem
@@ -691,6 +730,7 @@ public class NewModel(AppDbContext db, IUserContextService userContext) : PageMo
         public int Stock { get; set; }
     }
 }
+
 
 
 

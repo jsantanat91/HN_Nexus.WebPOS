@@ -1,4 +1,4 @@
-﻿namespace HN_Nexus.WebPOS.Models;
+namespace HN_Nexus.WebPOS.Models;
 
 public class AppConfig
 {
@@ -33,5 +33,12 @@ public class AppConfig
     public string CashAccount { get; set; } = "1010-000-000";
     public string CardAccount { get; set; } = "1020-000-000";
     public string TransferAccount { get; set; } = "1030-000-000";
-}
 
+    public string? SmtpHost { get; set; }
+    public int SmtpPort { get; set; } = 587;
+    public bool SmtpUseSsl { get; set; } = true;
+    public string? SmtpUser { get; set; }
+    public string? SmtpPassword { get; set; }
+    public string? AlertFromEmail { get; set; }
+    public string? AlertToEmails { get; set; } // separados por coma
+}
