@@ -30,31 +30,59 @@ public class MonitoringModel(AppDbContext db, IAlertEmailService email) : PageMo
 
         var q = db.AppTelemetryEvents.Where(x => x.CreatedAt >= from);
         TotalEvents = await q.LongCountAsync();
-        ErrorEvents = await q.LongCountAsync(x => x.StatusCode >= 500 || x.Error != null);
+        ErrorEvents = await q.LongCountAsync(x => x.StatusCode >= 500);
         SlowEvents = await q.LongCountAsync(x => x.DurationMs >= 1200);
         AvgMs = await q.AnyAsync() ? await q.AverageAsync(x => (double)x.DurationMs) : 0;
         AvgDbMs = await q.AnyAsync() ? await q.AverageAsync(x => (double)x.DbDurationMs) : 0;
         AvgDbCommands = await q.AnyAsync() ? await q.AverageAsync(x => x.DbCommandCount) : 0;
 
-        SlowEndpoints = await q
-            .GroupBy(x => x.Path)
-            .Select(g => new EndpointStat
+        // Evita fallas de traducción SQL con percentiles: agrupamos en memoria.
+        var events = await q
+            .Select(x => new
             {
-                Path = g.Key,
-                Calls = g.Count(),
-                AvgMs = g.Average(x => (double)x.DurationMs),
-                P95Ms = g.OrderBy(x => x.DurationMs).Skip((int)(g.Count() * 0.95)).Select(x => x.DurationMs).FirstOrDefault(),
-                Errors = g.Count(x => x.StatusCode >= 500 || x.Error != null),
-                AvgDbMs = g.Average(x => (double)x.DbDurationMs),
-                AvgDbCommands = g.Average(x => (double)x.DbCommandCount)
+                x.Path,
+                x.DurationMs,
+                x.StatusCode,
+                x.DbDurationMs,
+                x.DbCommandCount
+            })
+            .ToListAsync();
+
+        SlowEndpoints = events
+            .GroupBy(x => x.Path)
+            .Select(g =>
+            {
+                var sorted = g.Select(v => v.DurationMs).OrderBy(v => v).ToList();
+                if (sorted.Count == 0)
+                {
+                    return new EndpointStat
+                    {
+                        Path = g.Key,
+                        Calls = 0
+                    };
+                }
+
+                var p95Index = (int)Math.Ceiling(sorted.Count * 0.95) - 1;
+                p95Index = Math.Clamp(p95Index, 0, sorted.Count - 1);
+
+                return new EndpointStat
+                {
+                    Path = g.Key,
+                    Calls = g.Count(),
+                    AvgMs = g.Average(x => (double)x.DurationMs),
+                    P95Ms = sorted[p95Index],
+                    Errors = g.Count(x => x.StatusCode >= 500),
+                    AvgDbMs = g.Average(x => (double)x.DbDurationMs),
+                    AvgDbCommands = g.Average(x => (double)x.DbCommandCount)
+                };
             })
             .OrderByDescending(x => x.P95Ms)
             .ThenByDescending(x => x.Calls)
             .Take(20)
-            .ToListAsync();
+            .ToList();
 
         RecentErrors = await q
-            .Where(x => x.StatusCode >= 500 || x.Error != null)
+            .Where(x => x.StatusCode >= 500 || x.Path == "/Error")
             .OrderByDescending(x => x.CreatedAt)
             .Take(30)
             .ToListAsync();
@@ -68,7 +96,7 @@ public class MonitoringModel(AppDbContext db, IAlertEmailService email) : PageMo
 
         TempData["Flash"] = ok
             ? "Correo de prueba enviado."
-            : "No se pudo enviar. Revisa SMTP en ConfiguraciÃ³n General.";
+            : "No se pudo enviar. Revisa SMTP en Configuración General.";
         return RedirectToPage(new { Hours });
     }
 

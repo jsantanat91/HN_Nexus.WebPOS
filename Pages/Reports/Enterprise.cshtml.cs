@@ -55,20 +55,29 @@ public class EnterpriseModel(AppDbContext db, ITenantAnalyticsService tenantAnal
             .Take(12)
             .ToListAsync();
 
-        CategoryMargins = await db.SaleDetails
-            .Include(x => x.Sale)
-            .Include(x => x.Product)!.ThenInclude(p => p!.Category)
+        // Cálculo de margen por categoría en dos pasos para evitar fallas de traducción LINQ en PostgreSQL.
+        var marginRows = await db.SaleDetails
             .Where(x => x.Sale != null && x.Sale.Status == "Completed" && x.Sale.Date >= from)
-            .GroupBy(x => x.Product != null && x.Product.Category != null ? x.Product.Category.Name : "General")
+            .Select(x => new
+            {
+                Category = x.Product != null && x.Product.Category != null ? x.Product.Category.Name : "General",
+                x.Quantity,
+                x.UnitPrice,
+                ProductCost = x.Product != null ? x.Product.Cost : 0m
+            })
+            .ToListAsync();
+
+        CategoryMargins = marginRows
+            .GroupBy(x => x.Category)
             .Select(g => new CategoryMarginMetric
             {
-                Category = g.Key,
+                Category = g.Key ?? "General",
                 Sales = g.Sum(x => x.Quantity * x.UnitPrice),
-                Cost = g.Sum(x => x.Quantity * (x.Product != null ? x.Product.Cost : 0m))
+                Cost = g.Sum(x => x.Quantity * x.ProductCost)
             })
             .OrderByDescending(x => x.Margin)
             .Take(12)
-            .ToListAsync();
+            .ToList();
     }
 
     public class BranchMetric

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HN_Nexus.WebPOS.Pages.Config;
 
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = "SuperOnly")]
 public class HealthModel(AppDbContext db) : PageModel
 {
     public bool DbOk { get; private set; }
@@ -31,13 +31,13 @@ public class HealthModel(AppDbContext db) : PageModel
         var from = DateTime.UtcNow.AddHours(-24);
         var q = db.AppTelemetryEvents.Where(x => x.CreatedAt >= from);
         Events24h = await q.LongCountAsync();
-        Errors24h = await q.LongCountAsync(x => x.StatusCode >= 500 || x.Error != null);
+        Errors24h = await q.LongCountAsync(x => x.StatusCode >= 500);
         AvgLatencyMs = await q.AnyAsync() ? await q.AverageAsync(x => (double)x.DurationMs) : 0d;
         AvgDbMs = await q.AnyAsync() ? await q.AverageAsync(x => (double)x.DbDurationMs) : 0d;
         AvgDbCommands = await q.AnyAsync() ? await q.AverageAsync(x => x.DbCommandCount) : 0d;
 
         LastErrors = await q
-            .Where(x => x.StatusCode >= 500 || x.Error != null)
+            .Where(x => x.StatusCode >= 500 || x.Path == "/Error")
             .OrderByDescending(x => x.CreatedAt)
             .Take(20)
             .ToListAsync();

@@ -828,6 +828,70 @@ app.Use(async (ctx, next) =>
     await next();
 });
 
+app.Use(async (ctx, next) =>
+{
+    var path = ctx.Request.Path.Value ?? "/";
+    var skipAudit =
+        path.StartsWith("/css", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/js", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/lib", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/uploads", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWith("/_framework", StringComparison.OrdinalIgnoreCase);
+
+    if (skipAudit)
+    {
+        await next();
+        return;
+    }
+
+    Exception? reqError = null;
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        reqError = ex;
+        throw;
+    }
+    finally
+    {
+        if (ctx.User.Identity?.IsAuthenticated == true)
+        {
+            try
+            {
+                int? branchId = null;
+                if (int.TryParse(ctx.Request.Query["branchId"], out var bid) && bid > 0)
+                {
+                    branchId = bid;
+                }
+
+                var status = reqError is null ? ctx.Response.StatusCode : 500;
+                var detail = $"{ctx.Request.Method} {path} => {status}" + (reqError is not null ? $" ({reqError.GetType().Name})" : string.Empty);
+                using var scope = app.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.AuditLogs.Add(new AuditLog
+                {
+                    CreatedAt = DateTime.UtcNow,
+                    Action = "REQUEST",
+                    Entity = "Page",
+                    EntityId = null,
+                    BranchId = branchId,
+                    Username = ctx.User.Identity?.Name ?? "-",
+                    IpAddress = ClientIpResolver.Get(ctx),
+                    Details = detail
+                });
+                await db.SaveChangesAsync();
+            }
+            catch
+            {
+                // Nunca romper request por fallo de auditoría.
+            }
+        }
+    }
+});
+
 app.MapRazorPages();
 
 app.Run();

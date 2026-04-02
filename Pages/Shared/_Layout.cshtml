@@ -93,7 +93,7 @@
                             <a class="nav-link sub-link" asp-page="/Config/CfdiQueue">Cola CFDI</a>
                             <a class="nav-link sub-link" asp-page="/Config/CfdiVault">Resguardo CFDI</a>
                             <a class="nav-link sub-link" asp-page="/Config/Monitoring">Monitoreo</a>
-                            <a class="nav-link sub-link" asp-page="/Config/Health">Salud Sistema</a>
+                            @if (User.IsInRole("SuperUser")) { <a class="nav-link sub-link" asp-page="/Config/Health">Salud Sistema</a> }
                             @if (User.IsInRole("SuperUser")) { <a class="nav-link sub-link" asp-page="/Config/Tenants">Tenants</a> }
                             <a class="nav-link sub-link" asp-page="/Config/Audit">Bitácora</a>
                         </div>
