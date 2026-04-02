@@ -31,13 +31,15 @@ public class LoginModel(AppDbContext db, IAlertEmailService emailService) : Page
 
     public class RecoverInput
     {
-        [Required]
         public string UsernameOrEmail { get; set; } = string.Empty;
         public string? TenantCode { get; set; }
     }
 
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
+        ModelState.Remove($"{nameof(Recovery)}.{nameof(Recovery.UsernameOrEmail)}");
+        ModelState.Remove($"{nameof(Recovery)}.{nameof(Recovery.TenantCode)}");
+
         if (!ModelState.IsValid)
         {
             return Page();
